@@ -41,5 +41,6 @@ static void test_r2_graph_tarjan_strongly_connected_components();
 static void test_r2_graph_transpose();
 static void test_r2_graph_traversals();
 static void test_r2_graph_strongly_connected_components();
+static void test_r2_graph_strongly_connected();
 void r2_graph_run();
 #endif

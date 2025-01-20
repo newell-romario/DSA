@@ -2291,6 +2291,30 @@ static void test_r2_graph_strongly_connected_components()
         r2_graph_destroy_components(forest);        
 }
 
+static void test_r2_graph_strongly_connected()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);   
+        r2_uint64 edge[][2] = {
+                {1, 2},
+                {2, 1},
+                {3, 1}
+        };
+
+        for(r2_uint64 i = 0; i < 2;++i)
+                graph = r2_graph_add_edge(graph, &edge[i][0], sizeof(r2_uint64), &edge[i][1], sizeof(r2_uint64), 0);  
+        
+        assert(r2_graph_is_strong_connected(graph) == TRUE);
+        r2_destroy_graph(graph); 
+
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);  
+        for(r2_uint64 i = 0; i < 3;++i)
+                graph = r2_graph_add_edge(graph, &edge[i][0], sizeof(r2_uint64), &edge[i][1], sizeof(r2_uint64), 0);  
+
+
+        assert(r2_graph_is_strong_connected(graph) == FALSE);
+        r2_destroy_graph(graph); 
+        
+}
 void r2_graph_run()
 {
         test_r2_create_graph(); 
@@ -2332,6 +2356,7 @@ void r2_graph_run()
         test_r2_graph_transpose();
         test_r2_graph_traversals();
         test_r2_graph_strongly_connected_components();
+        test_r2_graph_strongly_connected();
 }
 
 

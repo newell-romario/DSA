@@ -634,13 +634,13 @@ r2_uint64 r2_hash_knuth(const unsigned char *key, r2_uint64 length, r2_uint64 ts
         r2_uint64  A    = 1099511628211;
         r2_uint64  K    = 0;
         r2_uint64  C    = 0;
-        r2_ldbl    P    = (r2_ldbl) 18446744073709551557;
+        r2_ldbl    P    = (r2_ldbl)18446744073709551557.00;
         for(r2_uint64 i = 0; i < length; ++i){
                 C = (((key[i] << 5) | (key[i] >> 3)) << 2) ^ (((key[i] >> 4) | (key[i]) << 3) << 5);
                 K = ((K*A/W) + key[i] + C * 16777619);
                 K = (K << 7) ^ (K >> 25); 
                 K = (K >> 47) | (K << 17);
-                K = K % (r2_uint64 )14695981039346656037;
+                K = K % (r2_uint64 )14695981039346656037UL;
         }
                
         
@@ -660,7 +660,7 @@ r2_uint64 r2_hash_knuth(const unsigned char *key, r2_uint64 length, r2_uint64 ts
  */
 r2_uint64 r2_hash_fnv(const unsigned char *key, r2_uint64 length, r2_uint64 tsize)
 {
-        r2_uint64 hash  = (r2_uint64)14695981039346656037;
+        r2_uint64 hash  = (r2_uint64)14695981039346656037UL;
         r2_uint64 prime = 1099511628211;
 
        for(r2_uint64 i = 0; i < length; ++i){
@@ -686,7 +686,7 @@ r2_uint64 r2_hash_wee(const unsigned char *key, r2_uint64 length, r2_uint64 tsiz
         r2_uint64 cbits         = 0;/*bit counter*/
         r2_uc abits[WORD]       = {0};/*groups the bits into groups of WORD bits*/
         r2_uint32 hash32        = ((*key << 5) | (*key >> 3)) ^ ((*key << 7) | (*key >> 25)) * 101 - 1; 
-        r2_uint64 hash64        = ((*key << 47) | (*key >> 17)) ^ ((*key << 23) | (*key >> 19)) * 101 -1;
+        r2_uint64 hash64        = (r2_uint64 )(((*key << 47) | (*key >> 17)) ^ ((*key << 23) | (*key >> 19)) * 101 -1);
         r2_uint32 A             = 2*nbits + 16777619;
         r2_uint64 pos           = 0;
         r2_uint64 i = 0;

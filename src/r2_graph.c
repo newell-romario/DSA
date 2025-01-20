@@ -201,7 +201,7 @@ struct r2_graph* r2_graph_del_vertex(struct r2_graph *graph, r2_uc *vkey, r2_uin
  * @param weight                Edge weight.
  * @return struct r2_graph*     Returns graph.
  */
-struct r2_graph* r2_graph_add_edge(struct r2_graph *graph, r2_uc *src, r2_uint64 slen,  r2_uc* dest, r2_uint64 dlen, r2_int64 weight)
+struct r2_graph* r2_graph_add_edge(struct r2_graph *graph, r2_uc *src, r2_uint64 slen,  r2_uc* dest, r2_uint64 dlen, r2_ldbl weight)
 {
         /*Stores src and destination keys and lengths*/
         r2_uc *keys[2] = {src, dest}; 
@@ -888,7 +888,7 @@ struct r2_bfstree* r2_graph_bfs_tree(struct r2_graph *graph, struct r2_vertex *s
                         r2_robintable_get(positions, dest->vkey, dest->len, &entry); 
                         if(entry.key == NULL){
                                 ++count;
-                                if(root->children.start == root->children.end){
+                                if(root->children.start == root->children.end){ 
                                         root->children.start = count; 
                                         root->children.end   = count;
                                 }
@@ -2694,3 +2694,32 @@ struct r2_components* r2_graph_strongly_connected_components(struct r2_graph *gr
         return forest;
 }
 
+
+/**
+ * @brief               Determines if a graph is strongly connected.
+ *                      A graph is strongly connected if for any two vertices x and y
+ *                      there is a path between them. 
+ *      
+ * @param graph         Graph.
+ * @return r2_uint16    Returns TRUE if graph is connected, else FALSE.
+ */
+r2_uint16 r2_graph_is_strong_connected(struct r2_graph *graph)
+{
+        r2_uint16 CONNECTED  = FALSE; 
+        r2_uint64 count[2] = {0, 0};
+        struct r2_dfstree *dfs = r2_graph_dfs_tree(graph, r2_listnode_first(graph->vlist)->data);
+        assert(dfs != NULL);
+        count[0] = dfs->ncount;
+        r2_destroy_dfs_tree(dfs); 
+        
+        struct r2_graph *transpose = r2_graph_transpose(graph); 
+        assert(transpose != NULL);
+        dfs = r2_graph_dfs_tree(transpose, r2_listnode_first(transpose->vlist)->data); 
+        assert(dfs != NULL);
+        count[1] = dfs->ncount; 
+        r2_destroy_dfs_tree(dfs); 
+        r2_destroy_graph(transpose);
+
+        CONNECTED = graph->nvertices == count[0] && graph->nvertices == count[1];
+        return CONNECTED;
+}

@@ -350,7 +350,7 @@ static void test_r2_chaintable_generate()
         struct r2_chaintable *table = r2_create_chaintable(1, 1, 0, cmp, cmp, NULL, NULL, free, NULL);
         char *key  = NULL; 
         r2_uint64 l = 70; 
-        FILE * fp = fopen("../tests/words.txt", "r");
+        FILE *fp = fopen("../tests/words.txt", "r");
         r2_uint64 line = 0; 
         while(TRUE){
                 key = malloc(sizeof(char) *l); 

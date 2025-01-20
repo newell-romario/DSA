@@ -20,7 +20,7 @@ struct r2_edge{
          * [3] - vertex in pos
          */
         struct r2_listnode *pos[4];
-        r2_int64 weight;/*weight*/
+        r2_ldbl  weight;/*weight*/
         struct r2_robintable *eat;/*edge attributes*/
 }; 
 
@@ -72,7 +72,7 @@ struct r2_graph* r2_graph_del_vertex(struct r2_graph *, r2_uc*, r2_uint64);
 void   r2_vertex_add_attributes(struct r2_vertex *, r2_uc *, void *, r2_uint64, r2_cmp); 
 void*  r2_vertex_get_attributes(struct r2_vertex *, r2_uc *, r2_uint64, r2_cmp);
 void   r2_vertex_del_attributes(struct r2_vertex *, r2_uc *, r2_uint64, r2_cmp);
-struct r2_graph* r2_graph_add_edge(struct r2_graph *, r2_uc*, r2_uint64,  r2_uc*, r2_uint64, r2_int64);
+struct r2_graph* r2_graph_add_edge(struct r2_graph *, r2_uc*, r2_uint64,  r2_uc*, r2_uint64, r2_ldbl);
 struct r2_edge*  r2_graph_get_edge(struct r2_graph *, r2_uc*, r2_uint64,  r2_uc*, r2_uint64);
 struct r2_graph* r2_graph_del_edge(struct r2_graph *, r2_uc*, r2_uint64,  r2_uc*, r2_uint64);
 void   r2_edge_add_attributes(struct r2_edge*, r2_uc *, void *, r2_uint64, r2_cmp); 
@@ -96,7 +96,7 @@ struct r2_bfsnode{
         r2_uint64 pos;/*position in the array*/
         r2_uint16 state;/*current state of vertex while processing*/
         r2_int64  parent;/*parent*/
-        r2_int64  dist;/*distance from the source vertex*/
+        r2_ldbl   dist;/*distance from the source vertex*/
         /**
          * Marks the beginning and ending of the subarray that represents
          * our children. A node with both start and end set equal
@@ -121,7 +121,7 @@ struct r2_dfsnode{
         r2_uint64 pos;/*position in the array*/
         r2_uint16 state;/*current state of vertex while processing*/
         r2_int64  parent;/*parent*/
-        r2_int64  dist;/*distance from the source vertex*/
+        r2_ldbl   dist;/*distance from the source vertex*/
         r2_uint64 start;/*start time*/
         r2_uint64 end;/*finish time*/
 };
