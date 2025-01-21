@@ -42,23 +42,19 @@
  * See Introduction to Algorithms by CLRS for a better explanation or Algorithms by Sedgewick.
  */
 
-struct r2_pqkey{
-        void *key; /*key*/
-        void *data;/*data*/
-        r2_uint64 pos;/*pos in pq*/
-}; 
-
 struct r2_pq{
-        struct r2_pqkey **data;/*stores data*/
+        void **data;/*stores data*/
+        r2_uint16 type;/*type of heap*/
         r2_uint64 ncount;/*current number of elements*/
-        r2_uint64 pq_size;/*size of pq*/ 
+        r2_uint64 pqsize;/*size of pq*/ 
         r2_cmp kcmp;/*A callback comparison function*/
-        r2_fk;/*A callback function that frees memory used by key*/
-        r2_fd;/*A callback function frees memory used by data */
+        r2_fd  fd;/*A callback function frees memory used by data*/
+        r2_cpy cpy;/*A callback function to copy key*/
 };
 
-struct r2_pq* r2_create_priority_queue(r2_uint64, r2_cmp, r2_fk, r2_fd);
+struct r2_pq* r2_create_priority_queue(r2_uint64, r2_uint16, r2_cmp, r2_fk, r2_fd);
 struct r2_pq* r2_destroy_priority_queue(struct r2_pq *);
-struct r2_pq* r2_pq_insert(struct r2_pq*, void *, void *);
-struct r2_pqkey* r2_pq_first(struct r2_pq *);
-struct r2_pq* r2_pq_remove(struct r2_pq *);
+struct r2_pq* r2_pq_insert(struct r2_pq*, void *);
+void* r2_pq_first(struct r2_pq *);
+struct r2_pq* r2_pq_remove_root(struct r2_pq *);
+r2_uint16 r2_pq_empty(const struct r2_pq *);
