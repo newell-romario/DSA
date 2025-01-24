@@ -10,6 +10,7 @@
 #include "tests/r2_btree_test.h"
 #include "tests/r2_graph_test.h"
 #include "tests/r2_hash_test.h"
+#include "tests/r2_heap_test.h"
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
@@ -20,7 +21,7 @@ static void benchmark_tree();
 
 int main()
 {
-//        test_r2_stack_run();
+        //test_r2_stack_run();
         //test_r2_queue_run();
         //test_r2_deque_run();
         //test_r2_arrstack_run();
@@ -31,6 +32,7 @@ int main()
         //test_r2_wavltree_run(); 
         //test_r2_btree_run(); 
         //test_r2_chaintable_run();
+        test_r2_pq_run();
         r2_graph_run();
         return 0;
 }

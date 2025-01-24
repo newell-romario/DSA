@@ -23,7 +23,7 @@ static void test_r2_graph_dfs();
 static void test_r2_graph_bfs_tree();
 static void test_r2_graph_dfs_tree();
 static void test_r2_graph_has_path();
-static void test_r2_graph_has_path_tree();
+static void test_r2_graph_bfs_has_path_tree();
 static void test_r2_graph_bfs_children();
 static void test_r2_graph_dfs_children();
 static void test_r2_graph_dfsnode_first(); 
@@ -42,5 +42,7 @@ static void test_r2_graph_transpose();
 static void test_r2_graph_traversals();
 static void test_r2_graph_strongly_connected_components();
 static void test_r2_graph_strongly_connected();
+static void test_r2_graph_dijkstra();
+
 void r2_graph_run();
 #endif

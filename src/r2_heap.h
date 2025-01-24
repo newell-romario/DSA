@@ -1,6 +1,7 @@
+#ifndef R2_HEAP_H_
+#define R2_HEAP_H_
 #include "r2_types.h"
-
-/***
+/**
  * A heap is a common way of implementing the priority queue data structure. A priority queue data structure is concerned with
  * storing the elements by their associated priority (i.e. elements with lower priorities are stored first or elements with higher priority are stored first). 
  * A heap specifically a binary heap is a common way of implememnting a priority queue. A binary heap comes in two types
@@ -42,8 +43,18 @@
  * See Introduction to Algorithms by CLRS for a better explanation or Algorithms by Sedgewick.
  */
 
+
+/**
+ * @brief We use this to map data to a position in the heap.
+ * 
+ */
+struct r2_locator{
+        r2_uint64 pos;/*position*/
+        void *data;/*data*/
+};
+
 struct r2_pq{
-        void **data;/*stores data*/
+        struct r2_locator **data;/*stores data along with position in heap*/
         r2_uint16 type;/*type of heap*/
         r2_uint64 ncount;/*current number of elements*/
         r2_uint64 pqsize;/*size of pq*/ 
@@ -52,9 +63,12 @@ struct r2_pq{
         r2_cpy cpy;/*A callback function to copy key*/
 };
 
-struct r2_pq* r2_create_priority_queue(r2_uint64, r2_uint16, r2_cmp, r2_fk, r2_fd);
+struct r2_pq* r2_create_priority_queue(r2_uint64, r2_uint16, r2_cmp, r2_fd, r2_cpy);
 struct r2_pq* r2_destroy_priority_queue(struct r2_pq *);
-struct r2_pq* r2_pq_insert(struct r2_pq*, void *);
-void* r2_pq_first(struct r2_pq *);
-struct r2_pq* r2_pq_remove_root(struct r2_pq *);
+struct r2_locator* r2_pq_insert(struct r2_pq*, void *);
+struct r2_locator* r2_pq_first(struct r2_pq *);
+struct r2_pq* r2_pq_remove(struct r2_pq *, struct r2_locator *);
 r2_uint16 r2_pq_empty(const struct r2_pq *);
+struct r2_pq* r2_pq_adjust(struct r2_pq *, struct r2_locator *, r2_uint16);
+#endif
+/*0x75d5a0*/

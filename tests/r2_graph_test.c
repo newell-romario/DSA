@@ -3,6 +3,7 @@
 #include <assert.h> 
 #include <stdio.h> 
 #include <string.h>
+#include <math.h>
 
 static r2_int16 kcmp(const void *, const void *);
 static r2_int16  vcmp(const void *, const void *);
@@ -11,6 +12,8 @@ static void print_graph(struct r2_graph *);
 static void print_vertex(void *, void *);
 static void print_bfstree(struct r2_bfsnode *, r2_uint64);
 static void print_dfstree(struct r2_dfstree *);
+static r2_ldbl relax(r2_ldbl , r2_ldbl );
+static void print_dfstree_distances(struct r2_dfstree *);
 
 /**
  * Test create graph functionality.
@@ -922,7 +925,7 @@ static void test_r2_graph_has_path()
         r2_destroy_graph(graph);
 }
 
-static void test_r2_graph_has_path_tree()
+static void test_r2_graph_bfs_has_path_tree()
 {
         r2_uint64 vertices[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
@@ -961,7 +964,7 @@ static void test_r2_graph_has_path_tree()
         struct r2_vertex   *dest =   r2_graph_get_vertex(graph, &vertices[8], sizeof(r2_uint64));
 
         struct r2_bfstree *bfs   = r2_graph_bfs_tree(graph, src); 
-        struct r2_list *path     = r2_graph_has_path_tree(bfs, src, dest);
+        struct r2_list *path     = r2_graph_bfs_has_path_tree(bfs, src, dest);
         assert(path != NULL);
         struct r2_listnode *head =   r2_listnode_first(path);
         printf("\nPath Tree: ");
@@ -989,7 +992,11 @@ static void test_r2_graph_has_path_tree()
 
         dest =   r2_graph_get_vertex(graph, &edges[6][1], sizeof(r2_uint64));
         r2_destroy_list(path);
-        path     = r2_graph_has_path_tree(bfs, src, dest);
+        path     = r2_graph_bfs_has_path_tree(bfs, src, dest);
+        assert(path == NULL);
+        src  =   r2_graph_get_vertex(graph, &vertices[4], sizeof(r2_uint64));
+        dest =   r2_graph_get_vertex(graph, &vertices[5], sizeof(r2_uint64));
+        path = r2_graph_bfs_has_path_tree(bfs, src, dest);
         assert(path == NULL);
         r2_destroy_bfs_tree(bfs);
         r2_destroy_graph(graph); 
@@ -2315,6 +2322,32 @@ static void test_r2_graph_strongly_connected()
         r2_destroy_graph(graph); 
         
 }
+
+static void test_r2_graph_dijkstra()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        r2_uint64 edges [][2] = {
+                {'s', 't'}, //10
+                {'s', 'y'}, //5
+                {'t', 'x'}, //1
+                {'t', 'y'}, //2
+                {'y', 't'}, //3
+                {'y', 'z'}, //2
+                {'y', 'x'}, //9
+                {'x', 'z'}, //4
+                {'z', 'x'}, //6
+                {'z', 's'} //7
+        };
+
+        r2_ldbl weight [] = {10, 5, 1, 2, 3, 2, 9, 4, 6, 7};
+        
+        for(r2_uint64 i = 0; i < 10;++i)
+                graph = r2_graph_add_edge(graph, &edges[i][0], sizeof(r2_uint64), &edges[i][1], sizeof(r2_uint64), weight[i]);  
+
+        struct r2_dfstree *dfs = r2_graph_dijkstra(graph, &edges[0][0], sizeof(r2_uint64), relax);
+        print_dfstree_distances(dfs);
+        r2_destroy_graph(graph);
+}
 void r2_graph_run()
 {
         test_r2_create_graph(); 
@@ -2338,7 +2371,7 @@ void r2_graph_run()
         test_r2_graph_bfs_tree();
         test_r2_graph_dfs_tree();
         test_r2_graph_has_path();
-        test_r2_graph_has_path_tree();
+        test_r2_graph_bfs_has_path_tree();
         test_r2_graph_bfs_children();
         test_r2_graph_dfs_children();
         test_r2_graph_bfsnode_first();
@@ -2357,6 +2390,7 @@ void r2_graph_run()
         test_r2_graph_traversals();
         test_r2_graph_strongly_connected_components();
         test_r2_graph_strongly_connected();
+        test_r2_graph_dijkstra();
 }
 
 
@@ -2455,5 +2489,38 @@ static void print_dfstree(struct r2_dfstree *dfs)
                                 head = head->next;
                         }
                 }
+        }
+}
+
+static r2_ldbl relax(r2_ldbl a, r2_ldbl b)
+{
+        return a + b;
+}
+
+static void print_dfstree_distances(struct r2_dfstree *dfs)
+{
+        struct r2_dfsnode *root  = dfs->tree; 
+        struct r2_vertex *source = root->vertex; 
+        struct r2_vertex *dest   = NULL;
+        struct r2_list *path = NULL;
+        struct r2_listnode *head = NULL;
+        r2_ldbl dist = 0;
+        printf("\nShortest Path Tree: ");
+        for(r2_uint64 i = 0; i < dfs->ncount; ++i){
+                dest = root[i].vertex;
+                dist = root[i].dist;
+                if(dist == 0 || dist == INFINITY)
+                        continue;
+                printf("\n%c", *source->vkey);
+                path = r2_graph_dfs_has_path_tree(dfs, source, dest);
+                head = r2_listnode_first(path); 
+                while(head != NULL){
+                        dest = head->data;
+                        if(dest != source) 
+                                printf("=>%c", *dest->vkey);
+                        head = head->next; 
+                }
+                printf(" = %.2lf", (double)dist);
+                r2_destroy_list(path);
         }
 }

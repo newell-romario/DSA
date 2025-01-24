@@ -1,11 +1,10 @@
 #include "r2_heap.h"
 #include <stdlib.h>
-#define PQSIZE 32
-
+#define  PQSIZE 32
 /********************File scope functions************************/
 static struct r2_pq* r2_bubble_down(struct r2_pq *, r2_uint64);
 static struct r2_pq* r2_bubble_up(struct r2_pq *, r2_uint64);
-static void r2_free_data(r2_fd, void *);
+static void r2_free_data(r2_fd, struct r2_locator *);
 static r2_uint16  r2_pq_resize(struct r2_pq *, r2_uint64);
 /********************File scope functions************************/
 
@@ -14,7 +13,7 @@ static r2_uint16  r2_pq_resize(struct r2_pq *, r2_uint64);
  * @brief                       Creates an empty priority queue. N.B This is an extendable priority queue.
  * 
  * @param pqsize                Priority queue size. If the size is 0 we default to a size of 32.
- * @param type                  Type represents whether the heap is a min or max heap.
+ * @param type                  Type represents whether the heap is a min or max heap. 0 == min heap or 1 => max heap.
  * @param kcmp                  A comparison callback function.
  * @param fd                    A callback function that frees memory used by data.
  * @param kcpy                  A callback function to copy key.
@@ -25,12 +24,12 @@ struct r2_pq* r2_create_priority_queue(r2_uint64 pqsize, r2_uint16 type ,r2_cmp 
         pqsize = (pqsize == 0? PQSIZE : pqsize) + 1;
         struct r2_pq *pq = malloc(sizeof(struct r2_pq)); 
         if(pq != NULL){
-                pq->data   = malloc(sizeof(void *) * pqsize);
+                pq->data   = malloc(sizeof(struct r2_locator *) * pqsize);
                 pq->fd     = fd;
                 pq->type   = type; 
                 pq->pqsize = pqsize; 
                 pq->kcmp   = kcmp;
-                pq->kcpy   = kcpy; 
+                pq->cpy    = kcpy; 
                 pq->ncount = 0;
                 if(pq->data != NULL){
                         for(r2_uint64 i = 0; i < pqsize; ++i)
@@ -53,7 +52,7 @@ struct r2_pq* r2_destroy_priority_queue(struct r2_pq *pq)
 {
         for(r2_uint64 i = 0; i <  pq->ncount; ++i)
                 r2_free_data(pq->fd, pq->data[i]);
-        
+
 
         free(pq->data); 
         free(pq);
@@ -89,19 +88,21 @@ static struct r2_pq* r2_bubble_down(struct r2_pq *pq,  r2_uint64 parent)
         do{
                 left  = 2 * parent;
                 right = 2 * parent + 1;
-                if(left < pq->ncount && right < pq->ncount){
-                        if(pq->kcmp(pq->data[left], pq->data[right]) == pq->type)
+                if(left < pq->ncount && right <= pq->ncount){
+                        if(pq->kcmp(pq->data[left]->data, pq->data[right]->data) == pq->type)
                                 cswap = left;
                         else    cswap = right;
-                }else if(left < pq->ncount)
+                }else if(left <= pq->ncount)
                         cswap = left;
                 else 
                         break;
                 
-                if(pq->kcmp(pq->data[cswap], pq->data[parent]) == pq->type){
-                        void *temp = pq->data[cswap];
-                        pq->data[cswap]  = pq->data[parent];
-                        pq->data[parent] = temp;
+                if(pq->kcmp(pq->data[cswap]->data, pq->data[parent]->data) == pq->type){
+                        struct r2_locator *temp = pq->data[cswap];
+                        pq->data[cswap]         = pq->data[parent];
+                        pq->data[cswap]->pos    = cswap;
+                        pq->data[parent]        = temp;
+                        pq->data[parent]->pos   = parent;
                         parent = cswap;
                 }else
                         break; 
@@ -121,10 +122,12 @@ static struct r2_pq* r2_bubble_up(struct r2_pq *pq, r2_uint64 root)
 {
         r2_uint64 parent = root / 2; 
         while(parent >= 1){
-                if(pq->kcmp(pq->data[root], pq->data[parent]) == pq->type){
-                        void *temp = pq->data[root];
-                        pq->data[root]   = pq->data[parent];
-                        pq->data[parent] = temp;
+                if(pq->kcmp(pq->data[root]->data, pq->data[parent]->data) == pq->type){
+                        struct r2_locator *temp = pq->data[root];
+                        pq->data[root]        = pq->data[parent];
+                        pq->data[root]->pos   = root;
+                        pq->data[parent]      = temp;
+                        pq->data[parent]->pos = parent;
                         root = parent;
                 }else
                         break;
@@ -137,11 +140,11 @@ static struct r2_pq* r2_bubble_up(struct r2_pq *pq, r2_uint64 root)
  * @brief                       Returns the root of the queue.
  * 
  * @param pq                    Priority Queue.
- * @return void*                Returns root.
+ * @return struct r2_locator*   Returns root.
  */
-void* r2_pq_first(struct r2_pq *pq)
+struct r2_locator* r2_pq_first(struct r2_pq *pq)
 {
-        return pq->data[0];
+        return pq->data[1];
 }
 
 /**
@@ -149,11 +152,12 @@ void* r2_pq_first(struct r2_pq *pq)
  * 
  * @param pq                    Priority Queue.
  * @param data                  Data.
- * @return struct r2_pq*        Returns priority queue.
+ * @return struct r2_locator*   Returns locator for element.
  */
-struct r2_pq* r2_pq_insert(struct r2_pq *pq, void *data)
+struct r2_locator* r2_pq_insert(struct r2_pq *pq, void *data)
 {
         r2_uint16 RESIZE = TRUE;
+        struct r2_locator *l = NULL;
         /**
          * @brief In the heap only the positions from data[1...n-1] are available. 
          * The ncount can't be equal to the pqsize since ncount is used to index
@@ -164,11 +168,16 @@ struct r2_pq* r2_pq_insert(struct r2_pq *pq, void *data)
                 RESIZE = r2_pq_resize(pq, pq->pqsize * 2);
         
         if(RESIZE == TRUE){
-                pq->data[++pq->ncount] = data;
-                pq = r2_bubble_up(pq, pq->ncount);
+                l  = malloc(sizeof(struct r2_locator));
+                if(l != NULL){
+                        l->data = data;
+                        l->pos  = pq->ncount + 1;
+                        pq->data[++pq->ncount] = l;
+                        pq = r2_bubble_up(pq, pq->ncount);
+                }
         }
-        
-        return pq;
+
+        return  l;
 }
 
 /**
@@ -181,7 +190,7 @@ struct r2_pq* r2_pq_insert(struct r2_pq *pq, void *data)
 static r2_uint16  r2_pq_resize(struct r2_pq *pq, r2_uint64 size)
 {
         r2_uint16 RESIZE = FALSE; 
-        void **data = malloc(sizeof(void *) *size);
+        struct r2_locator **data = malloc(sizeof(void *) *size);
         if(data != NULL){
                
                 for(r2_uint64 i = 0; i < size; ++i)
@@ -202,17 +211,45 @@ static r2_uint16  r2_pq_resize(struct r2_pq *pq, r2_uint64 size)
  * @brief                       Removes the root.
  * 
  * @param pq                    Priority Queue.
+ * @param loc                   Root location.
  * @return struct r2_pq*        Returns priority queue.
  */
-struct r2_pq* r2_pq_remove_min(struct r2_pq *pq)
+struct r2_pq* r2_pq_remove(struct r2_pq *pq, struct r2_locator *loc)
 {
         if(r2_pq_empty(pq) != TRUE){
-                pq->data[1] = pq->data[pq->ncount];
+                r2_uint64 root = loc->pos;
+                pq->data[root] = pq->data[pq->ncount];
+                pq->data[root]->pos  = root;
+                r2_free_data(pq->fd, loc);
+
                 pq->data[pq->ncount] = NULL;
                 --pq->ncount;
-                r2_bubble_down(pq, 1);
+                pq = r2_bubble_down(pq, root);
                 if(pq->ncount > PQSIZE && pq->ncount <= (pq->pqsize / 4))
                         r2_pq_resize(pq, pq->pqsize / 2);
         }
         return pq;
+}
+
+
+
+static void r2_free_data(r2_fd fd, struct r2_locator *l)
+{
+        if(fd != NULL)
+                fd(l->data);
+      
+        free(l);
+}
+
+/**
+ * @brief                  Adjusts the priority of an element in the priority queue.   
+ * 
+ * @param pq               Priority Queue.
+ * @param loc              Locator.
+ * @param adjust           Adjustment. if adjust == 0 => priority increased, else 1 => priority decreased.
+ * @return struct r2_pq*   Returns priority queue.
+ */
+struct r2_pq* r2_pq_adjust(struct r2_pq *pq, struct r2_locator *loc, r2_uint16 adjust)
+{
+        return adjust == 0? r2_bubble_up(pq, loc->pos) : r2_bubble_down(pq, loc->pos);
 }

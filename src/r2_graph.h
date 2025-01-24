@@ -78,11 +78,6 @@ struct r2_graph* r2_graph_del_edge(struct r2_graph *, r2_uc*, r2_uint64,  r2_uc*
 void   r2_edge_add_attributes(struct r2_edge*, r2_uc *, void *, r2_uint64, r2_cmp); 
 void*  r2_edge_get_attributes(struct r2_edge*, r2_uc *, r2_uint64, r2_cmp);
 void   r2_edge_del_attributes(struct r2_edge*, r2_uc *, r2_uint64, r2_cmp);
-
-
-
-
-
 /**************************************************Graph Algorithms******************************************************/
 /**
  * In our graph implementation we would like to keep the tree resulting from a bfs
@@ -94,7 +89,7 @@ void   r2_edge_del_attributes(struct r2_edge*, r2_uc *, r2_uint64, r2_cmp);
 struct r2_bfsnode{
         struct r2_vertex *vertex;
         r2_uint64 pos;/*position in the array*/
-        r2_uint16 state;/*current state of vertex while processing*/
+        r2_uint64 state;/*current state of vertex while processing*/
         r2_int64  parent;/*parent*/
         r2_ldbl   dist;/*distance from the source vertex*/
         /**
@@ -114,12 +109,10 @@ struct r2_bfstree{
         r2_uint64 ncount;/*number of elements in the tree*/
 };
 
-
-
 struct r2_dfsnode{
         struct r2_vertex *vertex;
         r2_uint64 pos;/*position in the array*/
-        r2_uint16 state;/*current state of vertex while processing*/
+        r2_uint64 state;/*current state of vertex while processing*/
         r2_int64  parent;/*parent*/
         r2_ldbl   dist;/*distance from the source vertex*/
         r2_uint64 start;/*start time*/
@@ -149,7 +142,8 @@ struct r2_dfstree* r2_graph_dfs_tree(struct r2_graph *, struct r2_vertex *);
 struct r2_bfstree* r2_destroy_bfs_tree(struct r2_bfstree *); 
 struct r2_dfstree* r2_destroy_dfs_tree(struct r2_dfstree *);
 struct r2_list* r2_graph_has_path(struct r2_graph *, struct r2_vertex *, struct r2_vertex *); 
-struct r2_list* r2_graph_has_path_tree(struct r2_bfstree *, struct r2_vertex *, struct r2_vertex *);
+struct r2_list* r2_graph_bfs_has_path_tree(struct r2_bfstree *, struct r2_vertex *, struct r2_vertex *);
+struct r2_list* r2_graph_dfs_has_path_tree(struct r2_dfstree *, struct r2_vertex *, struct r2_vertex *);
 struct r2_list* r2_graph_dfs_tree_children(struct r2_dfstree *, struct r2_vertex *); 
 struct r2_list* r2_graph_bfs_tree_children(struct r2_bfstree *, struct r2_vertex *);
 struct r2_bfsnode* r2_graph_bfsnode_next(struct r2_bfstree *, struct r2_bfsnode *); 
@@ -170,5 +164,6 @@ struct r2_graph* r2_graph_transpose(struct r2_graph *);
 struct r2_list* r2_graph_dfs_traversals(struct r2_graph *, r2_uint16);
 struct r2_components* r2_graph_strongly_connected_components(struct r2_graph *);
 r2_uint16 r2_graph_is_strong_connected(struct r2_graph *);
+struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
 /************************************Graph Algorithms*******************************************/
 #endif 
