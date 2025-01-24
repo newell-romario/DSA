@@ -441,6 +441,8 @@ struct r2_robintable* r2_robintable_put(struct r2_robintable *table, r2_uc *key,
 
                 if((table->nsize / table->tsize) > .50)
                         r2_robintable_resize(table, 1);
+        }else{
+                perror("Table full or out of memory");
         }
         
         return table; 
@@ -521,7 +523,7 @@ struct r2_robintable* r2_robintable_del(struct r2_robintable *table, r2_uc *key,
         /*Perform backward shifting*/
         if(found == TRUE){
                 r2_uint16 RESIZE = FALSE;
-                if(table->nsize > 0 && table->nsize <= table->tsize / 8)
+                if(table->nsize > 0 && (table->nsize < table->tsize / 8))
                         RESIZE = r2_robintable_resize(table, 2);
                         
                 if(RESIZE == FALSE){

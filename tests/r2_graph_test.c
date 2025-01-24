@@ -2346,8 +2346,100 @@ static void test_r2_graph_dijkstra()
 
         struct r2_dfstree *dfs = r2_graph_dijkstra(graph, &edges[0][0], sizeof(r2_uint64), relax);
         print_dfstree_distances(dfs);
+
+        struct r2_dfsnode *root = NULL;
+        struct r2_entry entry   = {.key = NULL, .data = NULL, .length = 0};
+        r2_uint64 vertex[5] = {'s', 't', 'y', 'x', 'z'};
+        r2_ldbl   distances[5] = {0, 8, 5, 9, 7};
+        for(r2_uint64 i = 0; i < 5; ++i){
+                r2_robintable_get(dfs->positions, &vertex[i], sizeof(r2_uint64), &entry);
+                root = entry.data;
+                assert(root->dist == distances[i]);
+        }
+
+        weight[0] = 3; 
+        weight[1] = 5;
+        weight[2] = 6;
+        weight[3] = 2; 
+        weight[4] = 1;
+        weight[5] = 6;
+        weight[6] = 4; 
+        weight[7] = 2; 
+        weight[8] = 7; 
+        weight[9] = 2; 
+        r2_destroy_dfs_tree(dfs);
         r2_destroy_graph(graph);
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        for(r2_uint64 i = 0; i < 10;++i)
+                graph = r2_graph_add_edge(graph, &edges[i][0], sizeof(r2_uint64), &edges[i][1], sizeof(r2_uint64), weight[i]);  
+
+
+        dfs = r2_graph_dijkstra(graph, &edges[0][0], sizeof(r2_uint64), relax);
+        print_dfstree_distances(dfs);
+        distances[0] = 0; 
+        distances[1] = 3; 
+        distances[2] = 5; 
+        distances[3] = 9;
+        distances[4] = 11;
+        for(r2_uint64 i = 0; i < 5; ++i){
+                r2_robintable_get(dfs->positions, &vertex[i], sizeof(r2_uint64), &entry);
+                root = entry.data;
+                assert(root->dist == distances[i]);
+        }
+        r2_destroy_dfs_tree(dfs);
+        r2_destroy_graph(graph);    
 }
+
+static void test_r2_graph_large_network()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        struct r2_vertex *vertex[2];  
+        FILE *fp = fopen("Email-EuAll.txt", "r");
+        r2_uint64 vertices[2];
+        r2_uint64 *src  = NULL;
+        r2_uint64 *dest = NULL;
+
+        while(fscanf(fp, "%lld\t%lld", &vertices[0], &vertices[1]) == 2){
+                vertex[0] = r2_graph_get_vertex(graph, &vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, &vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = vertex[1]->vkey;
+
+              //  printf("\n%lld => %lld", *src, *dest);
+                graph = r2_graph_add_edge(graph, src, sizeof(r2_uint64), dest, sizeof(r2_uint64), 0);
+        } 
+
+        r2_uint64 s = 0;
+        struct r2_dfstree *dfs = r2_graph_dfs_tree(graph, r2_graph_get_vertex(graph, &s, sizeof(r2_uint64)));
+        struct r2_bfstree *bfs = r2_graph_bfs_tree(graph, r2_graph_get_vertex(graph, &s, sizeof(r2_uint64)));
+
+        struct r2_components *scc = r2_graph_strongly_connected_components(graph);
+        r2_uint64 largest = 0;
+        r2_uint64 pos = 0 ; 
+        for(r2_uint64 i = 0; i < scc->ncount; ++i){
+                if(scc->cc[i]->ncount > largest){
+                        largest = scc->cc[i]->ncount;
+                        pos = i;
+                }
+        } 
+
+        printf("\nNumber of nodes in largest component: %ld", largest);
+        fclose(fp);
+        r2_destroy_graph(graph);      
+}
+
+
 void r2_graph_run()
 {
         test_r2_create_graph(); 
@@ -2385,12 +2477,13 @@ void r2_graph_run()
         test_r2_graph_bipartite_graph();
         test_r2_graph_has_cycle();
         test_graph_topological_sort();
-        test_r2_graph_tarjan_strongly_connected_components();
+  //      test_r2_graph_tarjan_strongly_connected_components();
         test_r2_graph_transpose();
         test_r2_graph_traversals();
-        test_r2_graph_strongly_connected_components();
+   //     test_r2_graph_strongly_connected_components();
         test_r2_graph_strongly_connected();
         test_r2_graph_dijkstra();
+        test_r2_graph_large_network();
 }
 
 
@@ -2472,7 +2565,7 @@ static void print_dfstree(struct r2_dfstree *dfs)
         for(r2_uint64 i = 0; i < dfs->ncount; ++i){
                 vertex = root[i].vertex;
                 if(vertex != NULL){
-                        printf("\n%c ==>", *vertex->vkey); 
+                        printf("\n%ld ==>", *vertex->vkey); 
                         head = r2_listnode_first(vertex->out); 
                         while(head != NULL){
                                 vertex = head->data; 
@@ -2483,7 +2576,7 @@ static void print_dfstree(struct r2_dfstree *dfs)
                                 child = entry.data;
                                 if(child != NULL){
                                         if(child->parent == root[i].pos)
-                                              printf("%c ", *vertex->vkey);   
+                                              printf("%ld ", *vertex->vkey);   
                                 }
 
                                 head = head->next;

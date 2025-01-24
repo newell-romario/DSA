@@ -43,6 +43,7 @@ struct r2_vertex{
 
 
 
+
 /**
  * @brief Represents graph.
  * 
@@ -165,5 +166,6 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *, r2_uint16);
 struct r2_components* r2_graph_strongly_connected_components(struct r2_graph *);
 r2_uint16 r2_graph_is_strong_connected(struct r2_graph *);
 struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
+struct r2_dfstree* r2_graph_bellman_ford(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
 /************************************Graph Algorithms*******************************************/
 #endif 

@@ -43,6 +43,6 @@ static void test_r2_graph_traversals();
 static void test_r2_graph_strongly_connected_components();
 static void test_r2_graph_strongly_connected();
 static void test_r2_graph_dijkstra();
-
+static void test_r2_graph_large_network();
 void r2_graph_run();
 #endif

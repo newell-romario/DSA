@@ -159,6 +159,7 @@ static r2_uint16 r2_arrstack_resize(struct r2_arrstack *stack, r2_uint64 size)
 
                 free(stack->data); 
                 stack->data = data;
+                stack->ssize = size;
                 SUCCESS= TRUE;
         }                
         return SUCCESS;    

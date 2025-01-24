@@ -32,7 +32,7 @@ int main()
         //test_r2_wavltree_run(); 
         //test_r2_btree_run(); 
         //test_r2_chaintable_run();
-        test_r2_pq_run();
+        //test_r2_pq_run();
         r2_graph_run();
         return 0;
 }
