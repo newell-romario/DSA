@@ -13,7 +13,7 @@
  * 
  */
 struct r2_arrstack{
-        void **data; /*data array*/
+        void **data;/*data array*/
         r2_uint64 top; /*position where next element will be inserted*/
         r2_uint64 ncount; /*number of elements*/
         r2_uint64 ssize; /*size of stack*/

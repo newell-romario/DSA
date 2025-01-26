@@ -394,7 +394,7 @@ static struct r2_vertex* r2_create_vertex(r2_cmp cmp)
                 vertex->elist           = r2_create_list(NULL, NULL, NULL); 
                 vertex->edges           = r2_create_robintable(1, 1, 0, 0, cmp, NULL, NULL, NULL, NULL, free);
                 vertex->nedges          = 0;
-                vertex->vat             = r2_create_robintable(1, 1, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL);
+                vertex->vat             = r2_create_robintable(1, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL);
                 if(vertex->in == NULL || vertex->out == NULL || vertex->elist == NULL || vertex->vat == NULL   || vertex->edges == NULL){
                         /**
                          * All metadata related to the vertex is important. 
@@ -483,7 +483,7 @@ static struct r2_edge*  r2_create_edge()
                 edge->dest        = NULL; 
                 for(r2_uint64 i = 0; i < 4; ++i)
                         edge->pos[i] = NULL; 
-                edge->eat         = r2_create_robintable(1, 1, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL); 
+                edge->eat         = r2_create_robintable(1, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL); 
                 edge->weight      = 0; 
                 /**
                  * All metadata is important. Failure to allocate requisite memory is considered
@@ -614,6 +614,11 @@ static void r2_free_edge(struct r2_graph *graph,  struct r2_edge *edge)
                 src->edges = r2_robintable_del(src->edges, dest->vkey, dest->len);
                 --src->nedges;
         }
+
+        sizeof(struct r2_edge);
+        sizeof(struct r2_vertex);
+        sizeof(struct r2_list);
+        sizeof(struct r2_listnode);
 }
 
 
@@ -1540,7 +1545,6 @@ struct r2_components* r2_graph_connected_components(struct r2_graph *graph)
                         forest = r2_graph_destroy_components(forest);
 
         assert(FAILED == FAILED);
-
         return forest;
 }
 

@@ -172,7 +172,7 @@ static r2_uint64 r2_get_tsize(r2_uint64 tsize, r2_int16 op, r2_int16 prime)
                         }
  
         }else{
-                nsize = tsize == 0? 256 : tsize;
+                nsize = tsize == 0? 2 : tsize;
                 switch(op){
                                 case 1: 
                                         nsize = nsize << 1; 
@@ -181,7 +181,7 @@ static r2_uint64 r2_get_tsize(r2_uint64 tsize, r2_int16 op, r2_int16 prime)
                                                nsize = tsize;  
                                 break; 
                                 case 2:
-                                        if(nsize != 256)
+                                        if(nsize != 2)
                                                 nsize = nsize >> 1;  
                                 break;
                 }           

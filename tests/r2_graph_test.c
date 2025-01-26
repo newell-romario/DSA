@@ -1775,7 +1775,6 @@ static void test_r2_graph_tarjan_strongly_connected_components()
         for(r2_uint64 i = 0; i < 8; ++i)
                 graph = r2_graph_add_vertex(graph, &vertices[i], sizeof(r2_uint64));
         
-
         r2_uint64 edges [][2] = {
                 {'a', 'b'}, 
                 {'b', 'c'}, 
@@ -2394,7 +2393,7 @@ static void test_r2_graph_large_network()
 {
         struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
         struct r2_vertex *vertex[2];  
-        FILE *fp = fopen("Email-EuAll.txt", "r");
+        FILE *fp = fopen("roadNet-CA.txt", "r");
         r2_uint64 vertices[2];
         r2_uint64 *src  = NULL;
         r2_uint64 *dest = NULL;

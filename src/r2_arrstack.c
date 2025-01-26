@@ -65,10 +65,8 @@ struct r2_arrstack*  r2_arrstack_destroy_stack(struct r2_arrstack *stack)
 struct r2_arrstack* r2_arrstack_push(struct r2_arrstack *stack, void *data)
 {
         if(r2_arrstack_full(stack) == TRUE){
-                r2_uint64 size = stack->ssize * 2; 
-                assert(size > stack->ssize);
-                
-                /*Return true whenever stack is grown successfully*/
+                r2_uint64 size = stack->ssize * 2;      
+                /*Resize failed*/
                 if(r2_arrstack_resize(stack, size) != TRUE)
                         goto FINAL;
 
@@ -77,7 +75,6 @@ struct r2_arrstack* r2_arrstack_push(struct r2_arrstack *stack, void *data)
         stack->data[stack->top] = data; 
         ++stack->top; 
         ++stack->ncount;
-
         FINAL:
                 return stack;
 }
@@ -91,10 +88,11 @@ struct r2_arrstack* r2_arrstack_push(struct r2_arrstack *stack, void *data)
 struct r2_arrstack* r2_arrstack_pop(struct r2_arrstack *stack)
 {
         if(r2_arrstack_empty(stack) != TRUE){
-                if(stack->fd != NULL)
-                        stack->fd(stack->data[stack->top - 1]);
-
                 --stack->top;
+                if(stack->fd != NULL)
+                        stack->fd(stack->data[stack->top]);
+
+                stack->data[stack->top] = NULL;
                 --stack->ncount;
                 if(stack->ncount > 0 && stack->ncount <= (stack->ssize / 4)){
                         r2_int64 size = stack->ssize / 2; 
@@ -106,7 +104,6 @@ struct r2_arrstack* r2_arrstack_pop(struct r2_arrstack *stack)
 
 /**
  * @brief               Returns the top of the stack.
- * 
  *                       
  *                      A NULL return value can mean the stack is empty or 
  *                      a NULL value is actually at the top of the stack.
@@ -142,9 +139,9 @@ r2_uint16 r2_arrstack_full(const struct r2_arrstack*stack)
         return stack->ssize == stack->ncount;
 }
 /**
- * @brief                       Grows stack by doubling it.                        
+ * @brief                       Grows or shrinks stack.                        
  * 
- * @param  stack                The stack that will be grown. 
+ * @param  stack                Stack. 
  * @return r2_uint16            Returns TRUE if stack was successfully grown, else FALSE. 
  */
 static r2_uint16 r2_arrstack_resize(struct r2_arrstack *stack, r2_uint64 size)
@@ -209,9 +206,9 @@ struct r2_arrstack* r2_arrstack_copy(const struct r2_arrstack *source)
                         else
                                 dest->data[i] = source->data[i];
 
-                        ++dest->top; 
-                        ++dest->ncount;
                 }
+                dest->top    = source->top;
+                dest->ncount = source->ncount;
         }
         return dest;
 }

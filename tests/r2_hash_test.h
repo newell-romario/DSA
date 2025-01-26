@@ -1,7 +1,6 @@
 #ifndef R2_HASH_TEST_H_
 #define R2_HASH_TEST_H_
 #include "../src/r2_hash.h"
-
 static struct r2_chain* test_r2_longest_chain(struct r2_chaintable *);
 static void test_r2_print_chain(const struct r2_chain*);
 static void test_r2_chaintable_generate();
