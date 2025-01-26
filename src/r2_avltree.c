@@ -18,7 +18,8 @@ static void r2_avltree_rebalance(struct r2_avltree *, struct r2_avlnode *);
  * @brief               Calculates the height of the tree recursively.          
  *                     
  *                      Please call seldomly since it's expensive to calculate the height of the tree recursively.
- *                      The height of tree can be read from root->heigh without processing the tree.
+ *                      The height of tree can be read from root->height without processing the tree.
+ * 
  * @param root          Root.
  * @return r2_uint64    Returns the height of the tree, else -1 for empty trees.
  */
@@ -69,7 +70,7 @@ r2_uint64 r2_avltree_size(const struct r2_avlnode *root)
 }
 
 /**
- * @brief               Checks if a tree is empty.
+ * @brief               Checks if AVL tree is empty.
  * 
  * @param tree          AVL Tree.
  * @return r2_uint16    Returns TRUE if empty, else FALSE.
@@ -81,9 +82,9 @@ r2_uint16 r2_avltree_empty(const struct r2_avltree *tree)
 
 
 /**
- * @brief                               Creates an avl node and returns it to the user.
+ * @brief                               Creates an empty AVL node.
  * 
- * @return struct r2_avlnode*           Returns an empty node, else NULL.
+ * @return struct r2_avlnode*           Returns AVL node, else NULL.
  */
 struct r2_avlnode* r2_create_avlnode()
 {
@@ -101,7 +102,7 @@ struct r2_avlnode* r2_create_avlnode()
 }
 
 /**
- * @brief                          Creates an empty avl tree.                                         
+ * @brief                          Creates an empty AVL Tree.                                         
  * 
  * @param kcmp                     A comparison callback function for key.
  * @param dcmp                     A comparison callback function for data.
@@ -109,7 +110,7 @@ struct r2_avlnode* r2_create_avlnode()
  * @param dcpy                     A callback function to copy values.
  * @param fk                       A callback function that release memory used by key.
  * @param fd                       A callback function that release memory used by data.
- * @return struct r2_avltree*      Returns an empty avl tree, else NULL. 
+ * @return struct r2_avltree*      Returns an empty AVL Tree, else NULL. 
  */
 struct r2_avltree* r2_create_avltree(r2_cmp kcmp, r2_cmp dcmp, r2_cpy kcpy, r2_cpy dcpy, r2_fk fk, r2_fd fd)
 {
@@ -134,7 +135,7 @@ struct r2_avltree* r2_create_avltree(r2_cmp kcmp, r2_cmp dcmp, r2_cpy kcpy, r2_c
  * @brief                       Destroys an AVL tree.
  *                              
  * @param tree                  AVL Tree.
- * @return struct r2_avltree*   Returns NULL whenever avl tree is deleted successfully.
+ * @return struct r2_avltree*   Returns NULL whenever AVL Tree is destroyed successfully.
  */
 struct r2_avltree* r2_destroy_avltree(struct r2_avltree *tree)
 {
@@ -151,10 +152,10 @@ struct r2_avltree* r2_destroy_avltree(struct r2_avltree *tree)
 } 
 
 /**
- * @brief                             Returns the minimum node in a sub tree.
+ * @brief                             Returns the minimum node in tree.
  * 
  * @param root                        Root.
- * @return struct r2_avlnode*         Returns the minimum node in the subtree, else NULL.
+ * @return struct r2_avlnode*         Returns minimum node, else NULL.
  */
 struct r2_avlnode* r2_avlnode_min(struct r2_avlnode *root)
 {
@@ -166,10 +167,10 @@ struct r2_avlnode* r2_avlnode_min(struct r2_avlnode *root)
 
 
 /**
- * @brief                               Returns the maximum node in a sub tree.
+ * @brief                               Returns the maximum node in tree.
  * 
  * @param root                          Root.
- * @return struct r2_avlnode*           Returns the maximum node in the subtree, else NULL.
+ * @return struct r2_avlnode*           Returns maximum node, else NULL.
  */
 struct r2_avlnode* r2_avlnode_max(struct r2_avlnode *root)
 {
@@ -180,7 +181,7 @@ struct r2_avlnode* r2_avlnode_max(struct r2_avlnode *root)
 }
 
 /**
- * @brief                                Returns the largest node before the root in an inorder traversal.
+ * @brief                                Returns the node before the root in an inorder traversal.
  * 
  * @param root                           Root.
  * @return struct r2_avlnode*            Returns the predecessor of root, else NULL.
@@ -201,7 +202,7 @@ struct r2_avlnode* r2_avlnode_predecessor(struct r2_avlnode *root)
 }
 
 /**
- * @brief                       Returns the first node after the root in an inorder traversal.
+ * @brief                       Returns the node after the root in an inorder traversal.
  * 
  * @param root                  Root.
  * @return struct r2_avlnode*   Returns the successor of the root, else NULL.
@@ -221,11 +222,6 @@ struct r2_avlnode* r2_avlnode_successor(struct r2_avlnode *root)
         return successor;
 }
 
-
-
-
-
-
 /**
  * @brief               Performs a right rotation
  * 
@@ -241,8 +237,7 @@ static void r2_avlnode_right_rotation(struct r2_avltree *tree, struct r2_avlnode
                 parent->left->parent = parent; 
         
         parent->ncount   = r2_avlnode_recalc_size(parent);
-        parent->height = r2_avlnode_recalc_height(parent);
-
+        parent->height   = r2_avlnode_recalc_height(parent);
 
         root->right = parent; 
         root->right->parent = root;
@@ -250,7 +245,6 @@ static void r2_avlnode_right_rotation(struct r2_avltree *tree, struct r2_avlnode
         root->height = r2_avlnode_recalc_height(root);
 
         if(grandparent != NULL){
-
                 if(grandparent->right == parent)
                         grandparent->right = root; 
                 else
@@ -264,7 +258,7 @@ static void r2_avlnode_right_rotation(struct r2_avltree *tree, struct r2_avlnode
         root->parent = grandparent;
         if(root->parent == NULL){
                 tree->root = root; 
-                tree->ncount  = root->ncount ;
+                tree->ncount  = root->ncount;
         }
 }
 
@@ -279,14 +273,12 @@ static void r2_avlnode_left_rotation(struct r2_avltree *tree, struct r2_avlnode 
         struct r2_avlnode *parent      = root->parent;
         struct r2_avlnode *grandparent = parent->parent;
 
-
         parent->right = root->left;
         if(parent->right != NULL)
                 parent->right->parent = parent; 
         
         parent->ncount = r2_avlnode_recalc_size(parent);
         parent->height = r2_avlnode_recalc_height(parent);
-
 
         root->left = parent; 
         root->left->parent = root;
@@ -355,11 +347,10 @@ struct r2_avltree* r2_avltree_insert(struct r2_avltree *tree, void *key, void *d
 
 
 /**
- * @brief                       Performs a search for a specific key.
+ * @brief                       Finds key in tree.
  * 
  * @param tree                  AVL Tree.
  * @param key                   Key.
- * 
  * @return struct r2_avlnode*   Returns the subtree which contains the key, else NULL.
  */
 struct r2_avlnode* r2_avltree_search(struct r2_avltree *tree, const void *key)
@@ -394,7 +385,7 @@ static void r2_avltree_restructure(struct r2_avltree *tree, struct r2_avlnode *r
                         parent->right = child; 
                 else
                         parent->left  = child;
-                
+
                 parent->ncount   = r2_avlnode_recalc_size(parent); 
                 parent->height   = r2_avlnode_recalc_height(parent);
         }else {
@@ -434,14 +425,13 @@ struct r2_avltree* r2_avltree_delete(struct r2_avltree *tree, void*key)
                 r2_freenode(root, tree->fk, tree->fd);
                 r2_avltree_rebalance(tree, parent);                 
         }
-
         return tree;
 }
 
 
 
 /**
- * @brief               Rebalances an avl tree after insertion or deletion.
+ * @brief               Rebalances an AVL Tree after insertion or deletion.
  * 
  * @param tree          AVL Tree.
  * @param root          The node which the rebalancing starts from. 
@@ -480,8 +470,10 @@ static void r2_avltree_rebalance(struct r2_avltree *tree, struct r2_avlnode *roo
 }  
 
 /**
- * @brief                       Finds the root at index.
- *                              Indexing starts at zero.
+ * @brief                       Locates a node based on index.
+ *                              Example the node at index zero is the smallest node in the 
+ *                              tree. N.B  Indexing starts at zero.
+ *                             
  * @param tree                  AVL Tree.
  * @param pos                   Pos.
  * @return struct r2_avlnode*   Returns the root node at index, else NULL.
@@ -505,7 +497,6 @@ struct r2_avlnode* r2_avltree_at(struct r2_avlnode *root, r2_uint64 pos)
                 }
         }
         return root;
-
 }
 
 
@@ -552,7 +543,6 @@ void r2_avltree_postorder(struct r2_avlnode *root, r2_act action, void *arg)
         }
 
         old_root->parent = parent;
-
 }
 
 
@@ -565,7 +555,6 @@ void r2_avltree_postorder(struct r2_avlnode *root, r2_act action, void *arg)
  */
 void r2_avltree_preorder(struct r2_avlnode *root, r2_act action, void *arg)
 {
-
         struct r2_avlnode *old_root = root; 
         struct r2_avlnode *parent   = root->parent; 
         root->parent = NULL;
@@ -690,7 +679,7 @@ struct r2_avlnode*  r2_avlnode_preorder_first(struct r2_avlnode *root)
 }
 
 /**
- * @brief               Gets keys in an avl tree.
+ * @brief               Gets keys in an AVL Tree.
  *                      Gets the keys in sorted order.
  * @param tree          AVL Tree.
  * @return void**       Returns an array of keys, else NULL when tree is empty or we're unable to allocate
