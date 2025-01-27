@@ -6,6 +6,7 @@
 static void r2_freenode(struct r2_wavlnode *, r2_fd, r2_fk);
 static r2_int64 r2_wavlnode_recalc_size(const struct r2_wavlnode *root);
 static r2_int64 r2_wavlnode_is_leaf(const struct r2_wavlnode *);
+static r2_int64 MAX(r2_int64 a, r2_int64 b);
 static r2_int64 r2_wavlnode_rank_diff(const struct r2_wavlnode *, const struct r2_wavlnode *root);
 static r2_int16 r2_wavlnode_has_child(const struct r2_wavlnode *, enum CHILD_TYPE);
 static struct r2_wavlnode* r2_wavlnode_get_sibling(const struct r2_wavlnode *);
@@ -17,6 +18,16 @@ static void r2_wavltree_delete_rebalance(struct r2_wavltree *, struct r2_wavlnod
 /********************File scope functions************************/
 
 
+
+r2_int64  r2_wavltree_height(const struct r2_wavlnode *root)
+{
+        if(root == NULL)
+                return -1; 
+
+        r2_int64 left_height  = r2_wavltree_height(root->left) + 1;  
+        r2_int64 right_height = r2_wavltree_height(root->right) + 1;
+        return MAX(left_height, right_height);    
+}
 
 /**
  * @brief                               Creates a wavl node.
@@ -60,7 +71,7 @@ r2_uint16 r2_wavltree_empty(const struct r2_wavltree *tree)
  * @param dcpy                  A callback function to copy values.
  * @param fk                    A callback function that release memory used by key.
  * @param fd                    A callback function that release memory used by data.
- * @return struct r2_wavltree*  Returns an empty wavl tree, else NULL.
+ * @return struct r2_wavltree*  Returns an empty WAVL tree, else NULL.
  */
 struct r2_wavltree* r2_create_wavltree(r2_cmp kcmp, r2_cmp dcmp, r2_cpy kcpy, r2_cpy dcpy, r2_fk fk, r2_fd fd)
 {
@@ -1138,4 +1149,9 @@ static void r2_freenode(struct r2_wavlnode *root, r2_fd freedata , r2_fk freekey
                 freekey(root->data);
         
         free(root);
+}
+
+static r2_int64 MAX(r2_int64 a, r2_int64 b) 
+{ 
+        return a > b? a : b; 
 }

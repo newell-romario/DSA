@@ -339,7 +339,7 @@ r2_uint16  r2_list_compare(const struct r2_list *l1, const struct r2_list *l2)
                 while(l1_front != NULL && l2_front != NULL){
                         
                         if(l1->cmp != NULL)
-                                result = l1->cmp(l1_front->data, l2_front->data);
+                                result = l1->cmp(l1_front->data, l2_front->data) == 0? TRUE: FALSE;
                         else
                                 result = l1_front->data == l2_front->data? TRUE : FALSE;
                         

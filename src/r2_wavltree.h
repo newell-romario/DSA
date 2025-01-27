@@ -74,8 +74,7 @@
  *              
  * 
  *            
- *                   
- * 
+ *                 
  *           
  */
 struct r2_wavlnode{
@@ -138,4 +137,5 @@ struct r2_wavlnode *r2_wavlnode_postorder_first(struct r2_wavlnode*);
 size_t r2_wavlnode_level(const struct r2_wavlnode *); 
 struct r2_wavltree* r2_wavltree_copy(const struct r2_wavltree *);
 r2_uint16 r2_wavltree_compare(const struct r2_wavltree *, const struct r2_wavltree   *);
+r2_int64  r2_wavltree_height(const struct r2_wavlnode *);
 #endif

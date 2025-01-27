@@ -125,6 +125,7 @@ struct r2_chain{
 struct r2_chaintable{
         r2_uint64 nsize;/*Number of entries in the table*/
         r2_uint64 tsize;/*Number of buckets*/
+        r2_ldbl lf;/*load factor*/
         struct r2_chain *chain;/*Buckets*/
         r2_hashfunc hf;/*Hash function*/
         r2_int16 prime;/*boolean representing if our hash table use prime number versus powers of 2*/
@@ -137,7 +138,7 @@ struct r2_chaintable{
 };
 
 
-struct r2_chaintable* r2_create_chaintable(r2_int16, r2_int16, r2_uint64, r2_cmp, r2_cmp, r2_cpy, r2_cpy,r2_fk, r2_fd); 
+struct r2_chaintable* r2_create_chaintable(r2_int16, r2_int16, r2_uint64, r2_ldbl, r2_cmp, r2_cmp, r2_cpy, r2_cpy,r2_fk, r2_fd); 
 struct r2_chaintable* r2_chaintable_put(struct r2_chaintable  *, r2_uc *, void *, r2_uint64);
 struct r2_chaintable* r2_chaintable_get(struct r2_chaintable *,  r2_uc *,  r2_uint64, struct r2_entry *);
 struct r2_chaintable* r2_chaintable_del(struct r2_chaintable*, r2_uc *, r2_uint64);
@@ -155,6 +156,7 @@ struct r2_robintable{
         struct r2_robinentry **cells;/*cells in hash table*/
         r2_uint64 nsize;/*Number of entries in the table*/
         r2_uint64 tsize;/*Number of buckets*/
+        r2_ldbl lf;/*load factor*/
         r2_uint64 psl; /*Maximum allowed length for a probe sequence*/
         r2_hashfunc hf;/*Hash function*/
         r2_int16 prime;/*Boolean representing if our hash table use prime number versus powers of 2*/
@@ -166,7 +168,7 @@ struct r2_robintable{
         r2_fd fd;/*A callback function that release memory used by data*/
 };
 
-struct r2_robintable* r2_create_robintable(r2_int16, r2_int16, r2_uint64, r2_uint64, r2_cmp, r2_cmp, r2_cpy, r2_cpy, r2_fk, r2_fd); 
+struct r2_robintable* r2_create_robintable(r2_int16, r2_int16, r2_uint64, r2_uint64, r2_ldbl, r2_cmp, r2_cmp, r2_cpy, r2_cpy, r2_fk, r2_fd); 
 struct r2_robintable* r2_robintable_put(struct r2_robintable *, r2_uc *, void *, r2_uint64);
 struct r2_robintable* r2_robintable_get(struct r2_robintable *, r2_uc *,  r2_uint64, struct r2_entry *);
 struct r2_robintable* r2_robintable_del(struct r2_robintable *, r2_uc *, r2_uint64); 

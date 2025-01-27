@@ -39,8 +39,8 @@ struct r2_ring* r2_create_ring(r2_uint64 rsize, r2_cmp cmp, r2_cpy cpy, r2_fd fd
 struct r2_ring* r2_destroy_ring(struct r2_ring *ring)
 {
         if(ring->fd != NULL){
-                for(r2_uint64 i = 0; i < ring->ncount; ++i)
-                        ring->fd(ring->data[i]);
+                for(r2_uint64 i = ring->front, j = 0; j < ring->rsize; i = (i % ring->rsize),  ++j)
+                        ring->fd(ring->data[i]);          
         }
 
         free(ring->data);
@@ -57,11 +57,15 @@ struct r2_ring* r2_destroy_ring(struct r2_ring *ring)
  */
 struct r2_ring* r2_ring_insert(struct r2_ring *ring, void *data)
 {
-        ring->data[ring->rear] = data;
-        ring->rear = (ring->rear + 1) % ring->rsize;
-        if((ring->ncount + 1) <= ring->rsize)
+        if(ring->ncount < ring->rsize){
+                ring->data[ring->rear] = data;
+                ring->rear = (ring->rear + 1) % ring->rsize;
                 ++ring->ncount;
-
+        }else{
+                ring->rear = (ring->rear + 1) % ring->rsize;
+                ring->data[ring->rear] = data;
+                ring->front = (ring->rear + 1) % ring->rsize;
+        }
        return ring;
 }
 
@@ -103,7 +107,7 @@ void* r2_ring_front(const struct r2_ring *ring)
 void* r2_ring_at(const struct r2_ring *ring, r2_uint64 pos)
 {
         void *data = NULL; 
-        if(pos >= 0 && pos < ring->rsize)
+        if(pos < ring->rsize)
                 data = ring->data[pos];
 
         return data;
@@ -129,16 +133,16 @@ r2_uint16 r2_ring_empty(const struct r2_ring *ring)
  */
 struct r2_ring* r2_ring_copy(const struct r2_ring *ring)
 {
-        struct r2_ring *copy = r2_create_ring(ring->rsize,ring->cmp, ring->cpy, ring->fd); 
+        struct r2_ring *copy = r2_create_ring(ring->rsize, ring->cmp, ring->cpy, ring->fd); 
         if(copy != NULL){
-                for(r2_uint64 i = 0; i < copy->rsize && ring->ncount > 0; ++i)
+                for(r2_uint64 i = 0, j = ring->front; i < ring->ncount; ++i, j = (j + 1) % ring->rsize)
                         if(ring->cpy != NULL)
-                                copy->data[i] = ring->cpy(ring->data[i]);
+                                copy->data[j] = ring->cpy(ring->data[j]);
                         else
-                                copy->data[i] = ring->data[i]; 
+                                copy->data[j] = ring->data[j]; 
                 
-                copy->front = ring->front; 
-                copy->rear  = ring->rear;
+                copy->front  = ring->front; 
+                copy->rear   = ring->rear;
                 copy->ncount = ring->ncount; 
         }
 
@@ -155,22 +159,19 @@ struct r2_ring* r2_ring_copy(const struct r2_ring *ring)
 r2_uint16 r2_ring_compare(const struct r2_ring *r1, const struct r2_ring *r2)
 {               
                 r2_uint16 result = FALSE;
-
                 if(r2_ring_empty(r1) == TRUE && r2_ring_empty(r2) == TRUE)
                         result = TRUE;
                 else if(r1->rsize == r2->rsize && r1->ncount == r2->ncount){
-                        for(r2_uint64 i = 0; i < r1->rsize; ++i){
+                        for(r2_uint64 i = 0, j = r1->front; i < r1->ncount; ++i, j = (j + 1) % r1->rsize){
                                 if(r1->cmp != NULL)
-                                        result = r1->cmp(r1->data[i], r2->data[i]); 
+                                        result = r1->cmp(r1->data[j], r2->data[j]) == 0? TRUE : FALSE; 
                                 else
-                                        result = r1->data[i] == r2->data[i]? TRUE : FALSE;
+                                        result = r1->data[j] == r2->data[j]? TRUE : FALSE;
 
                                 if(result == FALSE)
                                         break;
                         }
                 }
-
         return result;
 }
-
  

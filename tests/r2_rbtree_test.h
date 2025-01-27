@@ -22,7 +22,7 @@ static void test_r2_rbtree_compare();
 static void test_r2_rbtree_getkeys();
 static void test_r2_rbtree_getvalues();
 static r2_uint64 test_r2_rbnode_blackheight(const struct r2_rbnode *);
-static void test_r2_r2_rbnode_noconsecreds(const struct r2_rbnode *); 
+static void test_r2_rbnode_noconsecreds(const struct r2_rbnode *); 
 static void test_r2_rbtree_is_binary_tree(const struct r2_rbnode *, r2_cmp);
 static void test_r2_rbtree_certify(const struct r2_rbnode *, r2_cmp);
 static void test_r2_rbtree_generate();

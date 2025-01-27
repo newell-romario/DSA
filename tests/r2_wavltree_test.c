@@ -8,7 +8,7 @@
 static r2_int16 cmp(const void *, const void *);
 static r2_int16 cmp2(const void *a, const void *b);
 static r2_int64 r2_wavlnode_rank_diff(const struct r2_wavlnode *parent, const struct r2_wavlnode *root);
-
+static void test_r2_wavltree_is_binary_tree(const struct r2_wavlnode *root, r2_cmp cmp);
 
 /**
  * @brief Test the get keys functionality.
@@ -828,6 +828,71 @@ static r2_int64 r2_wavlnode_rank_diff(const struct r2_wavlnode *parent, const st
         return parent != NULL? parent->rank - root_rank : 0;
 }
 
+/**
+ * @brief Produces benchmarks for this WAVL tree.
+ * 
+ */
+static void test_r2_wavltree_stats()
+{
+       struct r2_wavltree *wavl = r2_create_wavltree(cmp2, NULL, NULL, NULL, NULL, NULL);
+       FILE *fp = fopen("com-friendster.ungraph.txt", "r"); 
+       char line[100];
+       r2_uint64 a[2] = {0}; 
+       r2_uint64 *key = NULL; 
+       clock_t before; 
+       r2_ldbl elapse = 0;
+
+
+        /*File 30GB and we can't edit the file because of size. Skip first 15 lines because it's irrelevant*/
+       for(r2_uint16 i = 0; i < 15; ++i){
+                fscanf(fp, "%s", line);
+       }
+
+       while(fscanf(fp, "%lld\t%lld", &a[0], &a[1]) == 2){
+                for(r2_uint16 i = 0; i < 2; ++i){
+                        key = malloc(sizeof(r2_uint64));  
+                        *key = a[i];
+                        before = clock();
+                        wavl = r2_wavltree_insert(wavl, key, key);
+                        elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
+                }
+
+                if(wavl->ncount == 20000000)
+                        break;
+       }
+       
+        r2_uint64 height = r2_wavltree_height(wavl->root);
+        printf("\nAverage insertion time: %Lf", elapse/wavl->ncount);
+        printf("\nHeight: %ld", height);
+
+
+        fclose(fp);
+        fp =  fopen("com-friendster.ungraph.txt", "r"); 
+        elapse = 0;
+        
+        /*File 30GB and we can't edit the file because of size. Skip first 15 lines because it's irrelevant*/
+        for(r2_uint16 i = 0; i < 15; ++i){
+                fscanf(fp, "%s", line);
+        }
+        
+        r2_uint64 count = 0;
+        while(fscanf(fp, "%lld\t%lld", &a[0], &a[1]) == 2){
+                for(r2_uint16 i = 0; i < 2; ++i){
+                        before = clock();
+                        if(r2_wavltree_search(wavl, &a[i]) == NULL)
+                                break;
+                        elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
+                }
+                if(count == 20000000)
+                        break;
+                ++count;
+       }
+
+       test_r2_wavltree_certify(wavl->root);
+       test_r2_wavltree_is_binary_tree(wavl->root, cmp2);
+       fclose(fp);  
+       r2_destroy_wavltree(wavl);           
+}
 
 /**
  * @brief       Run all tests.
@@ -855,7 +920,8 @@ void test_r2_wavltree_run()
         test_r2_wavltree_postorder(); 
         test_r2_wavltree_preorder();
         test_r2_wavltree_range_query();
-        test_r2_wavltree_generate();
+       // test_r2_wavltree_generate();
+        test_r2_wavltree_stats();
 }
 
 static r2_int16 cmp(const void *a, const void *b)
@@ -923,3 +989,4 @@ static r2_int16 cmp2(const void *a, const void *b)
         else 
                 return 1;
 }
+

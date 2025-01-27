@@ -986,6 +986,7 @@ static void test_r2_avltree_stats()
                 fscanf(fp, "%s", line);
         }
         
+        r2_uint64 count = 0;
         while(fscanf(fp, "%lld\t%lld", &a[0], &a[1]) == 2){
                 for(r2_uint16 i = 0; i < 2; ++i){
                         before = clock();
@@ -993,6 +994,10 @@ static void test_r2_avltree_stats()
                                 break;
                         elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
                 }
+
+                if(count == 20000000)
+                        break;
+                ++count;
        }
 
        test_r2_avltree_is_avltree(avl->root);

@@ -164,6 +164,9 @@ struct r2_queue* r2_queue_copy(const struct r2_queue *source)
                                         cur  = &temp->next;
                                         ++dest->qsize;
                                         dest->rear = temp;
+                                }else{
+                                        dest = r2_destroy_queue(dest); 
+                                        break;
                                 }
                                 front = front->next;
                         }  
@@ -188,7 +191,7 @@ r2_uint16  r2_queue_compare(const struct r2_queue *q1, const struct r2_queue *q2
                 while(q1_front != NULL && q2_front != NULL){
                         
                         if(q1->cmp != NULL)
-                                result = q1->cmp(q1_front->data, q2_front->data);
+                                result = q1->cmp(q1_front->data, q2_front->data) == 0? TRUE : FALSE;
                         else
                                 result = q1_front->data == q2_front->data? TRUE : FALSE;
                         

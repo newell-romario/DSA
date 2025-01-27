@@ -60,8 +60,8 @@ struct r2_graph* r2_create_graph(r2_cmp vmcp, r2_cmp gcmp, r2_fk fv, r2_fk fk, r
         if(graph != NULL){
                 graph->nvertices = 0; 
                 graph->nedges    = 0; 
-                graph->gat       = r2_create_robintable(1, 1, 0, 0, gcmp, NULL, NULL, NULL, fk, fd);
-                graph->vertices  = r2_create_robintable(1, 1, 0, 0, vmcp, NULL, NULL, NULL, fv, free);
+                graph->gat       = r2_create_robintable(1, 1, 0, 0, .75, gcmp, NULL, NULL, NULL, fk, fd);
+                graph->vertices  = r2_create_robintable(1, 1, 0, 0, .75, vmcp, NULL, NULL, NULL, fv, free);
                 graph->vlist     = r2_create_list(NULL, NULL, NULL);
                 graph->elist     = r2_create_list(NULL, NULL, NULL);
                 graph->vcmp      = vmcp;
@@ -392,9 +392,9 @@ static struct r2_vertex* r2_create_vertex(r2_cmp cmp)
                 vertex->in              = r2_create_list(NULL, NULL, NULL);  
                 vertex->out             = r2_create_list(NULL, NULL, NULL); 
                 vertex->elist           = r2_create_list(NULL, NULL, NULL); 
-                vertex->edges           = r2_create_robintable(1, 1, 0, 0, cmp, NULL, NULL, NULL, NULL, free);
+                vertex->edges           = r2_create_robintable(1, 1, 0, 0, .75,cmp, NULL, NULL, NULL, NULL, free);
                 vertex->nedges          = 0;
-                vertex->vat             = r2_create_robintable(1, 1, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL);
+                vertex->vat             = r2_create_robintable(1, 1, 0, 0, .75,NULL, NULL, NULL, NULL, NULL, NULL);
                 if(vertex->in == NULL || vertex->out == NULL || vertex->elist == NULL || vertex->vat == NULL   || vertex->edges == NULL){
                         /**
                          * All metadata related to the vertex is important. 
@@ -483,7 +483,7 @@ static struct r2_edge*  r2_create_edge()
                 edge->dest        = NULL; 
                 for(r2_uint64 i = 0; i < 4; ++i)
                         edge->pos[i] = NULL; 
-                edge->eat         = r2_create_robintable(1, 1, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL); 
+                edge->eat         = r2_create_robintable(1, 1, 0, 0, .75,NULL, NULL, NULL, NULL, NULL, NULL); 
                 edge->weight      = 0; 
                 /**
                  * All metadata is important. Failure to allocate requisite memory is considered
@@ -640,7 +640,7 @@ void r2_graph_bfs(struct r2_graph *graph, struct r2_vertex *source,r2_act action
         * the states change from WHITE => GREY => BLACK.
         */
         r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
-        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75,graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || queue == NULL){
                 FAILED = TRUE; 
                 goto CLEANUP; 
@@ -730,7 +730,7 @@ void r2_graph_dfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
         * the states change from WHITE => GREY => BLACK.
         */
         r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
-        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75,graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || stack == NULL){
                 FAILED = TRUE; 
                 goto CLEANUP; 
@@ -830,8 +830,8 @@ struct r2_bfstree* r2_graph_bfs_tree(struct r2_graph *graph, struct r2_vertex *s
         struct r2_queue *queue            = r2_create_queue(NULL, NULL, NULL);
         struct r2_bfstree   *bfs          = malloc(sizeof(struct r2_bfstree));
         struct r2_bfsnode   *tree         = malloc(sizeof(struct r2_bfsnode) * graph->nvertices);
-        struct r2_robintable *positions   = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
-        struct r2_robintable *processed   = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *positions   = r2_create_robintable(1, 1, 0, 0, .75,graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *processed   = r2_create_robintable(1, 1, 0, 0, .75,graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(processed == NULL || queue == NULL || tree == NULL || bfs == NULL || positions == NULL){
                 FAILED = TRUE; 
                 goto CLEANUP; 
@@ -959,7 +959,7 @@ struct r2_dfstree* r2_graph_dfs_tree(struct r2_graph *graph, struct r2_vertex *s
         r2_int16 FAILED = FALSE;
         struct r2_arrstack   *stack       = r2_arrstack_create_stack(0, NULL, NULL, NULL);
         struct r2_dfsnode    *tree        = malloc(sizeof(struct r2_dfsnode) * graph->nvertices);
-        struct r2_robintable *positions   = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *positions   = r2_create_robintable(1, 1, 0, 0, .75,graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         struct r2_dfstree    *dfs         = malloc(sizeof(struct r2_dfstree));
 
         if(stack == NULL || tree == NULL || positions == NULL || dfs == NULL){
@@ -1125,8 +1125,8 @@ struct r2_list* r2_graph_has_path(struct r2_graph *graph, struct r2_vertex *src,
         r2_int16 FAILED = FALSE;
         struct r2_queue *queue = r2_create_queue(NULL, NULL, NULL);
         r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
-        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
-        struct r2_robintable *parents   = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75,graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *parents   = r2_create_robintable(1, 1, 0, 0, .75,graph->vcmp, NULL, NULL, NULL, NULL, NULL);
         struct r2_list       *paths     = r2_create_list(NULL, NULL, NULL);
 
         if(state == NULL || processed == NULL || queue == NULL || parents  == NULL || paths == NULL){
@@ -1472,7 +1472,7 @@ struct r2_components* r2_graph_connected_components(struct r2_graph *graph)
 {
         r2_int16 FAILED = FALSE;
         r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices); 
-        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         struct r2_dfstree **cc = malloc(sizeof(struct r2_dfstree *) *graph->nvertices);
         struct r2_components *forest    = malloc(sizeof(struct r2_components));
         if(state == NULL || processed == NULL || forest == NULL || cc == NULL){
@@ -1558,7 +1558,7 @@ static struct r2_dfstree* r2_graph_dfs_tree_components(struct r2_graph *graph, s
         r2_int16 FAILED = FALSE;
         struct r2_arrstack   *stack       = r2_arrstack_create_stack(0, NULL, NULL, NULL);
         struct r2_dfsnode    *tree        = malloc(sizeof(struct r2_dfsnode) * graph->nvertices);
-        struct r2_robintable *positions   = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *positions   = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         struct r2_dfstree    *dfs         = malloc(sizeof(struct r2_dfstree));
         if(stack == NULL || tree == NULL || positions == NULL || dfs == NULL){
                 FAILED = TRUE; 
@@ -1744,8 +1744,8 @@ struct r2_bipartite* r2_graph_is_bipartite(struct r2_graph *graph)
         r2_uint16 FAILED = FALSE;
         struct r2_bipartite *sets = malloc(sizeof(struct r2_bipartite));
         struct r2_queue* queue = r2_create_queue(NULL, NULL, NULL);
-        struct r2_robintable *groups =  r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
-        struct r2_robintable *processed =  r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *groups =  r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *processed =  r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         r2_uint16 *state  = malloc(sizeof(r2_int16) * graph->nvertices);
         r2_uint16 *colors = malloc(sizeof(r2_int16) * graph->nvertices);
         if(sets != NULL){
@@ -1936,7 +1936,7 @@ r2_int16 r2_graph_has_cycle(struct r2_graph *graph)
         * the states change from WHITE => GREY => BLACK.
         */
         r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
-        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || stack == NULL)
                 goto CLEANUP; 
         
@@ -2037,7 +2037,7 @@ struct r2_list* r2_graph_topological_sort(struct r2_graph *graph)
         r2_uint16 FAILED = FALSE;
         struct r2_list  *top   = r2_create_list(NULL, NULL, NULL); 
         struct r2_queue *queue = r2_create_queue(NULL, NULL, NULL);
-        struct r2_robintable *indegree = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *indegree = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         r2_uint64 *count = malloc(sizeof(r2_uint64)*graph->nvertices);
         if(top == NULL || queue == NULL || indegree == NULL || count == NULL){
                 FAILED = TRUE;
@@ -2183,7 +2183,7 @@ struct r2_components* r2_graph_tarjan_strongly_connected_components(struct r2_gr
 {
         r2_int16 FAILED = FALSE;
         struct r2_arrstack   *followers   = r2_arrstack_create_stack(0, NULL, NULL, NULL);
-        struct r2_robintable *processed   = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *processed   = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         struct r2_dfsinfo *vertices       = malloc(sizeof(struct r2_dfsinfo) * graph->nvertices); 
         struct r2_components *forest      = malloc(sizeof(struct r2_components));
         struct r2_dfstree **cc            = malloc(sizeof(struct r2_dfstree *) * graph->nvertices);
@@ -2380,7 +2380,7 @@ static struct r2_dfstree* r2_tarjan_followers(struct r2_dfsinfo *vertices, struc
         r2_uint16 FAILED = FALSE;
         struct r2_dfstree    *dfs         = malloc(sizeof(struct r2_dfstree));
         struct r2_dfsnode    *tree        = malloc(sizeof(struct r2_dfsnode) * (followers->ncount  + 1));
-        struct r2_robintable *positions   = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *positions   = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         struct r2_vertex *source = root->vertex;
 
         if(tree == NULL || positions == NULL || dfs == NULL){
@@ -2508,7 +2508,7 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, r2_uint16 order)
         struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
         struct r2_list *list      = r2_create_list(NULL, NULL, NULL);
         r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
-        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75,graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         
         if(state == NULL || processed == NULL || stack == NULL || list == NULL){
                 FAILED = TRUE; 
@@ -2652,7 +2652,7 @@ struct r2_components* r2_graph_strongly_connected_components(struct r2_graph *gr
 {
         r2_int16 FAILED = FALSE;
         r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices); 
-        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         struct r2_dfstree **cc = malloc(sizeof(struct r2_dfstree *) *graph->nvertices);
         struct r2_components *forest    = malloc(sizeof(struct r2_components));
         if(state == NULL || processed == NULL || forest == NULL || cc == NULL){
@@ -2783,8 +2783,8 @@ struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *graph, r2_uc *src, r2_uint
 
         struct r2_dfstree *dfs             = malloc(sizeof(struct r2_dfstree)); 
         struct r2_dfsnode *tree            = malloc(sizeof(struct r2_dfsnode) * graph->nvertices);
-        struct r2_robintable *positions    = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
-        struct r2_robintable    *processed = r2_create_robintable(1, 1, 0, 0, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
+        struct r2_robintable *positions    = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
+        struct r2_robintable    *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
         struct r2_pq *pq                   = r2_create_priority_queue(graph->nvertices, 0, cmp, NULL, NULL);
         if(dfs == NULL || tree == NULL || positions == NULL || processed == NULL || pq == NULL){
                 FAILED = TRUE; 

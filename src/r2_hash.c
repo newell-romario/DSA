@@ -31,6 +31,7 @@ static r2_uint16 r2_robintable_resize(struct r2_robintable*, r2_uint16);
  * @param hf                            Hash function.
  * @param prime                         When prime == 1, hash table size is prime, else hash table size is a power of two.
  * @param tsize                         Hash table size.
+ * @param lf                            Load factor.
  * @param kcmp                          A callback comparison function to compare keys.
  * @param dcmp                          A callback comparison function to compare data.
  * @param kcpy                          A callback function to copy keys.
@@ -39,7 +40,7 @@ static r2_uint16 r2_robintable_resize(struct r2_robintable*, r2_uint16);
  * @param fd                            A callback function that releases memory used by data.
  * @return struct r2_chaintable*        Returns an empty hash table, else NULL.
  */
-struct r2_chaintable* r2_create_chaintable(r2_int16 hf, r2_int16 prime, r2_uint64 tsize, r2_cmp kcmp, r2_cmp dcmp, r2_cpy kcpy, r2_cpy dcpy,r2_fk fk, r2_fd fd)
+struct r2_chaintable* r2_create_chaintable(r2_int16 hf, r2_int16 prime, r2_uint64 tsize, r2_ldbl lf,r2_cmp kcmp, r2_cmp dcmp, r2_cpy kcpy, r2_cpy dcpy,r2_fk fk, r2_fd fd)
 {
         r2_hashfunc hfs[] = {
                 r2_hash_wee,
@@ -54,6 +55,7 @@ struct r2_chaintable* r2_create_chaintable(r2_int16 hf, r2_int16 prime, r2_uint6
                 table->prime  = prime;
                 table->tsize  = tsize != 0 && prime != 1? tsize :  r2_get_tsize(tsize, 1, table->prime); 
                 table->hf     = hfs[hf];
+                table->lf     = lf == 0? .75: lf;
                 table->kcmp   = kcmp; 
                 table->dcmp   = dcmp; 
                 table->kcpy   = kcpy; 
@@ -205,7 +207,7 @@ struct r2_chaintable* r2_chaintable_put(struct r2_chaintable *table, r2_uc *key,
         struct r2_cnode *node = r2_chain_search(&table->chain[hash], key, length, table->kcmp); 
 
         if(node == NULL){
-                if((table->nsize/table->tsize) >= .75){
+                if((table->nsize/table->tsize) >= table->lf){
                         table   = r2_chaintable_resize(table, 1);
                         hash    = table->hf(key, length, table->tsize);
                 }
@@ -261,6 +263,7 @@ struct r2_chaintable* r2_chaintable_del(struct r2_chaintable *table, r2_uc *key,
                                 table->fk, 
                                 table->fd,
                                 table->kcmp);
+
                 --table->nsize;
                 if(table->nsize > 0 && table->nsize <= (table->tsize / 8))
                         table = r2_chaintable_resize(table, 2);
@@ -321,6 +324,7 @@ static struct r2_chaintable *r2_chaintable_resize(struct r2_chaintable *table, r
  * @param prime                         When prime == 1, hash table size is prime, else hash table size is a power of two.
  * @param psl                           Probe sequence length.
  * @param tsize                         Hash table size.
+ * @param lf                            Load factor.
  * @param kcmp                          A callback comparison function to compare keys.
  * @param dcmp                          A callback comparison function to compare data.
  * @param kcpy                          A callback function to copy keys.
@@ -329,7 +333,7 @@ static struct r2_chaintable *r2_chaintable_resize(struct r2_chaintable *table, r
  * @param fd                            A callback function that releases memory used by data.
  * @return struct r2_robintable*        Returns empty hash table, else NULL.
  */
-struct r2_robintable* r2_create_robintable(r2_int16 hf, r2_int16 prime, r2_uint64 psl, r2_uint64 tsize, r2_cmp kcmp, r2_cmp dcmp, r2_cpy kcpy, r2_cpy dcpy, r2_fk fk, r2_fd fd)
+struct r2_robintable* r2_create_robintable(r2_int16 hf, r2_int16 prime, r2_uint64 psl, r2_uint64 tsize, r2_ldbl lf,r2_cmp kcmp, r2_cmp dcmp, r2_cpy kcpy, r2_cpy dcpy, r2_fk fk, r2_fd fd)
 {
         r2_hashfunc hfs[] = {
                 r2_hash_wee,
@@ -345,6 +349,7 @@ struct r2_robintable* r2_create_robintable(r2_int16 hf, r2_int16 prime, r2_uint6
                 if(table->cells != NULL){
                         table->nsize    = 0; 
                         table->tsize    = tsize;
+                        table->lf       = lf == 0? .75 : lf;
                         table->psl      = psl == 0? PSL: psl; 
                         table->hf       = hfs[hf]; 
                         table->prime    = prime; 
@@ -439,7 +444,7 @@ struct r2_robintable* r2_robintable_put(struct r2_robintable *table, r2_uc *key,
                 table->cells[(hash + psl) % table->tsize] = rentry; 
                 ++table->nsize;
 
-                if((table->nsize / table->tsize) > .50)
+                if((table->nsize / table->tsize) > table->lf)
                         r2_robintable_resize(table, 1);
         }else{
                 perror("Table full or out of memory");
@@ -642,13 +647,12 @@ r2_uint64 r2_hash_knuth(const unsigned char *key, r2_uint64 length, r2_uint64 ts
                 K = ((K*A/W) + key[i] + C * 16777619);
                 K = (K << 7) ^ (K >> 25); 
                 K = (K >> 47) | (K << 17);
-                K = K % (r2_uint64 )14695981039346656037UL;
+                K = K * 14695981039346656037UL;
         }
                
-        
+        K = K % (r2_uint64 )14695981039346656037UL;
         r2_uint64 B  = (K*A/P);
         r2_ldbl hash = ((K*A/P)-B)*tsize;
-        
         return  hash;
 }
 

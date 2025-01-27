@@ -55,13 +55,13 @@ struct r2_stacknode* r2_create_stacknode()
 struct r2_stack* r2_destroy_stack(struct r2_stack *stack)
 {
         
-        struct r2_stacknode *prev = NULL;
+        struct r2_stacknode *cur = NULL;
         struct r2_stacknode *top  = r2_stack_peek(stack);
 
         while(top != NULL){
-                prev = top; 
+                cur = top; 
                 top  = top->next;
-                r2_freenode(prev, stack->fd);
+                r2_freenode(cur, stack->fd);
         }
 
         free(stack);
@@ -184,10 +184,10 @@ r2_uint16  r2_stack_compare(const struct r2_stack *s1, const struct r2_stack *s2
                 while(s1_top != NULL && s2_top != NULL){
                                
                         if(s1->cmp != NULL)
-                                result = s1->cmp(s1_top->data, s2_top->data);
+                                result = s1->cmp(s1_top->data, s2_top->data) == 0? TRUE: FALSE;
                         else
                                 result = s1_top->data == s2_top->data? TRUE : FALSE;
-                        if(result == FALSE)
+                        if(!result)
                                 break;
                         s1_top = s1_top->next; 
                         s2_top = s2_top->next;

@@ -262,7 +262,7 @@ static r2_uint64 test_r2_rbnode_blackheight(const struct r2_rbnode *root)
  * 
  * @param root 
  */
-static void test_r2_r2_rbnode_noconsecreds(const struct r2_rbnode *root)
+static void test_r2_rbnode_noconsecreds(const struct r2_rbnode *root)
 {
         if(root == NULL)
                 return; 
@@ -275,8 +275,8 @@ static void test_r2_r2_rbnode_noconsecreds(const struct r2_rbnode *root)
                 assert(rightcolor == BLACK); 
         }
 
-        test_r2_r2_rbnode_noconsecreds(root->left); 
-        test_r2_r2_rbnode_noconsecreds(root->right); 
+        test_r2_rbnode_noconsecreds(root->left); 
+        test_r2_rbnode_noconsecreds(root->right); 
 }
 
 static void test_r2_rbtree_is_binary_tree(const struct r2_rbnode *root, r2_cmp cmpfunc)
@@ -297,7 +297,7 @@ static void test_r2_rbtree_certify(const struct r2_rbnode *root, r2_cmp cmpfunc)
         if(root == NULL)
                 return;
         test_r2_rbtree_is_binary_tree(root, cmpfunc);
-        test_r2_r2_rbnode_noconsecreds(root);
+        test_r2_rbnode_noconsecreds(root);
         assert(test_r2_rbnode_blackheight(root->left) == test_r2_rbnode_blackheight(root->right));
 }
 
@@ -719,7 +719,7 @@ static void test_r2_rbtree_compare()
 }
 
 /**
- * @brief       Test the get keys functionality.
+ * @brief      Test the get keys functionality.
  * 
  */
 static void test_r2_rbtree_getkeys()
@@ -835,6 +835,7 @@ static void test_r2_rbtree_stats()
                 fscanf(fp, "%s", line);
         
         elapse = 0;
+        r2_uint64 count = 0;
         while(fscanf(fp, "%lld\t%lld", &a[0], &a[1]) == 2){
                 for(r2_uint16 i = 0; i < 2; ++i){
                         before = clock();
@@ -844,14 +845,17 @@ static void test_r2_rbtree_stats()
                         elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
                 }
 
-                if(rb->ncount == 20000000)
+                if(count == 20000000)
                         break;
+                ++count;
         }
         r2_uint64 height = r2_rbtree_height(rb->root);
         printf("\nAverage insertion time: %Lf", elapse/rb->ncount);
         printf("\nHeight: %ld", height);
 
-        test_r2_r2_rbnode_noconsecreds(rb->root);
+        test_r2_rbnode_noconsecreds(rb->root);
+        test_r2_rbnode_blackheight(rb->root);
+        test_r2_rbtree_is_binary_tree(rb->root, cmp);
         r2_destroy_rbtree(rb);
         fclose(fp);
 }

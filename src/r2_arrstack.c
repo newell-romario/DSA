@@ -175,7 +175,7 @@ r2_uint16 r2_arrstack_compare(const struct r2_arrstack *s1, const struct r2_arrs
                 if(r2_arrstack_empty(s1) != TRUE && r2_arrstack_empty(s2) != TRUE){
                         for(int i = 0; i < s1->ncount; ++i){
                                 if(s1->cmp != NULL)
-                                        result = s1->cmp(s1->data[i], s2->data[i]);
+                                        result = s1->cmp(s1->data[i], s2->data[i]) == 0? TRUE : FALSE;
                                 else    result = s1->data[i] == s2->data[i]? TRUE : FALSE; 
 
                                 if(result == FALSE)

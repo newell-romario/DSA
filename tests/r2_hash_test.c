@@ -34,7 +34,7 @@ static r2_int16 cmp2(const void *a, const void *b);
  */
 static void test_r2_create_chaintable()
 {
-        struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, cmp, cmp, NULL, NULL, NULL, NULL);
+        struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         assert(table != NULL);
         assert(table->chain != NULL); 
         assert(table->hf == r2_hash_wee); 
@@ -56,9 +56,9 @@ static void test_r2_create_chaintable()
  */
 static void test_r2_destroy_chaintable()
 {
-        struct r2_chaintable * table  = r2_create_chaintable(3, 1, 0, cmp, cmp, NULL, NULL, NULL, NULL);
+        struct r2_chaintable * table  = r2_create_chaintable(3, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         assert(r2_destroy_chaintable(table) == NULL); 
-        table  = r2_create_chaintable(0, 1, 0, cmp, cmp, NULL, NULL, NULL, NULL);
+        table  = r2_create_chaintable(0, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         for(r2_uint64 i = 0 ; i < 17; ++i)
                 table = r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i]));
         
@@ -71,7 +71,7 @@ static void test_r2_destroy_chaintable()
  */
 static void test_r2_chaintable_put()
 {
-        struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, cmp, cmp, NULL, NULL, NULL, NULL);
+        struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         for(r2_uint64 i = 0 ; i < 17; ++i)
                 table = r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i]));
         
@@ -91,7 +91,7 @@ static void test_r2_chaintable_put()
  */
 static void test_r2_chaintable_get()
 {
-        struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, cmp, cmp, NULL, NULL, NULL, NULL);
+        struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         struct r2_entry entry;
         for(r2_uint64 i = 0 ; i < 17; ++i){
                 entry.key  = 0;
@@ -114,7 +114,7 @@ static void test_r2_chaintable_get()
  */
 static void test_r2_chaintable_del()
 {
-        struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, cmp, cmp, NULL, NULL, NULL, NULL);
+        struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         for(r2_uint64 i = 0 ; i < 17; ++i)
                 table = r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i]));
 
@@ -137,7 +137,7 @@ static void test_r2_chaintable_del()
  */
 static void test_r2_create_robintable()
 {
-        struct r2_robintable *table = r2_create_robintable(0, 1, 0, 0, cmp, cmp, NULL, NULL, NULL, NULL);
+        struct r2_robintable *table = r2_create_robintable(0, 1, 0, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         assert(table->cells != NULL); 
         assert(table->hf == r2_hash_wee); 
         assert(table->prime == 1); 
@@ -160,7 +160,7 @@ static void test_r2_create_robintable()
  */
 static void test_r2_robintable_put()
 {
-        struct r2_robintable *table = r2_create_robintable(0, 1, 0, 0, cmp, cmp, NULL, NULL, NULL, NULL);
+        struct r2_robintable *table = r2_create_robintable(0, 1, 0, 0, .75,cmp, cmp, NULL, NULL, NULL, NULL);
         for(r2_uint64 i = 0; i < 17; ++i)
                 table = r2_robintable_put(table, strings[i], strings[i], strlen(strings[i]));
         
@@ -181,7 +181,7 @@ static void test_r2_robintable_put()
  */
 static void test_r2_robintable_get()
 {
-        struct r2_robintable *table = r2_create_robintable(0, 1, 0, 0, cmp, cmp, NULL, NULL, NULL, NULL);
+        struct r2_robintable *table = r2_create_robintable(0, 1, 0, 0, .75,cmp, cmp, NULL, NULL, NULL, NULL);
         struct r2_entry entry;
         entry.key  = NULL; 
         entry.data = NULL;
@@ -210,7 +210,7 @@ static void test_r2_robintable_get()
  */
 static void test_r2_robintable_del()
 {
-        struct r2_robintable *table = r2_create_robintable(0, 1, 0, 0, cmp, cmp, NULL, NULL, NULL, NULL);
+        struct r2_robintable *table = r2_create_robintable(0, 1, 0, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         for(r2_uint64 i = 0; i < 17; ++i)
                 table = r2_robintable_put(table, strings[i], strings[i], strlen(strings[i]));    
 
@@ -227,14 +227,15 @@ static void test_r2_robintable_psl(struct r2_robintable *table)
 {
         FILE *results = fopen("robintable.csv", "w");
         char key[50];
-        FILE *fp = fopen("../tests/words.txt", "r");
+        FILE *fp = fopen("words.txt", "r");
         r2_uint64 line = 0; 
         struct r2_key j;
         struct r2_key k;
         r2_uint64 length;
         r2_uint64 hash ;
         r2_uint64 psl;
-
+        r2_int64 lowest = INT_MAX;
+        r2_int64 max    = INT_MIN;
         while(TRUE){
                 if(fscanf(fp, "%s", key) != 1)
                         break;
@@ -243,7 +244,13 @@ static void test_r2_robintable_psl(struct r2_robintable *table)
                 hash  = table->hf(key, length, table->tsize);
                 k.key = key; 
                 k.len = length;
-              
+                if(hash < lowest){
+                        lowest = hash;
+                }
+
+                if(hash > max){
+                        max = hash;
+                }
                 psl = 0; 
                 while(table->cells[hash] != NULL){
                         j.key = table->cells[hash]->entry.key;
@@ -259,7 +266,8 @@ static void test_r2_robintable_psl(struct r2_robintable *table)
                         hash  = (hash + 1) % table->tsize;
                 }
         }
-
+        
+        printf("\nStart Index: %lld  End Index: %lld", lowest, max);
         fclose(results); 
         fclose(fp);
 
@@ -347,10 +355,10 @@ static struct r2_chain* test_r2_longest_chain(struct r2_chaintable *table)
 static void test_r2_chaintable_generate()
 {
         printf("\n---------------------------------Hashing with separate chaining----------------------------------");
-        struct r2_chaintable *table = r2_create_chaintable(1, 1, 0, cmp, cmp, NULL, NULL, free, NULL);
+        struct r2_chaintable *table = r2_create_chaintable(1, 1, 0, .75, cmp, cmp, NULL, NULL, free, NULL);
         char *key  = NULL; 
         r2_uint64 l = 70; 
-        FILE *fp = fopen("../tests/words.txt", "r");
+        FILE *fp = fopen("words.txt", "r");
         r2_uint64 line = 0; 
         while(TRUE){
                 key = malloc(sizeof(char) *l); 
@@ -410,10 +418,10 @@ static void test_r2_chaintable_generate()
 static void test_r2_robintable_generate()
 {
         printf("\n---------------------------------Hashing with open addressing(Robinhood)---------------------------------");
-        struct r2_robintable *table = r2_create_robintable(2, 1, 0, 0, cmp, cmp, NULL, NULL, free,  NULL);
+        struct r2_robintable *table = r2_create_robintable(2, 1, 0, 0, .75, cmp, cmp, NULL, NULL, free,  NULL);
         char *key  = NULL; 
         r2_uint64 l = 70; 
-        FILE * fp = fopen("../tests/words.txt", "r");
+        FILE * fp = fopen("words.txt", "r");
         r2_uint64 line = 0; 
         while(TRUE){
                 key = malloc(sizeof(char) *l); 

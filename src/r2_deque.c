@@ -252,7 +252,7 @@ r2_uint16  r2_deque_compare(const struct r2_deque *d1, const struct r2_deque *d2
                 while(d1_front != NULL && d2_front != NULL){
 
                         if(d1->cmp != NULL)
-                                result = d1->cmp(d1_front->data, d2_front->data);
+                                result = d1->cmp(d1_front->data, d2_front->data) == 0? TRUE: FALSE;
                         else    
                                 result = d1_front->data == d2_front->data? TRUE : FALSE;
                         

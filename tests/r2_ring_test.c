@@ -140,7 +140,11 @@ static void *cpy(const void *data)
 }
 static r2_int16 cmp(const void *d1, const void *d2)
 {
-        return *((int *)d1) == *((int *)d2);
+        if(*((int *)d1) == *((int *)d2))
+                return 0; 
+        else if(*((int *)d1) < *((int *)d2))
+                return -1; 
+        else    return 1;
 }
 
 /**
