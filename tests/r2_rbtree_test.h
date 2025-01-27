@@ -1,7 +1,6 @@
 #ifndef RB_TREETEST_H_
 #define RB_TREETEST_H_
 #include "..\src\r2_rbtree.h"
-
 static void test_r2_rbtree_empty();
 static void test_r2_create_rbnode();
 static void test_r2_create_rb_tree();
@@ -27,5 +26,6 @@ static void test_r2_r2_rbnode_noconsecreds(const struct r2_rbnode *);
 static void test_r2_rbtree_is_binary_tree(const struct r2_rbnode *, r2_cmp);
 static void test_r2_rbtree_certify(const struct r2_rbnode *, r2_cmp);
 static void test_r2_rbtree_generate();
+static void test_r2_rbtree_stats();
 void test_r2_rbtree_run();
 #endif

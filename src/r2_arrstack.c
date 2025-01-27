@@ -69,9 +69,7 @@ struct r2_arrstack* r2_arrstack_push(struct r2_arrstack *stack, void *data)
                 /*Resize failed*/
                 if(r2_arrstack_resize(stack, size) != TRUE)
                         goto FINAL;
-
         }
-
         stack->data[stack->top] = data; 
         ++stack->top; 
         ++stack->ncount;
@@ -165,7 +163,7 @@ static r2_uint16 r2_arrstack_resize(struct r2_arrstack *stack, r2_uint64 size)
 
 /**
  * @brief               Compares two stack.
- * 
+ *                      Please ensure cmp field is set for s1 before comparison.
  * @param s1            Stack 1
  * @param s2            Stack 2
  * @return r2_uint16    Returns TRUE if both stack are equal, otherwise FALSE.
@@ -191,8 +189,10 @@ r2_uint16 r2_arrstack_compare(const struct r2_arrstack *s1, const struct r2_arrs
 }
 
 /**
- * @brief                       Retuns a copy of the stack. 
- * 
+ * @brief                       Returns a copy of the stack. 
+ *                              This function can do a shallow/deep copy based on if the 
+ *                              structure member cpy was set. If cpy is set then it's a deep copy,
+ *                              else shallow copy.
  * @param source                Stack.
  * @return struct r2_arrstack*  Returns a copy of the stack. 
  */

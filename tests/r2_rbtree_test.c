@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <math.h>
+#include <time.h>
 #include "r2_rbtree_test.h"
 
 
@@ -795,6 +797,66 @@ static void test_r2_rbtree_generate()
 }
 
 /**
+ * @brief Produces benchmarks for this RB tree.
+ * 
+ */
+static void test_r2_rbtree_stats()
+{
+        struct r2_rbtree *rb = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
+        FILE *fp = fopen("com-friendster.ungraph.txt", "r"); 
+        char line[100];
+        r2_uint64 a[2] = {0}; 
+        r2_uint64 *key = NULL; 
+        clock_t before; 
+        r2_ldbl elapse = 0;
+
+
+        /*File 30GB and we can't edit the file because of size. Skip first 15 lines because it's irrelevant*/
+        for(r2_uint16 i = 0; i < 15; ++i){
+                        fscanf(fp, "%s", line);
+        }
+
+        while(fscanf(fp, "%lld\t%lld", &a[0], &a[1]) == 2){
+                        for(r2_uint16 i = 0; i < 2; ++i){
+                                key = malloc(sizeof(r2_uint64));  
+                                *key = a[i];
+                                before = clock();
+                                rb = r2_rbtree_insert(rb, key, key);
+                                elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
+                        }
+
+                        if(rb->ncount == 20000000)
+                                break;
+        }
+
+        rewind(fp);
+        /*File 30GB and we can't edit the file because of size. Skip first 15 lines because it's irrelevant*/
+        for(r2_uint16 i = 0; i < 15; ++i)
+                fscanf(fp, "%s", line);
+        
+        elapse = 0;
+        while(fscanf(fp, "%lld\t%lld", &a[0], &a[1]) == 2){
+                for(r2_uint16 i = 0; i < 2; ++i){
+                        before = clock();
+                        if(r2_rbtree_search(rb, &a[i]) == NULL)
+                                break;
+
+                        elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
+                }
+
+                if(rb->ncount == 20000000)
+                        break;
+        }
+        r2_uint64 height = r2_rbtree_height(rb->root);
+        printf("\nAverage insertion time: %Lf", elapse/rb->ncount);
+        printf("\nHeight: %ld", height);
+
+        test_r2_r2_rbnode_noconsecreds(rb->root);
+        r2_destroy_rbtree(rb);
+        fclose(fp);
+}
+
+/**
  * @brief Run all tests.
  * 
  */
@@ -819,5 +881,6 @@ void test_r2_rbtree_run()
         test_r2_rbtree_compare();
         test_r2_rbtree_getkeys();
         test_r2_rbtree_getvalues();
-        test_r2_rbtree_generate();
+        //test_r2_rbtree_generate();
+        test_r2_rbtree_stats();
 }

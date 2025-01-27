@@ -61,4 +61,5 @@ r2_uint64 r2_rbnode_level(const struct r2_rbnode *);
 r2_uint16 r2_rbtree_empty(const struct r2_rbtree *); 
 struct r2_rbtree *r2_rbtree_copy(const struct r2_rbtree *);
 r2_uint16 r2_rbtree_compare(const struct r2_rbtree *, const struct r2_rbtree *);
+r2_int64 r2_rbtree_height(const struct r2_rbnode *);
 #endif

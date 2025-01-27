@@ -20,6 +20,7 @@ struct r2_edge{
          * [3] - vertex in pos
          */
         struct r2_listnode *pos[4];
+        r2_ldbl  weight;/*weight*/
         struct r2_robintable *eat;/*edge attributes*/
 }; 
 

@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
+
 #define SIZE 10
 
 r2_uint64 arr[SIZE];
@@ -37,7 +39,7 @@ static void test_r2_create_avlnode()
 }
 
 /**
- * @brief  Tests the successor function for avl tree.
+ * @brief  Tests the successor function for AVL Tree.
  * 
  */
 static void test_r2_avlnode_successor()
@@ -63,7 +65,7 @@ static void test_r2_avlnode_successor()
 
 
 /**
- * @brief  Tests the predecessor function of the avl tree.
+ * @brief  Tests the predecessor function of the AVL Tree.
  * 
  */
 static void test_r2_avlnode_predecessor()
@@ -89,7 +91,7 @@ static void test_r2_avlnode_predecessor()
 }
 
 /**
- * @brief       Tests the min functionality of the avl tree.
+ * @brief   Tests the min functionality of the AVL Tree.
  * 
  */
 static void test_r2_avlnode_min()
@@ -109,7 +111,7 @@ static void test_r2_avlnode_min()
 
 
 /**
- * @brief       Tests the max functionality of the avl tree.
+ * @brief   Tests the max functionality of the AVL Tree.
  * 
  */
 static void test_r2_avlnode_max()
@@ -148,7 +150,10 @@ static void test_r2_create_avltree()
         r2_destroy_avltree(tree);
 }
 
-/*Test delete functionality*/
+/**
+ * @brief Test delete functionality
+ * 
+ */
 static void test_r2_destroy_avltree()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
@@ -358,7 +363,7 @@ static void test_r2_avltree_delete()
         /*Delete key with 3*/
         ncount = tree->ncount;
         tree   = r2_avltree_delete(tree, &arr[2]); 
-       test_r2_avltree_certify(tree->root, tree->kcmp); 
+        test_r2_avltree_certify(tree->root, tree->kcmp); 
         root = r2_avltree_search(tree, &arr[2]); 
         assert(root == NULL); /* key shouldn't exist.*/
         assert(tree->ncount == (ncount - 1));
@@ -372,7 +377,7 @@ static void test_r2_avltree_delete()
         /*Delete key with 4*/
         ncount = tree->ncount;
         tree = r2_avltree_delete(tree, &arr[3]); 
-       test_r2_avltree_certify(tree->root, tree->kcmp); ; 
+        test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[3]); 
         assert(root == NULL); /* key shouldn't exist.*/
         assert(tree->ncount == (ncount - 1));
@@ -412,7 +417,7 @@ static void test_r2_avltree_delete()
         /*Delete key with 7*/
         ncount = tree->ncount;
         tree = r2_avltree_delete(tree, &arr[6]); 
-       test_r2_avltree_certify(tree->root, tree->kcmp); ; 
+        test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[6]); 
         assert(root == NULL); /* key shouldn't exist.*/
         assert(tree->ncount == (ncount - 1));
@@ -425,7 +430,7 @@ static void test_r2_avltree_delete()
         /*Delete key with 8*/
         ncount = tree->ncount;
         tree = r2_avltree_delete(tree, &arr[7]); 
-       test_r2_avltree_certify(tree->root, tree->kcmp); ; 
+        test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[7]); 
         assert(root == NULL); /* key shouldn't exist.*/
         assert(tree->ncount == (ncount - 1));
@@ -438,7 +443,7 @@ static void test_r2_avltree_delete()
         /*Delete key with 9*/
         ncount = tree->ncount;
         tree = r2_avltree_delete(tree, &arr[8]); 
-       test_r2_avltree_certify(tree->root, tree->kcmp); ; 
+        test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[8]); 
         assert(root == NULL); /* key shouldn't exist.*/
         assert(tree->ncount == (ncount - 1));
@@ -451,7 +456,7 @@ static void test_r2_avltree_delete()
         /*Delete key with 10*/
         ncount = tree->ncount;
         tree = r2_avltree_delete(tree, &arr[9]); 
-       test_r2_avltree_certify(tree->root, tree->kcmp); ; 
+        test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[9]); 
         assert(root == NULL); /* key shouldn't exist.*/
         assert(tree->ncount == (ncount - 1));
@@ -762,6 +767,7 @@ static void test_r2_avltree_compare()
         struct r2_avltree *tree = r2_create_avltree(NULL, NULL, NULL, NULL, NULL, NULL);
         /*Shallow comparison*/
         assert(r2_avltree_compare(tree, tree) == TRUE); 
+        
         /*Shallow comparison*/
         tree->kcmp = cmp;
         tree->dcmp = cmp;
@@ -793,7 +799,7 @@ static void test_r2_avltree_compare()
         /*Deep comparison*/
         tree->kcmp = cmp;
         tree->dcmp = cmp;
-        assert(r2_avltree_compare(tree, copy) == TRUE); /*Deep comparison*/
+        assert(r2_avltree_compare(tree, copy) == TRUE); 
         r2_destroy_avltree(tree);
         r2_destroy_avltree(copy);
 }
@@ -933,6 +939,66 @@ static void test_r2_avltree_generate()
         r2_destroy_avltree(avl); 
 }
 
+/**
+ * @brief   Produces benchmarks for this AVL tree.
+ * 
+ */
+static void test_r2_avltree_stats()
+{
+       struct r2_avltree *avl = r2_create_avltree(cmp, NULL, NULL, NULL, NULL, NULL);
+       FILE *fp = fopen("com-friendster.ungraph.txt", "r"); 
+       char line[100];
+       r2_uint64 a[2] = {0}; 
+       r2_uint64 *key = NULL; 
+       clock_t before; 
+       r2_ldbl elapse = 0;
+
+
+        /*File 30GB and we can't edit the file because of size. Skip first 15 lines because it's irrelevant*/
+       for(r2_uint16 i = 0; i < 15; ++i){
+                fscanf(fp, "%s", line);
+       }
+
+       while(fscanf(fp, "%lld\t%lld", &a[0], &a[1]) == 2){
+                for(r2_uint16 i = 0; i < 2; ++i){
+                        key = malloc(sizeof(r2_uint64));  
+                        *key = a[i];
+                        before = clock();
+                        avl = r2_avltree_insert(avl, key, key);
+                        elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
+                }
+
+                if(avl->ncount == 20000000)
+                        break;
+       }
+       
+        r2_uint64 height = r2_avltree_height(avl->root);
+        printf("\nAverage insertion time: %Lf", elapse/avl->ncount);
+        printf("\nHeight: %ld", height);
+
+
+        fclose(fp);
+        fp =  fopen("com-friendster.ungraph.txt", "r"); 
+        elapse = 0;
+        
+        /*File 30GB and we can't edit the file because of size. Skip first 15 lines because it's irrelevant*/
+        for(r2_uint16 i = 0; i < 15; ++i){
+                fscanf(fp, "%s", line);
+        }
+        
+        while(fscanf(fp, "%lld\t%lld", &a[0], &a[1]) == 2){
+                for(r2_uint16 i = 0; i < 2; ++i){
+                        before = clock();
+                        if(r2_avltree_search(avl, &a[i]) == NULL)
+                                break;
+                        elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
+                }
+       }
+
+       test_r2_avltree_is_avltree(avl->root);
+       fclose(fp);  
+       r2_destroy_avltree(avl);   
+}
 
 /**
  * @brief  Runs all the avl tree tests.
@@ -962,5 +1028,6 @@ void test_r2_avltree_run()
         test_r2_avltree_rangequery();
         test_r2_avltree_compare();
         test_r2_avltree_copy();
-        test_r2_avltree_generate();
+        //test_r2_avltree_generate();
+        test_r2_avltree_stats();
 }

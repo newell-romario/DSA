@@ -2,6 +2,7 @@
 #define R2_AVL_TREE_H_
 #include "r2_types.h"
 #include "r2_list.h"
+#define PROFILE_TREE
 
 /**
  *An Adel’son-Vel’skii and Landis (AVL) tree is a balanced binary search tree

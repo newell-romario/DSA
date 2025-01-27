@@ -18,6 +18,24 @@ static r2_uint16 r2_rbnode_is_red(const struct r2_rbnode *);
 
 
 
+/**
+ * @brief               Calculates the height of the tree recursively.          
+ *                     
+ *                      Please call seldomly since it's expensive to calculate the height of the tree recursively.
+ *                      The height of tree can be read from root->height without processing the tree.
+ * 
+ * @param root          Root.
+ * @return r2_uint64    Returns the height of the tree, else -1 for empty trees.
+ */
+r2_int64 r2_rbtree_height(const struct r2_rbnode *root)
+{
+        if(root == NULL)
+                return -1; 
+
+        r2_int64 left_height  = r2_rbtree_height(root->left) + 1;  
+        r2_int64 right_height = r2_rbtree_height(root->right) + 1;
+        return MAX(left_height, right_height);    
+}
 
 /**
  * @brief                       Creates an empty node.
@@ -288,7 +306,6 @@ static void r2_rbtree_insert_rebalance(struct r2_rbtree *tree, struct r2_rbnode 
                         parent->ncount = r2_rbnode_recalc_size(parent);
                         parent = parent->parent; 
                 }
-
                 tree->root->color = BLACK; 
                 tree->ncount= tree->root->ncount;
 }
@@ -422,7 +439,6 @@ static void r2_rbtree_delete_rebalance(struct r2_rbtree *tree, struct r2_rbnode 
                                         r2_rbnode_right_rotation(tree, child);
                                         sibling = child;
                                 }
-                               
                                 sibling->color = parent->color; 
                                 parent->color = BLACK; 
                                 sibling->right->color = BLACK;
@@ -968,7 +984,6 @@ r2_uint16 r2_rbtree_compare(const struct r2_rbtree *tree1, const struct r2_rbtre
                 } 
         } 
         return result;
-
 }
 
 
@@ -996,4 +1011,9 @@ static void r2_freenode(struct r2_rbnode *root, r2_fk freekey, r2_fd freedata)
         if(freekey != NULL)
                 freekey(root->data);
         free(root);
+}
+
+static r2_int64 MAX(r2_int64 a, r2_int64 b) 
+{ 
+        return a > b? a : b; 
 }
