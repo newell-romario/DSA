@@ -134,24 +134,24 @@ struct r2_deque* r2_deque_delete_at_back(struct r2_deque *deque)
 {
         if(r2_deque_empty(deque) != TRUE){
                 struct r2_dequenode *front   = r2_deque_front(deque);
-                struct r2_dequenode *rear    = r2_deque_rear(deque);
+                struct r2_dequenode *cur     = r2_deque_rear(deque);
                 
-                if(front != rear){
+                if(front != cur){
                         /*Iterating through deque to find the node before rear*/
                         while(front->next != NULL){
-                                rear  = front; 
+                                cur = front; 
                                 front = front->next; 
                         }
 
-                        rear->next  = NULL;
-                        deque->rear = rear;
-                        rear = front; 
+                        cur->next  = NULL;
+                        deque->rear = cur;
+                        cur = front; 
                 }else{
                         deque->front = NULL; 
                         deque->rear  = NULL;
                 }
                 
-                r2_freenode(rear, deque->fd); 
+                r2_freenode(cur, deque->fd); 
                 --deque->dsize;
         }
         
@@ -228,6 +228,9 @@ struct r2_deque* r2_deque_copy(const struct r2_deque *source)
                                 cur = &temp->next;
                                 dest->rear = temp; 
                                 ++dest->dsize;
+                        }else{
+                                dest = r2_destroy_deque(dest);
+                                break;
                         }
                         front = front->next;
                 }

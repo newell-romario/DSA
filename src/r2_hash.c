@@ -207,7 +207,7 @@ struct r2_chaintable* r2_chaintable_put(struct r2_chaintable *table, r2_uc *key,
         struct r2_cnode *node = r2_chain_search(&table->chain[hash], key, length, table->kcmp); 
 
         if(node == NULL){
-                if((table->nsize/table->tsize) >= table->lf){
+                if(((r2_ldbl)table->nsize/table->tsize) >= table->lf){
                         table   = r2_chaintable_resize(table, 1);
                         hash    = table->hf(key, length, table->tsize);
                 }
@@ -444,7 +444,7 @@ struct r2_robintable* r2_robintable_put(struct r2_robintable *table, r2_uc *key,
                 table->cells[(hash + psl) % table->tsize] = rentry; 
                 ++table->nsize;
 
-                if((table->nsize / table->tsize) > table->lf)
+                if(((r2_ldbl)table->nsize / table->tsize) >= table->lf)
                         r2_robintable_resize(table, 1);
         }else{
                 perror("Table full or out of memory");
@@ -647,7 +647,7 @@ r2_uint64 r2_hash_knuth(const unsigned char *key, r2_uint64 length, r2_uint64 ts
                 K = ((K*A/W) + key[i] + C * 16777619);
                 K = (K << 7) ^ (K >> 25); 
                 K = (K >> 47) | (K << 17);
-                K = K * 14695981039346656037UL;
+                K = K % (r2_uint64 )14695981039346656037UL;
         }
                
         K = K % (r2_uint64 )14695981039346656037UL;

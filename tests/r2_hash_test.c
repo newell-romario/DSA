@@ -223,16 +223,20 @@ static void test_r2_robintable_del()
  * @brief       Dump probe sequence length of each record to csv
  * 
  */
-static void test_r2_robintable_psl(struct r2_robintable *table)
+static void 
+
+
+
+test_r2_robintable_psl(struct r2_robintable *table)
 {
         FILE *results = fopen("robintable.csv", "w");
-        char key[50];
-        FILE *fp = fopen("words.txt", "r");
+        char key[300];
+        FILE *fp = fopen("enwiki-latest-all-titles.txt", "r");
         r2_uint64 line = 0; 
         struct r2_key j;
         struct r2_key k;
         r2_uint64 length;
-        r2_uint64 hash ;
+        r2_int64 hash ;
         r2_uint64 psl;
         r2_int64 lowest = INT_MAX;
         r2_int64 max    = INT_MIN;
@@ -266,7 +270,7 @@ static void test_r2_robintable_psl(struct r2_robintable *table)
                         hash  = (hash + 1) % table->tsize;
                 }
         }
-        
+
         printf("\nStart Index: %lld  End Index: %lld", lowest, max);
         fclose(results); 
         fclose(fp);
@@ -392,7 +396,6 @@ static void test_r2_chaintable_generate()
         line = 0; 
         printf("\n---------------------------------------Deleting-------------------------------------------");
         while(table->nsize != 0){
-                
                 if(fscanf(fp, "%s", del) == 1){
                         entry.key = entry.data = NULL;
                         printf("\n%d)(Key = %s,val = %s)", ++line, del, del);
@@ -403,12 +406,10 @@ static void test_r2_chaintable_generate()
                         entry.key = entry.data = NULL;
                         r2_chaintable_get(table, del, strlen(del), &entry);
                         assert(entry.key == NULL);
-                }
-                        
-                
-                
+                }  
         }
         fclose(fp);
+        r2_destroy_chaintable(table);
 }
 
 /**
@@ -418,7 +419,7 @@ static void test_r2_chaintable_generate()
 static void test_r2_robintable_generate()
 {
         printf("\n---------------------------------Hashing with open addressing(Robinhood)---------------------------------");
-        struct r2_robintable *table = r2_create_robintable(2, 1, 0, 0, .75, cmp, cmp, NULL, NULL, free,  NULL);
+        struct r2_robintable *table = r2_create_robintable(2, 1, 0, 0, .55, cmp, cmp, NULL, NULL, free,  NULL);
         char *key  = NULL; 
         r2_uint64 l = 70; 
         FILE * fp = fopen("words.txt", "r");
@@ -450,8 +451,30 @@ static void test_r2_robintable_generate()
                 assert(entry.key == NULL);
         }
         fclose(fp);
+        r2_destroy_robintable(table);
 }
+static void test_r2_robintable_stats()
+{
+        struct r2_robintable *table = r2_create_robintable(2, 1, 0, 0, .80, cmp, cmp, NULL, NULL, free,  NULL);
+        char *key   = NULL; 
+        r2_uint64 l = 300; 
+        FILE * fp   = fopen("enwiki-latest-all-titles.txt", "r");
+        r2_uint64 line = 0; 
+        while(TRUE){
+                key = malloc(sizeof(char) *l); 
+                if(fscanf(fp, "%s", key) != 1)
+                        break;
 
+                if(line == 5000000)
+                        break;
+                printf("\n%d)(Key = %s,val = %s)", ++line, key, key);
+                table = r2_robintable_put(table, key, key, strlen(key));
+        }
+
+        test_r2_robintable_psl(table);
+        fclose(fp);
+        r2_destroy_robintable(table);       
+}
 /**
  * @brief               Sends the chain length to a file in cwd.
  * 
@@ -514,6 +537,7 @@ void test_r2_chaintable_run()
         test_r2_robintable_put();
         test_r2_robintable_get();
         test_r2_robintable_del();
-        test_r2_chaintable_generate();
-        test_r2_robintable_generate();
+      //test_r2_chaintable_generate();
+       // test_r2_robintable_generate();
+         test_r2_robintable_stats();
 }

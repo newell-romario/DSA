@@ -24,7 +24,7 @@ static void test_r2_ring_at()
 {
         struct r2_ring  *ring = r2_create_ring(SIZE, NULL, NULL, NULL);
         for(r2_uint64 i = 0; i < SIZE; ++i){
-                ring = r2_ring_insert(ring, &arr[i]); 
+                r2_ring_insert(ring, &arr[i]); 
                 assert(r2_ring_at(ring, i) == &arr[i]);
         }
         r2_destroy_ring(ring);
@@ -68,12 +68,11 @@ static void test_r2_ring_insert()
 {
         struct r2_ring  *ring = r2_create_ring(SIZE, NULL, NULL, NULL);   
         for(r2_uint64 i = 0; i < SIZE; ++i){
-                ring = r2_ring_insert(ring, &arr[i]); 
+                r2_ring_insert(ring, &arr[i]); 
                 assert(ring->ncount == (i + 1)); 
                 assert(r2_ring_at(ring, i) == &arr[i]);
         }
 
-        ring = r2_ring_insert(ring, &arr[0]); 
         r2_destroy_ring(ring);
 }
 
@@ -85,19 +84,18 @@ static void test_r2_ring_delete()
 {
         struct r2_ring  *ring = r2_create_ring(SIZE, NULL, NULL, NULL);
         for(r2_uint64 i = 0; i < SIZE; ++i)
-                ring  = r2_ring_insert(ring, &arr[i]); 
+                r2_ring_insert(ring, &arr[i]); 
 
         void *data = NULL;        
         for(r2_uint64 i = 0;i <= SIZE - 2;i += 2){
                 data = r2_ring_front(ring);
                 assert(data == &arr[i]);
-                ring = r2_ring_delete(ring);
+                r2_ring_delete(ring);
                 data = r2_ring_front(ring);
                 assert(data == &arr[i + 1]);
-                ring = r2_ring_delete(ring);
+                r2_ring_delete(ring);
         }
 
-        ring = r2_ring_delete(ring);
         r2_destroy_ring(ring);
 }
 
@@ -111,7 +109,7 @@ static void test_r2_ring_empty()
         assert(r2_ring_empty(ring) == TRUE);
         
         for(r2_uint64 i = 0; i < SIZE; ++i)
-                ring = r2_ring_insert(ring, &arr[i]); 
+                r2_ring_insert(ring, &arr[i]); 
         
         assert(r2_ring_empty(ring) != TRUE);
         r2_destroy_ring(ring);
@@ -125,7 +123,7 @@ static void test_r2_ring_front()
 {
         struct r2_ring  *ring = r2_create_ring(SIZE, NULL, NULL, NULL);
         for(int i = 0; i < SIZE; ++i){
-                ring = r2_ring_insert(ring, &arr[i]); 
+                r2_ring_insert(ring, &arr[i]); 
                 assert(r2_ring_front(ring) == &arr[0]);
         }
 
@@ -181,7 +179,7 @@ static void test_r2_ring_copy()
         r2_destroy_ring(copy);
 
         for(int i = 0; i < SIZE; ++i)
-                ring = r2_ring_insert(ring, &arr[i]); 
+                r2_ring_insert(ring, &arr[i]); 
                
         
         /*Shallow copy.*/
@@ -229,7 +227,7 @@ static void test_r2_ring_compare()
         assert(r2_ring_compare(ring, ring) == TRUE);
 
         for(int i = 0; i < SIZE; ++i)
-                ring = r2_ring_insert(ring, &arr[i]); 
+                r2_ring_insert(ring, &arr[i]); 
         
         /*Shallow comparison*/
         ring->cmp = NULL;

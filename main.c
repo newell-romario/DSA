@@ -29,7 +29,7 @@ int main()
         test_r2_ring_run();
         //test_r2_avltree_run();
         //test_r2_rbtree_run();
-        test_r2_wavltree_run(); 
+        //test_r2_wavltree_run(); 
         //test_r2_btree_run(); 
         //test_r2_chaintable_run();
         //test_r2_pq_run();
