@@ -312,13 +312,14 @@ static void r2_avlnode_left_rotation(struct r2_avltree *tree, struct r2_avlnode 
  * @param tree                  AVL Tree.
  * @param key                   Key.
  * @param data                  Data.
- * @return struct r2_avltree*   Returns an AVL tree. 
+ * @return r2_uint16            Returns TRUE when successfully inserted, else FALSE. 
  */
-struct r2_avltree* r2_avltree_insert(struct r2_avltree *tree, void *key, void *data)
+r2_uint16 r2_avltree_insert(struct r2_avltree *tree, void *key, void *data)
 {
         struct r2_avlnode **root  = &tree->root; 
         struct r2_avlnode *parent = NULL;
         r2_int64 result = 0;
+        r2_uint16 SUCCESS = FALSE;
         while(*root != NULL){
                 parent = *root; 
                 result = tree->kcmp(key, parent->key); 
@@ -328,7 +329,8 @@ struct r2_avltree* r2_avltree_insert(struct r2_avltree *tree, void *key, void *d
                         root = &((*root)->left);
                 else{
                         (*root)->data = data;
-                        return tree; 
+                        SUCCESS = TRUE;
+                        return SUCCESS; 
                 }
                         
         }
@@ -340,9 +342,9 @@ struct r2_avltree* r2_avltree_insert(struct r2_avltree *tree, void *key, void *d
                 temp->parent = parent;
                 *root = temp;
                 r2_avltree_rebalance(tree, *root);
+                SUCCESS = TRUE;
         }
-
-        return tree;
+        return SUCCESS;
 }
 
 
@@ -402,12 +404,13 @@ static void r2_avltree_restructure(struct r2_avltree *tree, struct r2_avlnode *r
  * 
  * @param tree                  AVL Tree. 
  * @param key                   Key.
- * @return struct r2_avltree*   Returns an avl tree. 
+ * @return r2_uint16            Returns TRUE when successfully deleted, else FALSE. 
  */
-struct r2_avltree* r2_avltree_delete(struct r2_avltree *tree, void*key)
+r2_uint16 r2_avltree_delete(struct r2_avltree *tree, void*key)
 {
         /*Node to be deleted.*/
         struct r2_avlnode *root = r2_avltree_search(tree, key);
+        r2_uint16 SUCCESS =  FALSE;
         if(root != NULL){
                 struct r2_avlnode *parent = NULL;
                 if(root->right == NULL)
@@ -423,9 +426,10 @@ struct r2_avltree* r2_avltree_delete(struct r2_avltree *tree, void*key)
                 }
                 parent = root->parent;
                 r2_freenode(root, tree->fk, tree->fd);
-                r2_avltree_rebalance(tree, parent);                 
+                r2_avltree_rebalance(tree, parent);  
+                SUCCESS = TRUE;               
         }
-        return tree;
+        return SUCCESS;
 }
 
 
@@ -782,7 +786,8 @@ struct r2_list* r2_avltree_range_query(const struct r2_avltree *tree, void *lowe
 
 /**
  * @brief               Compares two avl trees.
- *                      
+ *                      Comparison is only successfully when both trees have the same preorder traversal i.e. the same structure.       
+ * 
  * 
  * @param tree1         Tree 1
  * @param tree2         Tree 2
@@ -820,7 +825,6 @@ r2_uint16 r2_avltree_compare(const struct r2_avltree *tree1, const struct r2_avl
  */
 struct r2_avltree *r2_avltree_copy(const struct r2_avltree *source)
 {
-
         if(source->kcmp == NULL)
                 return NULL;
 
@@ -833,10 +837,21 @@ struct r2_avltree *r2_avltree_copy(const struct r2_avltree *source)
                         key = root->key; 
                         data = root->data;
                         if(source->kcpy != NULL && source->dcpy != NULL){
-                                key  = source->kcpy(key); 
-                                data = source->dcpy(data);
+                                key  = source->kcpy(key);
+                                if(data != NULL){
+                                        data = source->dcpy(data);
+                                        if(data == NULL){
+                                                dest = r2_destroy_avltree(dest);
+                                                break;
+                                        }
+
+                                } 
+                                if(key == NULL){
+                                        dest = r2_destroy_avltree(dest);
+                                        break;
+                                }
                         }
-                        dest  = r2_avltree_insert(dest, key, data);
+                        r2_avltree_insert(dest, key, data);
                         root  = r2_avlnode_preorder_next(root);
                 } 
         }

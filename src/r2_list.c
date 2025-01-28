@@ -113,11 +113,12 @@ struct r2_list* r2_destroy_list(struct r2_list *list)
  * 
  * @param list                  List. 
  * @param data                  Data.
- * @return struct r2_list*      Returns list. 
+ * @return r2_uint16            Returns TRUE upon succesful insertion, else FALSE.
  */
-struct r2_list* r2_list_insert_at_front(struct r2_list *list, void *data)
+r2_uint16 r2_list_insert_at_front(struct r2_list *list, void *data)
 {
         struct r2_listnode *node = r2_create_listnode(); 
+        r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
                 node->data = data;
                 
@@ -129,9 +130,10 @@ struct r2_list* r2_list_insert_at_front(struct r2_list *list, void *data)
                 node->next = list->front; 
                 list->front = node; 
                 ++list->lsize;
+                SUCCESS = TRUE;
         }
 
-        return list; 
+        return SUCCESS; 
 }
 
 /**
@@ -139,11 +141,12 @@ struct r2_list* r2_list_insert_at_front(struct r2_list *list, void *data)
  * 
  * @param list                  List. 
  * @param data                  Data. 
- * @return struct r2_list*      Returns list.
+ * @return r2_uint16            Returns TRUE upon succesful insertion, else FALSE.
  */
-struct r2_list* r2_list_insert_at_back(struct r2_list *list, void *data)
+r2_uint16 r2_list_insert_at_back(struct r2_list *list, void *data)
 {
         struct r2_listnode *node = r2_create_listnode(); 
+        r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
                 node->data = data;
                 if(r2_list_empty(list) == TRUE)
@@ -154,9 +157,10 @@ struct r2_list* r2_list_insert_at_back(struct r2_list *list, void *data)
                 node->prev = list->rear;
                 list->rear = node; 
                 ++list->lsize; 
+                SUCCESS = TRUE;
         }
 
-        return list; 
+        return SUCCESS; 
 }
 
 /**
@@ -165,12 +169,12 @@ struct r2_list* r2_list_insert_at_back(struct r2_list *list, void *data)
  * @param list                          List
  * @param pos                           Position. 
  * @param data                          Data.
- * @return struct r2_list*              Returns list. 
+ * @return r2_uint16                    Returns TRUE upon succesful insertion, else FALSE.
  */
-struct r2_list* r2_list_insert_after(struct r2_list *list, struct r2_listnode *pos, void *data)
+r2_uint16 r2_list_insert_after(struct r2_list *list, struct r2_listnode *pos, void *data)
 {
         struct r2_listnode *rear   = r2_listnode_last(list);
-
+        r2_uint16 SUCCESS = FALSE;
         if(pos == rear)
                 return r2_list_insert_at_back(list, data);
         else{
@@ -182,11 +186,10 @@ struct r2_list* r2_list_insert_after(struct r2_list *list, struct r2_listnode *p
                         pos->next->prev = node; 
                         pos->next = node;
                         ++list->lsize; 
+                        SUCCESS = TRUE;
                 }
-                
         }
-        return list; 
-
+        return SUCCESS; 
 }
 
 /**
@@ -195,11 +198,12 @@ struct r2_list* r2_list_insert_after(struct r2_list *list, struct r2_listnode *p
  * @param list                  List.
  * @param pos                   Position.
  * @param data                  Data.
- * @return struct r2_list*      Returns list.
+ * @return r2_uint16            Returns TRUE upon succesful insertion, else FALSE.
  */
-struct r2_list* r2_list_insert_before(struct r2_list *list, struct r2_listnode *pos, void *data)
+r2_uint16 r2_list_insert_before(struct r2_list *list, struct r2_listnode *pos, void *data)
 {
         struct r2_listnode *front = r2_listnode_first(list); 
+        r2_uint16 SUCCESS  = FALSE;
         if(pos == front)
                 return r2_list_insert_at_front(list, data);
         else{
@@ -211,9 +215,10 @@ struct r2_list* r2_list_insert_before(struct r2_list *list, struct r2_listnode *
                         pos->prev->next = node; 
                         pos->prev = node; 
                         ++list->lsize; 
+                        SUCCESS = TRUE;
                 }
         }
-        return list; 
+        return SUCCESS; 
 }
 
 
@@ -221,10 +226,11 @@ struct r2_list* r2_list_insert_before(struct r2_list *list, struct r2_listnode *
  * @brief                       Deletes an element at the front of the list. 
  * 
  * @param list                  List.  
- * @return struct r2_list*      Returns the list.
+ * @return r2_uint16            Returns TRUE upon succesful deletion, else FALSE.
  */
-struct r2_list* r2_list_delete_at_front(struct r2_list *list)
+r2_uint16 r2_list_delete_at_front(struct r2_list *list)
 {
+        r2_uint16 SUCCESS = FALSE;
         if(r2_list_empty(list) != TRUE){
                 struct r2_listnode *front = r2_listnode_first(list); 
                 if(list->front == list->rear)
@@ -235,9 +241,10 @@ struct r2_list* r2_list_delete_at_front(struct r2_list *list)
                 list->front = front->next;
                 --list->lsize; 
                 r2_freenode(front, list->fd);
+                SUCCESS = TRUE;
         }
 
-        return list; 
+        return SUCCESS; 
 }
 
 
@@ -245,10 +252,11 @@ struct r2_list* r2_list_delete_at_front(struct r2_list *list)
  * @brief                       Deletes an element at the back of the list.
  * 
  * @param list                  List. 
- * @return struct r2_list*      Returns list.
+ * @return r2_uint16            Returns TRUE upon succesful deletion, else FALSE.
  */
-struct r2_list* r2_list_delete_at_back(struct r2_list *list)
+r2_uint16 r2_list_delete_at_back(struct r2_list *list)
 {
+        r2_uint16 SUCCESS = FALSE;
         if(r2_list_empty(list) != TRUE){
                 struct r2_listnode *rear = r2_listnode_last(list); 
                 if(list->front == list->rear)
@@ -259,8 +267,9 @@ struct r2_list* r2_list_delete_at_back(struct r2_list *list)
                 list->rear = rear->prev;
                 --list->lsize;
                 r2_freenode(rear, list->fd);
+                SUCCESS = TRUE;
         }
-        return list; 
+        return SUCCESS; 
 }
 
 /**
@@ -268,10 +277,11 @@ struct r2_list* r2_list_delete_at_back(struct r2_list *list)
  * 
  * @param list                  List. 
  * @param pos                   Position.
- * @return struct r2_list*      Returns list.
+ * @return r2_uint16            Returns TRUE upon succesful deletion, else FALSE.
  */
-struct r2_list* r2_list_delete(struct r2_list *list, struct r2_listnode *pos)
+r2_uint16 r2_list_delete(struct r2_list *list, struct r2_listnode *pos)
 {
+        r2_uint16 SUCCESS = FALSE;
         if(r2_list_empty(list) != TRUE){  
                 struct r2_listnode *front = r2_listnode_first(list); 
                 struct r2_listnode *rear  = r2_listnode_last(list);
@@ -285,8 +295,9 @@ struct r2_list* r2_list_delete(struct r2_list *list, struct r2_listnode *pos)
                         r2_freenode(pos, list->fd);       
                         --list->lsize;
                 }
+                SUCCESS = TRUE;
         }
-        return list; 
+        return SUCCESS; 
 }
 
 /**
@@ -307,8 +318,14 @@ struct r2_list* r2_list_copy(const struct r2_list *source)
                 while(current != NULL){
                         temp = r2_create_listnode(); 
                         if(temp != NULL){
-
-                                temp->data = source->cpy != NULL? source->cpy(current->data) : current->data;
+                                if(current->data != NULL && source->cpy != NULL){
+                                        temp->data =  source->cpy(current->data);
+                                        if(temp->data == NULL){
+                                                copy = r2_destroy_list(copy);
+                                                break;
+                                        }
+                                }else 
+                                        temp->data =  current->data;
                                 temp->prev = prev;
                                 *front     = temp; 
                                 front      = &temp->next;

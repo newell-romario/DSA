@@ -177,4 +177,3 @@ r2_uint16 r2_ring_compare(const struct r2_ring *r1, const struct r2_ring *r2)
                 }
         return result;
 }
- 

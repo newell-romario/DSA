@@ -73,37 +73,40 @@ struct r2_stack* r2_destroy_stack(struct r2_stack *stack)
  * 
  * @param stack                 Stack.
  * @param data                  Data.
- * @return struct r2_stack*     Returns stack. 
+ * @return r2_uint16            Returns TRUE upon succesful insertion, else FALSE. 
  */
-struct r2_stack* r2_stack_push(struct r2_stack *stack, void *data)
+r2_uint16 r2_stack_push(struct r2_stack *stack, void *data)
 {
         struct r2_stacknode *node = r2_create_stacknode(); 
+        r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
                 node->data = data;
                 node->next = stack->top;
                 ++stack->ssize;
                 stack->top = node; 
+                SUCCESS = TRUE;
         }
-
-        return stack;
+        return SUCCESS;
 }
 
 /**
  * @brief                       Pops an element from stack.
  * 
  * @param stack                 Stack.
- * @return struct r2_stack*     Returns stack. 
+ * @return struct r2_stack*     Returns TRUE upon succesful deletion, else FALSE.  
  */
-struct r2_stack* r2_stack_pop(struct r2_stack *stack)
+r2_uint16 r2_stack_pop(struct r2_stack *stack)
 {
+        r2_uint16 SUCCESS = FALSE;
         if(r2_stack_empty(stack) != TRUE){
                 struct r2_stacknode *top = r2_stack_peek(stack); 
                 stack->top = top->next;
                 --stack->ssize;
                 r2_freenode(top, stack->fd);
+                SUCCESS = TRUE;
         }
 
-        return stack; 
+        return SUCCESS; 
 }
 
 
@@ -148,8 +151,13 @@ struct r2_stack* r2_stack_copy(const struct r2_stack *source)
                 while(top != NULL){
                         temp = r2_create_stacknode();
                         if(temp != NULL){
-
-                                temp->data =  source->cpy != NULL? source->cpy(top->data) : top->data;
+                                if(top->data != NULL && source->cpy != NULL){
+                                        temp->data  =  source->cpy(top->data);
+                                        if(temp->data == NULL){
+                                                new_stack = r2_destroy_stack(new_stack);
+                                                break;
+                                        }
+                                }else temp->data =  top->data;
                                 *next      = temp; 
                                 next       = &(temp->next);
                                 ++new_stack->ssize;

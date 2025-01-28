@@ -3,7 +3,6 @@
 #include "r2_types.h"
 #include "r2_list.h"
 
-
 enum COLOR{
         RED   = 0, 
         BLACK = 1
@@ -41,8 +40,8 @@ struct r2_rbnode* r2_rbnode_successor(const struct r2_rbnode *);
 struct r2_rbnode* r2_rbnode_predeccessor(const struct r2_rbnode *);
 struct r2_rbnode* r2_rbnode_min(struct r2_rbnode *); 
 struct r2_rbnode* r2_rbnode_max(struct r2_rbnode *);
-struct r2_rbtree* r2_rbtree_insert(struct r2_rbtree *, void *, void *); 
-struct r2_rbtree* r2_rbtree_delete(struct r2_rbtree *, void *);
+r2_uint16 r2_rbtree_insert(struct r2_rbtree *, void *, void *); 
+r2_uint16 r2_rbtree_delete(struct r2_rbtree *, void *);
 struct r2_rbnode* r2_rbtree_search(struct r2_rbtree *, void *);
 struct r2_rbnode* r2_rbtree_at(struct r2_rbnode *, r2_uint64 ); 
 struct r2_list*   r2_rbtree_range_query(const struct r2_rbtree *, void *, void *, r2_act, void *);

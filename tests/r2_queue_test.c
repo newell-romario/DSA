@@ -37,7 +37,7 @@ static void test_r2_create_queue()
  * @brief Tests the create queue node functionality
  * 
  **/
-static void test_r2_createqueuenode()
+static void test_r2_create_queuenode()
 {
         struct r2_queuenode * node = r2_create_queuenode();
         assert(node->data == NULL);
@@ -66,7 +66,7 @@ static void test_r2_queue_enqueue()
         struct r2_queuenode     *rear  = NULL;
         struct r2_queuenode     *front = NULL; 
         for(int i = 0; i < SIZE; ++i){
-                queue = r2_queue_enqueue(queue, &arr[i]);
+                r2_queue_enqueue(queue, &arr[i]);
                 front = r2_queue_front(queue);
                 rear  = r2_queue_rear(queue);
                 assert(front->data == &arr[0]);
@@ -87,17 +87,17 @@ static void test_r2_queue_dequeue()
         struct r2_queue         *queue = r2_create_queue(NULL, NULL, NULL);
         struct r2_queuenode     *front = NULL; 
         for(int i = 0; i < SIZE; ++i)
-                queue = r2_queue_enqueue(queue, &arr[i]);
+                r2_queue_enqueue(queue, &arr[i]);
         
 
         for(int i = 0; i < SIZE; i += 2){
 
                 front = r2_queue_front(queue);
                 assert(front->data == &arr[i]);
-                queue = r2_queue_dequeue(queue);
+                r2_queue_dequeue(queue);
                 front = r2_queue_front(queue);
                 assert(front->data == &arr[i + 1]);
-                queue = r2_queue_dequeue(queue);
+                r2_queue_dequeue(queue);
         }
 
         
@@ -115,7 +115,7 @@ static void test_r2_queue_front()
         struct r2_queue         *queue = r2_create_queue(NULL, NULL, NULL);
         struct r2_queuenode     *front = NULL; 
         for(int i = 0; i < SIZE; ++i){
-                queue = r2_queue_enqueue(queue, &arr[i]);
+                r2_queue_enqueue(queue, &arr[i]);
                 front = r2_queue_front(queue);
                 assert(front->data == &arr[0]);
         }
@@ -133,7 +133,7 @@ static void test_r2_queue_rear()
         struct r2_queue     *queue = r2_create_queue(NULL, NULL, NULL);
         struct r2_queuenode *rear  = NULL; 
         for(int i = 0; i < SIZE; ++i){
-                queue = r2_queue_enqueue(queue, &arr[i]);
+                r2_queue_enqueue(queue, &arr[i]);
                 rear  = r2_queue_rear(queue);
                 assert(rear->data == &arr[i]);
         }
@@ -167,7 +167,12 @@ static void* cpy(const void *data)
 
 static r2_int16 cmp(const void *s1, const void *s2)
 {
-        return *(int *)s1 == *(int *)s2;
+        if((*(int *)s1) == (*(int *)s2))
+                return 0; 
+        else if((*(int *)s1) < (*(int *)s2)) 
+                return -1;
+        else 
+                return 1;
 }
 
 
@@ -206,7 +211,7 @@ static void test_r2_queue_copy()
 
 
         for(int i = 0; i < SIZE;++i)
-                source = r2_queue_enqueue(source, &arr[i]);
+                r2_queue_enqueue(source, &arr[i]);
         
 
         /* Shallow copy.*/
@@ -257,7 +262,7 @@ static void test_r2_queue_compare()
         assert(r2_queue_compare(source, source) == TRUE);
         
         for(int i = 0; i < SIZE;++i)
-                source = r2_queue_enqueue(source, &arr[i]);
+                r2_queue_enqueue(source, &arr[i]);
         
 
         /**
@@ -299,7 +304,7 @@ void test_r2_queue_run()
 {
         test_init_data();
         test_r2_create_queue();
-        test_r2_createqueuenode();
+        test_r2_create_queuenode();
         test_r2_destroy_queue();
         test_r2_queue_compare();
         test_r2_queue_dequeue();

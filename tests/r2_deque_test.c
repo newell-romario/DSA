@@ -53,7 +53,7 @@ static void test_r2_deque_empty()
         assert(r2_deque_empty(deque) == TRUE);
 
         for(r2_uint64 i = 0; i < SIZE;++i)
-               deque = r2_deque_insert_at_front(deque, &arr[i]); 
+              r2_deque_insert_at_front(deque, &arr[i]); 
         
         assert(r2_deque_empty(deque) != TRUE);
         r2_destroy_deque(deque);
@@ -71,7 +71,7 @@ static void test_r2_deque_insert_at_front()
         struct r2_dequenode *rear  = NULL;
 
         for(int i = 0; i < SIZE;++i){
-               deque = r2_deque_insert_at_front(deque, &arr[i]);
+              r2_deque_insert_at_front(deque, &arr[i]);
                front = r2_deque_front(deque); 
                rear  = r2_deque_rear(deque);
 
@@ -100,11 +100,11 @@ static void test_r2_deque_insert_at_back()
         struct r2_dequenode *rear  = NULL;
 
         for(int i = 0; i < SIZE;++i){
-               deque = r2_deque_insert_at_back(deque, &arr[i]);
-               rear  = r2_deque_rear(deque); 
-               front = r2_deque_front(deque);
-               assert(front->data == &arr[0]);
-               assert(rear->data  == &arr[i]); 
+                r2_deque_insert_at_back(deque, &arr[i]);
+                rear  = r2_deque_rear(deque); 
+                front = r2_deque_front(deque);
+                assert(front->data == &arr[0]);
+                assert(rear->data  == &arr[i]); 
         }
         
         front = r2_deque_front(deque); 
@@ -127,15 +127,15 @@ static void test_r2_deque_delete_at_front()
         struct r2_dequenode *front = NULL;
 
         for(int i = 0; i < SIZE;++i)
-               deque = r2_deque_insert_at_back(deque, &arr[i]);
+              r2_deque_insert_at_back(deque, &arr[i]);
         
         for(int i = 0; i <= SIZE - 2; i += 2){
                 front = r2_deque_front(deque); 
                 assert(front->data == &arr[i]);
-                deque = r2_deque_delete_at_front(deque);
+                r2_deque_delete_at_front(deque);
                 front = r2_deque_front(deque);
                 assert(front->data == &arr[i + 1]);
-                deque = r2_deque_delete_at_front(deque); 
+                r2_deque_delete_at_front(deque); 
         }
 
         assert(r2_deque_empty(deque) == TRUE); 
@@ -152,16 +152,16 @@ static void test_r2_deque_delete_at_back()
         struct r2_dequenode *rear  = NULL;
 
         for(int i = 0; i < SIZE;++i)
-               deque = r2_deque_insert_at_back(deque, &arr[i]);
+              r2_deque_insert_at_back(deque, &arr[i]);
         
 
         for(int i = SIZE - 1; i >= 1; i -= 2){
                 rear = r2_deque_rear(deque); 
                 assert(rear->data == &arr[i]);
-                deque = r2_deque_delete_at_back(deque);
+               r2_deque_delete_at_back(deque);
                 rear = r2_deque_rear(deque); 
                 assert(rear->data == &arr[i - 1]);
-                deque = r2_deque_delete_at_back(deque);
+               r2_deque_delete_at_back(deque);
         }
         
         assert(r2_deque_empty(deque) == TRUE); 
@@ -178,7 +178,7 @@ static void test_r2_deque_front()
         struct r2_dequenode *front = NULL;
 
         for(int i = 0; i < SIZE;++i){
-               deque = r2_deque_insert_at_back(deque, &arr[i]); 
+              r2_deque_insert_at_back(deque, &arr[i]); 
                front = r2_deque_front(deque); 
                assert(front->data == &arr[0]);
         }
@@ -197,7 +197,7 @@ static void test_r2_deque_rear()
         struct r2_dequenode *rear  = NULL;
 
         for(int i = 0; i < SIZE;++i){
-               deque = r2_deque_insert_at_back(deque, &arr[i]); 
+                r2_deque_insert_at_back(deque, &arr[i]); 
                rear  = r2_deque_rear(deque); 
                assert(rear->data == &arr[i]);
         }
@@ -214,7 +214,12 @@ static void* cpy(const void *data)
 
 static r2_int16 cmp(const void *s1, const void *s2)
 {
-        return (*(int *)s1) == (*(int *)s2); 
+        if((*(int *)s1) == (*(int *)s2))
+                return 0; 
+        else if((*(int *)s1) < (*(int *)s2)) 
+                return -1;
+        else 
+                return 1;
 }
 
 /**
@@ -253,7 +258,7 @@ static void test_r2_deque_copy()
      
 
         for(r2_uint64 i = 0; i < SIZE; ++i)
-                source = r2_deque_insert_at_back(source, &arr[i]);
+                r2_deque_insert_at_back(source, &arr[i]);
         
 
         /*Does a shallow copy and shallow comparison.*/
@@ -294,7 +299,7 @@ static void test_r2_deque_compare()
 
 
         for(int i = 0; i < SIZE; ++i)
-                source = r2_deque_insert_at_back(source, &arr[i]);
+                r2_deque_insert_at_back(source, &arr[i]);
         
         /*Compares a deque against itself*/
 

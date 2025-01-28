@@ -4,9 +4,8 @@
 #include <math.h>
 #include <time.h>
 #include "r2_rbtree_test.h"
-
-
 #define SIZE   9
+
 static r2_uint64 arr[SIZE] = {1, 9, 2, 8, 3, 7, 4, 6, 5};
 static r2_int16 cmp(const void *a, const void *b);
 static r2_int64 r2_rbnode_size(const struct r2_rbnode *);
@@ -71,7 +70,7 @@ static void test_r2_rbnode_insert()
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL); 
         struct r2_rbnode *root = NULL; 
         for(int i = 0 ; i < SIZE; ++i){
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
                 test_r2_rbtree_certify(tree->root, cmp);
         }
 
@@ -174,14 +173,14 @@ static void test_r2_rbnode_delete()
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL); 
         struct r2_rbnode *root = NULL; 
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
         
         /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         /*Testing case 2 of the delete algorithm.*/
         /*Deleting node with key 1.*/
         root = r2_rbtree_search(tree, &arr[0]);
         assert( root != NULL);
-        tree = r2_rbtree_delete(tree, &arr[0]);
+        r2_rbtree_delete(tree, &arr[0]);
         root = r2_rbtree_search(tree, &arr[0]);
         assert(root == NULL);
         test_r2_rbtree_certify(tree->root, cmp);
@@ -190,7 +189,7 @@ static void test_r2_rbnode_delete()
        /*Deleting node with key 9.*/
         root = r2_rbtree_search(tree, &arr[1]);
         assert( root != NULL);
-        tree = r2_rbtree_delete(tree, &arr[1]);
+        r2_rbtree_delete(tree, &arr[1]);
         root = r2_rbtree_search(tree, &arr[1]);
         assert(root == NULL);
         test_r2_rbtree_certify(tree->root, cmp);
@@ -199,7 +198,7 @@ static void test_r2_rbnode_delete()
         /*Deleting node with key 2.*/
         root = r2_rbtree_search(tree, &arr[2]);
         assert( root != NULL);
-        tree = r2_rbtree_delete(tree, &arr[2]);
+        r2_rbtree_delete(tree, &arr[2]);
         root = r2_rbtree_search(tree, &arr[2]);
         assert( root == NULL);
         test_r2_rbtree_certify(tree->root, cmp);
@@ -208,7 +207,7 @@ static void test_r2_rbnode_delete()
         /*Testing case 1 of the delete algorithm.*/
         root = r2_rbtree_search(tree, &arr[4]);
         assert( root != NULL);
-        tree = r2_rbtree_delete(tree, &arr[4]);
+        r2_rbtree_delete(tree, &arr[4]);
         root = r2_rbtree_search(tree, &arr[4]);
         assert( root == NULL);
         test_r2_rbtree_certify(tree->root, cmp);
@@ -217,14 +216,14 @@ static void test_r2_rbnode_delete()
         /*Deleting node with key 7.*/
         root = r2_rbtree_search(tree, &arr[5]);
         assert( root != NULL);
-        tree = r2_rbtree_delete(tree, &arr[5]);
+        r2_rbtree_delete(tree, &arr[5]);
         root = r2_rbtree_search(tree, &arr[5]);
         assert( root == NULL);
         test_r2_rbtree_certify(tree->root, cmp);
         
         for(int i = 0; i < SIZE; ++i){
                 test_r2_rbtree_certify(tree->root, cmp);
-                tree = r2_rbtree_delete(tree, &arr[i]);
+                r2_rbtree_delete(tree, &arr[i]);
                 test_r2_rbtree_certify(tree->root, cmp);
         }
                 
@@ -324,7 +323,7 @@ static void test_r2_rbnode_min()
         /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL); 
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
         
         struct r2_rbnode *root = r2_rbnode_min(tree->root); 
         assert(root->data == &arr[0]);
@@ -342,7 +341,7 @@ static void test_r2_rbnode_max()
         /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
         
         struct r2_rbnode *root = r2_rbnode_max(tree->root); 
         assert(root->data == &arr[1]);
@@ -360,7 +359,7 @@ static void test_r2_rbnode_successor()
         /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
         
         struct r2_rbnode *root = r2_rbnode_successor(tree->root); 
         assert(root->data == &arr[8]);
@@ -387,7 +386,7 @@ static void test_r2_rbnode_predecessor()
          /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
         
         struct r2_rbnode *root = r2_rbnode_predeccessor(tree->root); 
         assert(root->data == &arr[4]);
@@ -413,7 +412,7 @@ static void test_r2_rbnode_search()
         /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
         
         struct r2_rbnode *root = NULL;
 
@@ -437,13 +436,13 @@ static void test_r2_rbnode_size()
         /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i){
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
                 assert(tree->ncount== r2_rbnode_size(tree->root));
         }
                 
          /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         for(int i = 0 ; i < SIZE; ++i){
-                tree = r2_rbtree_delete(tree, &arr[0]);
+                r2_rbtree_delete(tree, &arr[0]);
                 assert(tree->ncount == r2_rbnode_size(tree->root));
         }
         
@@ -479,7 +478,7 @@ static void test_r2_rbtree_at()
         /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
         
         struct r2_rbnode *root = NULL;
         root = r2_rbtree_at(tree->root, 0);
@@ -507,7 +506,7 @@ static void test_r2_rbtree_inorder()
         /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
 
         printf("\n/*******************************************RB Inorder Traversal************************/\n");
         r2_rbtree_inorder(tree->root, print_node, NULL);
@@ -537,7 +536,7 @@ static void test_r2_rbtree_preorder()
         /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
 
         printf("\n/*******************************************RB Preorder Traversal************************/\n");
         r2_rbtree_preorder(tree->root, print_node, NULL);
@@ -567,7 +566,7 @@ static void test_r2_rbtree_postorder()
          /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
         
 
         printf("\n/*******************************************RB Postorder Traversal************************/\n");
@@ -638,7 +637,7 @@ static void test_r2_rbtree_copy()
         
 
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);  
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);  
 
         /*Shallow comparison*/
         tree->kcpy = NULL; 
@@ -688,7 +687,7 @@ static void test_r2_rbtree_compare()
         assert(r2_rbtree_compare(tree, tree) == TRUE); 
 
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);  
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);  
 
         /*Shallow comparison*/
         tree->kcmp = NULL; 
@@ -727,7 +726,7 @@ static void test_r2_rbtree_getkeys()
         /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
 
         void **keys = r2_rbtree_get_values(tree); 
         assert((*(int *)keys[0]) == 1);
@@ -752,7 +751,7 @@ static void test_r2_rbtree_getvalues()
          /*{1, 9, 2, 8, 3, 7, 4, 6, 5}*/
         struct r2_rbtree *tree = r2_create_rbtree(cmp, NULL, NULL, NULL, NULL, NULL);
         for(int i = 0 ; i < SIZE; ++i)
-                tree = r2_rbtree_insert(tree, &arr[i], &arr[i]);
+                r2_rbtree_insert(tree, &arr[i], &arr[i]);
 
         void **values = r2_rbtree_get_values(tree); 
         assert((*(int *)values[0]) == 1);
@@ -780,13 +779,13 @@ static void test_r2_rbtree_generate()
 
         for(int i = 0; i < 100000;++i){  
              fscanf(dataset, "%lld", &data[i]);
-             rb = r2_rbtree_insert(rb, &data[i], &data[i]); 
+             r2_rbtree_insert(rb, &data[i], &data[i]); 
         }
 
         test_r2_rbtree_certify(rb->root, cmp);
  
         for(int i = 0; i < 100000;++i){
-                rb = r2_rbtree_delete(rb, &data[i]); 
+                r2_rbtree_delete(rb, &data[i]); 
                 test_r2_rbtree_certify(rb->root, cmp); 
         }
             
@@ -821,7 +820,7 @@ static void test_r2_rbtree_stats()
                                 key = malloc(sizeof(r2_uint64));  
                                 *key = a[i];
                                 before = clock();
-                                rb = r2_rbtree_insert(rb, key, key);
+                                r2_rbtree_insert(rb, key, key);
                                 elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
                         }
 

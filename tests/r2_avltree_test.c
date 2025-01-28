@@ -46,7 +46,7 @@ static void test_r2_avlnode_successor()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);
+                r2_avltree_insert(tree, &arr[i], &arr[i]);
 
         struct r2_avlnode *root = r2_avlnode_min(tree->root);
         
@@ -72,7 +72,7 @@ static void test_r2_avlnode_predecessor()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);
+                r2_avltree_insert(tree, &arr[i], &arr[i]);
 
 
         struct r2_avlnode *root = r2_avlnode_max(tree->root);
@@ -98,7 +98,7 @@ static void test_r2_avlnode_min()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]); 
+                r2_avltree_insert(tree, &arr[i], &arr[i]); 
 
         struct r2_avlnode *root = r2_avlnode_min(tree->root);
         assert(root != NULL); 
@@ -119,7 +119,7 @@ static void test_r2_avlnode_max()
 
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]); 
+                r2_avltree_insert(tree, &arr[i], &arr[i]); 
 
         struct r2_avlnode *root = r2_avlnode_max(tree->root);
         assert(root != NULL); 
@@ -184,7 +184,7 @@ static void test_r2_avltree_insert()
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i){
                test_r2_avltree_certify(tree->root, tree->kcmp); 
-               tree = r2_avltree_insert(tree, &arr[i], &arr[i]);
+               r2_avltree_insert(tree, &arr[i], &arr[i]);
                test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         }
                 
@@ -302,7 +302,7 @@ static void test_r2_avltree_search()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);
+                r2_avltree_insert(tree, &arr[i], &arr[i]);
 
         struct r2_avlnode *root = NULL;
         for(int i = 0; i < SIZE; ++i){
@@ -327,7 +327,7 @@ static void test_r2_avltree_delete()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);
+                r2_avltree_insert(tree, &arr[i], &arr[i]);
         
 
         struct r2_avlnode *root = NULL;
@@ -335,7 +335,7 @@ static void test_r2_avltree_delete()
         
         /*Testing to see if delete operations were successful and the correct avl tree was built. */
         /*Delete key with 1*/
-        tree = r2_avltree_delete(tree, &arr[0]); 
+        r2_avltree_delete(tree, &arr[0]); 
         test_r2_avltree_certify(tree->root, tree->kcmp); 
         root = r2_avltree_search(tree, &arr[0]); 
         assert(root == NULL); /* key shouldn't exist.*/
@@ -348,7 +348,7 @@ static void test_r2_avltree_delete()
 
         /*Delete key with 2*/
         ncount = tree->ncount;
-        tree = r2_avltree_delete(tree, &arr[1]); 
+        r2_avltree_delete(tree, &arr[1]); 
         test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[1]); 
         assert(root == NULL); /* key shouldn't exist.*/
@@ -362,7 +362,7 @@ static void test_r2_avltree_delete()
 
         /*Delete key with 3*/
         ncount = tree->ncount;
-        tree   = r2_avltree_delete(tree, &arr[2]); 
+        r2_avltree_delete(tree, &arr[2]); 
         test_r2_avltree_certify(tree->root, tree->kcmp); 
         root = r2_avltree_search(tree, &arr[2]); 
         assert(root == NULL); /* key shouldn't exist.*/
@@ -376,7 +376,7 @@ static void test_r2_avltree_delete()
 
         /*Delete key with 4*/
         ncount = tree->ncount;
-        tree = r2_avltree_delete(tree, &arr[3]); 
+        r2_avltree_delete(tree, &arr[3]); 
         test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[3]); 
         assert(root == NULL); /* key shouldn't exist.*/
@@ -390,7 +390,7 @@ static void test_r2_avltree_delete()
 
         /*Delete key with 5*/
         ncount = tree->ncount;
-        tree = r2_avltree_delete(tree, &arr[4]); 
+        r2_avltree_delete(tree, &arr[4]); 
        test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[4]); 
         assert(root == NULL); /* key shouldn't exist.*/
@@ -403,8 +403,8 @@ static void test_r2_avltree_delete()
 
         /*Delete key with 6*/
         ncount = tree->ncount;
-        tree = r2_avltree_delete(tree, &arr[5]); 
-       test_r2_avltree_certify(tree->root, tree->kcmp); ; 
+        r2_avltree_delete(tree, &arr[5]); 
+        test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[5]); 
         assert(root == NULL); /* key shouldn't exist.*/
         assert(tree->ncount == (ncount - 1));
@@ -416,7 +416,7 @@ static void test_r2_avltree_delete()
 
         /*Delete key with 7*/
         ncount = tree->ncount;
-        tree = r2_avltree_delete(tree, &arr[6]); 
+        r2_avltree_delete(tree, &arr[6]); 
         test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[6]); 
         assert(root == NULL); /* key shouldn't exist.*/
@@ -429,7 +429,7 @@ static void test_r2_avltree_delete()
 
         /*Delete key with 8*/
         ncount = tree->ncount;
-        tree = r2_avltree_delete(tree, &arr[7]); 
+        r2_avltree_delete(tree, &arr[7]); 
         test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[7]); 
         assert(root == NULL); /* key shouldn't exist.*/
@@ -442,7 +442,7 @@ static void test_r2_avltree_delete()
 
         /*Delete key with 9*/
         ncount = tree->ncount;
-        tree = r2_avltree_delete(tree, &arr[8]); 
+        r2_avltree_delete(tree, &arr[8]); 
         test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[8]); 
         assert(root == NULL); /* key shouldn't exist.*/
@@ -455,7 +455,7 @@ static void test_r2_avltree_delete()
 
         /*Delete key with 10*/
         ncount = tree->ncount;
-        tree = r2_avltree_delete(tree, &arr[9]); 
+        r2_avltree_delete(tree, &arr[9]); 
         test_r2_avltree_certify(tree->root, tree->kcmp); ; 
         root = r2_avltree_search(tree, &arr[9]); 
         assert(root == NULL); /* key shouldn't exist.*/
@@ -478,7 +478,7 @@ static void test_r2_avltree_height()
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < s; ++i){
                 a[i] = i;
-                tree = r2_avltree_insert(tree, &a[i], &a[i]);
+                r2_avltree_insert(tree, &a[i], &a[i]);
                 if((tree->ncount % 1000) == 0){
                         height = log2(tree->ncount) * 1.44;  /* Height =  1.44 log n according to analysis.*/
                         assert(tree->root->height == r2_avltree_height(tree->root));
@@ -497,7 +497,7 @@ static void test_r2_avltree_size()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i){
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);
+                r2_avltree_insert(tree, &arr[i], &arr[i]);
                 assert(tree->ncount == (i + 1));
                 assert(r2_avltree_size(tree->root) == tree->ncount);
         }
@@ -517,7 +517,7 @@ static void test_r2_avltree_empty()
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         assert(r2_avltree_empty(tree) == TRUE);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);
+                r2_avltree_insert(tree, &arr[i], &arr[i]);
         
 
         assert(r2_avltree_empty(tree) != TRUE);
@@ -533,7 +533,7 @@ static void test_r2_avltree_level()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);
+                r2_avltree_insert(tree, &arr[i], &arr[i]);
         
         assert(r2_avltree_level(tree->root) == 0);
         assert(r2_avltree_level(r2_avltree_search(tree, &arr[9])) == 3);
@@ -550,7 +550,7 @@ static void test_r2_avltree_at()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);  
+                r2_avltree_insert(tree, &arr[i], &arr[i]);  
 
          for(int i = 0; i < SIZE; ++i)
                 assert(&arr[i] == r2_avltree_at(tree->root, i)->data);
@@ -582,7 +582,7 @@ static void test_r2_avltree_inorder()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);  
+                r2_avltree_insert(tree, &arr[i], &arr[i]);  
 
         printf("\n/******************************************* AVL Inorder Traversal************************/\n");
         r2_avltree_inorder(tree->root, print_node, NULL);
@@ -618,7 +618,7 @@ static void test_r2_avltree_postorder()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);  
+                r2_avltree_insert(tree, &arr[i], &arr[i]);  
 
         printf("\n/*******************************************AVL Postorder Traversal************************/\n");
         r2_avltree_postorder(tree->root, print_node, NULL);
@@ -654,7 +654,7 @@ static void test_r2_avltree_preorder()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);  
+                r2_avltree_insert(tree, &arr[i], &arr[i]);  
 
         printf("\n/*******************************************AVL Preorder Traversal************************/\n");
         r2_avltree_preorder(tree->root, print_node, NULL);
@@ -688,7 +688,7 @@ static void test_r2_avltree_getkeys()
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         assert(r2_avltree_get_keys(tree) == NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);    
+                r2_avltree_insert(tree, &arr[i], &arr[i]);    
 
         void **keys  = r2_avltree_get_keys(tree); 
         assert(keys != NULL);
@@ -716,7 +716,7 @@ static void test_r2_avltree_getvalues()
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         assert(r2_avltree_get_values(tree) == NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);    
+                r2_avltree_insert(tree, &arr[i], &arr[i]);    
 
         void **values  = r2_avltree_get_keys(tree); 
         assert( values != NULL);
@@ -741,7 +741,7 @@ static void test_r2_avltree_rangequery()
 {
         struct r2_avltree *tree = r2_create_avltree(cmp, cmp, cpy, cpy, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);    
+                r2_avltree_insert(tree, &arr[i], &arr[i]);    
         r2_uint64 range[2] = {2, 9}; 
        
         printf("\n /*****************Range Query************/\n");
@@ -774,7 +774,7 @@ static void test_r2_avltree_compare()
         assert(r2_avltree_compare(tree, tree) == TRUE); 
 
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);  
+                r2_avltree_insert(tree, &arr[i], &arr[i]);  
 
        /*Shallow comparison*/
         tree->kcmp = NULL;
@@ -837,7 +837,7 @@ static void test_r2_avltree_copy()
         
 
         for(int i = 0; i < SIZE; ++i)
-                tree = r2_avltree_insert(tree, &arr[i], &arr[i]);  
+                r2_avltree_insert(tree, &arr[i], &arr[i]);  
 
         /*Shallow comparison*/
         tree->kcpy = NULL;
@@ -964,7 +964,7 @@ static void test_r2_avltree_stats()
                         key = malloc(sizeof(r2_uint64));  
                         *key = a[i];
                         before = clock();
-                        avl = r2_avltree_insert(avl, key, key);
+                        r2_avltree_insert(avl, key, key);
                         elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
                 }
 

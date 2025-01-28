@@ -314,18 +314,19 @@ static void r2_rbtree_insert_rebalance(struct r2_rbtree *tree, struct r2_rbnode 
 
 
 /**
- * @brief                       Performs an insertion into the rb tree.
+ * @brief                       Performs an insertion into the RB Tree.
  * 
  * @param tree                  RB Tree.
  * @param key                   Key that will be inserted.
  * @param data                  Data that will be inserted along with key. 
- * @return struct r2_rbtree*    Returns RB Tree with new element inserted.
+ * @return r2_uint16            Returns TRUE upon successful insertion, else FALSE.
  */
-struct r2_rbtree* r2_rbtree_insert(struct r2_rbtree *tree, void *key, void *data)
+r2_uint16 r2_rbtree_insert(struct r2_rbtree *tree, void *key, void *data)
 {
         struct r2_rbnode **root  = &tree->root; 
         struct r2_rbnode *parent = NULL;
-        r2_int64 result = 0;
+        r2_int64 result   = 0;
+        r2_uint64 SUCCESS = FALSE;
         while(*root != NULL){
                 parent = *root; 
                 result = tree->kcmp(key, parent->key);
@@ -335,7 +336,8 @@ struct r2_rbtree* r2_rbtree_insert(struct r2_rbtree *tree, void *key, void *data
                         root = &((*root)->left);
                 else {
                         (*root)->data = data;
-                        return tree; 
+                        SUCCESS = TRUE;
+                        return SUCCESS; 
                 }
         }
 
@@ -345,10 +347,10 @@ struct r2_rbtree* r2_rbtree_insert(struct r2_rbtree *tree, void *key, void *data
                 temp->data = data; 
                 temp->parent = parent; 
                 *root = temp;
-                r2_rbtree_insert_rebalance(tree, *root); 
-        }
-
-        return tree;
+                r2_rbtree_insert_rebalance(tree, *root);
+                SUCCESS = TRUE;
+        }  
+        return SUCCESS;
 }
 
 
@@ -457,11 +459,12 @@ static void r2_rbtree_delete_rebalance(struct r2_rbtree *tree, struct r2_rbnode 
  * 
  * @param tree                  Red and black tree.
  * @param key                   Key that will be removed.
- * @return struct r2_rbtree*    Returns a red and black tree.
+ * @return r2_uint16            Returns TRUE upon successful deletion, else FALSE.
  */
-struct r2_rbtree* r2_rbtree_delete(struct r2_rbtree *tree, void *key)
+r2_uint16 r2_rbtree_delete(struct r2_rbtree *tree, void *key)
 {
         struct r2_rbnode *root = r2_rbtree_search(tree, key);
+        r2_uint16 SUCCESS = FALSE;
         if(root != NULL){
 
                 /*Represents where the rebalancing will start from. */
@@ -510,10 +513,11 @@ struct r2_rbtree* r2_rbtree_delete(struct r2_rbtree *tree, void *key)
                 }
                         tree->ncount = r2_rbnode_recalc_size(tree->root);
 
-                r2_freenode(root, tree->fk, tree->fd);   
+                r2_freenode(root, tree->fk, tree->fd);  
+                SUCCESS = TRUE; 
         }
 
-        return tree;
+        return SUCCESS;
 }
 
 /**
@@ -754,8 +758,7 @@ void** r2_rbtree_get_values(const struct r2_rbtree *tree)
  * @return struct r2_rbnode*    Returns the root node at index, else NULL.
  */
 struct r2_rbnode* r2_rbtree_at(struct r2_rbnode *root, r2_uint64 pos)
-{
-         
+{ 
         if(pos >= root->ncount)
                 return NULL; 
 
@@ -939,17 +942,25 @@ struct r2_rbtree *r2_rbtree_copy(const struct r2_rbtree *source)
                                         key  = root->key; 
                                         data = root->data;
                                         if(source->kcpy != NULL && source->dcpy != NULL){
-                                                key  = source->kcpy(key); 
-                                                data = source->dcpy(data);
+                                                key  = source->kcpy(key);
+                                                if(key == NULL){
+                                                        dest = r2_destroy_rbtree(dest);
+                                                        break;
+                                                } 
+                                                if(data != NULL){
+                                                        data = source->dcpy(data);
+                                                        if(data == NULL){
+                                                                dest = r2_destroy_rbtree(dest);
+                                                                break;
+                                                        }
+                                                }                                                
                                         }
-                                        dest  = r2_rbtree_insert(dest, key, data);
+                                        r2_rbtree_insert(dest, key, data);
                                 }    
                         } 
-                } 
-
-                r2_destroy_list(list);    
+                        r2_destroy_list(list); 
+                }          
         }
-        
         return dest;
 }
 

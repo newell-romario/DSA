@@ -84,11 +84,12 @@ r2_uint16 r2_deque_empty(const struct r2_deque *deque)
  * 
  * @param deque                 Deque. 
  * @param data                  Data.
- * @return struct r2_deque*     Returns deque. 
+ * @return r2_uint16            Returns TRUE upon successful insertion, else FALSE. 
  */
-struct r2_deque* r2_deque_insert_at_front(struct r2_deque *deque, void *data)
+r2_uint16 r2_deque_insert_at_front(struct r2_deque *deque, void *data)
 {
         struct r2_dequenode *node =  r2_create_dequenode();
+        r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
                 node->data = data;
                 if(r2_deque_empty(deque) == TRUE)
@@ -97,8 +98,9 @@ struct r2_deque* r2_deque_insert_at_front(struct r2_deque *deque, void *data)
                 node->next   = deque->front;
                 deque->front = node; 
                 ++deque->dsize;
+                SUCCESS = TRUE;
         }
-        return deque;
+        return SUCCESS;
 }
 
 /**
@@ -106,11 +108,12 @@ struct r2_deque* r2_deque_insert_at_front(struct r2_deque *deque, void *data)
  * 
  * @param deque                 Deque. 
  * @param data                  Data.
- * @return struct r2_deque*     Returns deque. 
+ * @return r2_uint16            Returns TRUE upon successful insertion, else FALSE.  
  */
-struct r2_deque* r2_deque_insert_at_back(struct r2_deque *deque, void *data)
+r2_uint16 r2_deque_insert_at_back(struct r2_deque *deque, void *data)
 {
         struct r2_dequenode *node = r2_create_dequenode(); 
+        r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
                 node->data = data;
                 if(r2_deque_empty(deque) == TRUE)
@@ -119,8 +122,9 @@ struct r2_deque* r2_deque_insert_at_back(struct r2_deque *deque, void *data)
                         deque->rear->next = node;
                 deque->rear = node;
                 ++deque->dsize; 
+                SUCCESS = TRUE;
         }
-        return deque;
+        return SUCCESS;
 }
 
 
@@ -128,10 +132,11 @@ struct r2_deque* r2_deque_insert_at_back(struct r2_deque *deque, void *data)
  * @brief                               Removes the last node in the deque.
  * 
  * @param deque                         Deque.
- * @return struct r2_deque*             Returns deque. 
+ * @return r2_uint16                    Returns TRUE upon successful deletion, else FALSE.            
  */
-struct r2_deque* r2_deque_delete_at_back(struct r2_deque *deque)
+r2_uint16 r2_deque_delete_at_back(struct r2_deque *deque)
 {
+        r2_uint16 SUCCESS = FALSE;
         if(r2_deque_empty(deque) != TRUE){
                 struct r2_dequenode *front   = r2_deque_front(deque);
                 struct r2_dequenode *cur     = r2_deque_rear(deque);
@@ -153,19 +158,21 @@ struct r2_deque* r2_deque_delete_at_back(struct r2_deque *deque)
                 
                 r2_freenode(cur, deque->fd); 
                 --deque->dsize;
+                SUCCESS = TRUE;
         }
         
-        return deque; 
+        return SUCCESS; 
 }
 
 /**
  * @brief                               Removes the first node in the deque.
  * 
  * @param deque                         Deque.
- * @return struct r2_deque*             Returns deque.
+ * @return r2_uint16                    Returns TRUE upon successful deletion, else FALSE. 
  */
-struct r2_deque*  r2_deque_delete_at_front(struct r2_deque *deque)
+r2_uint16  r2_deque_delete_at_front(struct r2_deque *deque)
 {
+        r2_uint16 SUCCESS  = FALSE;
         if(r2_deque_empty(deque) != TRUE){
                 struct r2_dequenode *front = r2_deque_front(deque); 
                 struct r2_dequenode *rear  = r2_deque_rear(deque);
@@ -176,8 +183,9 @@ struct r2_deque*  r2_deque_delete_at_front(struct r2_deque *deque)
                 deque->front = front->next;
                 r2_freenode(front, deque->fd); 
                 --deque->dsize;
+                SUCCESS = TRUE;
         }     
-        return deque;
+        return SUCCESS;
 }
 
 /**
@@ -219,8 +227,13 @@ struct r2_deque* r2_deque_copy(const struct r2_deque *source)
                 while(front != NULL){
                         temp = r2_create_dequenode(); 
                         if(temp != NULL){
-                                if(source->cpy != NULL)
+                                if(source->cpy != NULL && front->data != NULL){
                                         temp->data = source->cpy(front->data);
+                                        if(temp->data == NULL){
+                                                dest = r2_destroy_deque(dest);
+                                                break;
+                                        }
+                                }     
                                 else
                                         temp->data = front->data;
 

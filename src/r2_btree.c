@@ -37,7 +37,6 @@ struct r2_btree* r2_create_btree(r2_int64 order, r2_cmp kcmp, r2_fk fk)
                         btree->ncount   = 0; 
                 }       
         }  
-
         return btree;     
 }
 
@@ -491,7 +490,6 @@ r2_int16 r2_btree_empty(const struct r2_btree *btree)
 {
         return btree->root == NULL && btree->ncount == 0;
 }
-
 
 
 
