@@ -200,7 +200,7 @@ struct r2_arrstack* r2_arrstack_copy(const struct r2_arrstack *source)
         struct r2_arrstack *dest = r2_arrstack_create_stack(source->ssize, source->fd, source->cpy, source->cmp);
         if(dest != NULL){
                 for(r2_uint64 i = 0; i < source->ncount; ++i){
-                        if(source->cpy != NULL){
+                        if(source->cpy != NULL && dest->data[i] != NULL){
                                 dest->data[i] = source->cpy(source->data[i]);
                                 if(dest->data[i]  == NULL){
                                         dest = r2_arrstack_destroy_stack(dest);

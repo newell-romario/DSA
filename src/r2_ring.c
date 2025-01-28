@@ -136,7 +136,7 @@ struct r2_ring* r2_ring_copy(const struct r2_ring *ring)
                 copy->front  = ring->front; 
                 copy->rear   = ring->rear;
                 for(r2_uint64 i = 0, j = ring->front; i < ring->ncount; ++i, j = (j + 1) % ring->rsize){
-                        if(ring->cpy != NULL){
+                        if(ring->cpy != NULL && copy->data[j] != NULL){
                                 copy->data[j] = ring->cpy(ring->data[j]);
                                 if(copy->data[j] == NULL){
                                         copy = r2_destroy_ring(copy);

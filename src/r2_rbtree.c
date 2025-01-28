@@ -821,7 +821,10 @@ struct r2_list*  r2_rbtree_range_query(const struct r2_rbtree *tree, void *lower
                         
                         
                         key  = tree->kcpy != NULL? tree->kcpy(k1->key): k1->key;
-                        keys =  r2_list_insert_at_back(keys, key);
+                        if(r2_list_insert_at_back(keys, key) == FALSE){
+                                keys = r2_destroy_list(keys);
+                                break;
+                        }
                         k1   =  r2_rbnode_successor(k1);
                 }
         }
@@ -926,18 +929,18 @@ struct r2_rbtree *r2_rbtree_copy(const struct r2_rbtree *source)
                 if(list != NULL){
                         struct r2_rbnode *root = NULL;
                         struct r2_listnode *front = NULL;
-                        list = r2_list_insert_at_back(list, source->root);
+                        r2_list_insert_at_back(list, source->root);
                         void *key  = NULL; 
                         void *data = NULL;
                         while(r2_list_empty(list) != TRUE){
                                 front = r2_listnode_first(list);
                                 root  = front->data;
-                                list  = r2_list_delete_at_front(list);
+                                r2_list_delete_at_front(list);
                                 if(root != NULL){
                                         if(root->left != NULL)
-                                                list  = r2_list_insert_at_back(list, root->left); 
+                                                r2_list_insert_at_back(list, root->left); 
                                         if(root->right != NULL)
-                                                list  = r2_list_insert_at_back(list, root->right); 
+                                                r2_list_insert_at_back(list, root->right); 
 
                                         key  = root->key; 
                                         data = root->data;
