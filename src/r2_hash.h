@@ -135,13 +135,15 @@ struct r2_chaintable{
         r2_cpy dcpy;/*A callback function to copy values*/
         r2_fk fk;/*A callback function that release memory used by key*/
         r2_fd fd;/*A callback function that release memory used by data*/
+        struct r2_chain *first;/*first entry*/
+        struct r2_chain *end;/*last entry*/
 };
 
 
 struct r2_chaintable* r2_create_chaintable(r2_int16, r2_int16, r2_uint64, r2_ldbl, r2_cmp, r2_cmp, r2_cpy, r2_cpy,r2_fk, r2_fd); 
-struct r2_chaintable* r2_chaintable_put(struct r2_chaintable  *, r2_uc *, void *, r2_uint64);
-struct r2_chaintable* r2_chaintable_get(struct r2_chaintable *,  r2_uc *,  r2_uint64, struct r2_entry *);
-struct r2_chaintable* r2_chaintable_del(struct r2_chaintable*, r2_uc *, r2_uint64);
+r2_uint16 r2_chaintable_put(struct r2_chaintable  *, r2_uc *, void *, r2_uint64);
+r2_uint16 r2_chaintable_del(struct r2_chaintable*, r2_uc *, r2_uint64);
+void* r2_chaintable_get(struct r2_chaintable *,  r2_uc *,  r2_uint64);
 struct r2_chaintable* r2_destroy_chaintable(struct r2_chaintable *);
 
 

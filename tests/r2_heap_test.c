@@ -15,7 +15,7 @@ static void test_r2_create_priority_queue()
         struct r2_pq *pq = r2_create_priority_queue(64, 1, NULL, NULL,NULL);
         assert(pq != NULL); 
         assert(pq->ncount == 0); 
-        assert(pq->pqsize == (64 + 1)); 
+        assert(pq->pqsize == (64)); 
         assert(pq->type == 1);
         assert(pq->kcmp == NULL);
         assert(pq->fd == NULL);

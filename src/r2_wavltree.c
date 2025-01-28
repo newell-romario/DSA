@@ -242,7 +242,7 @@ struct r2_wavlnode* r2_wavltree_search(struct r2_wavltree *tree, const void *key
  * @param tree                  WAVL tree.
  * @param key                   Key.
  * @param data                  Data.
- * @return struct r2_wavltree*  Returns TRUE upon successful insertion, else FALSE. 
+ * @return r2_uint16            Returns TRUE upon successful insertion, else FALSE. 
  */
 r2_uint16 r2_wavltree_insert(struct r2_wavltree *tree, void *key, void *data)
 {
@@ -373,9 +373,9 @@ static void r2_wavltree_insert_rebalance(struct r2_wavltree *tree, struct r2_wav
  * 
  * @param tree                  WAVL Tree. 
  * @param key                   Key.
- * @return struct r2_wavltree*  Returns an WAVL tree. 
+ * @return r2_uint16            Returns TRUE upon successful deletion, else FALSE. 
  */
-struct r2_wavltree *r2_wavltree_delete(struct r2_wavltree *tree, void *key)
+r2_uint16  r2_wavltree_delete(struct r2_wavltree *tree, void *key)
 {
         struct r2_wavlnode *root  = r2_wavltree_search(tree, key);
         struct r2_wavlnode *child = NULL; 
@@ -898,7 +898,7 @@ struct r2_wavltree* r2_wavltree_copy(const struct r2_wavltree *source)
                                 }
                                 
                         }
-                        dest  = r2_wavltree_insert(dest, key, data);
+                        r2_wavltree_insert(dest, key, data);
                         root  = r2_wavlnode_inorder_next(root);
                 } 
         }
@@ -948,6 +948,10 @@ struct r2_list* r2_wavltree_range_query(const struct r2_wavltree *tree, void *lo
                                 action(k1, arg);
                         
                         key = tree->kcpy != NULL? tree->kcpy(k1->key): k1->key;
+                        if(key == NULL){
+                                keys = r2_destroy_list(keys);
+                                break;
+                        }
                         if(r2_list_insert_at_back(keys, key) == FALSE){
                                 keys = r2_destroy_list(keys);
                                 break;

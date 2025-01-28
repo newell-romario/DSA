@@ -108,7 +108,6 @@ enum CHILD_TYPE{
         TRHEE_CHILD 
 };
 
- 
 
 r2_uint16 r2_wavltree_empty(const struct r2_wavltree *);
 struct r2_wavlnode* r2_create_wavlnode(); 

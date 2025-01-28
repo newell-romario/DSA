@@ -27,7 +27,7 @@ static void test_r2_arrstack_create_stack()
          * 
          */
         for(int i = 32; i < 4096; i <<= 2){
-                r2_arrstack_create_stack(i, NULL, NULL, NULL); 
+                stack = r2_arrstack_create_stack(i, NULL, NULL, NULL); 
                 assert(r2_arrstack_empty(stack) == TRUE); 
                 assert(stack->top == 0);
                 assert(stack->cmp == NULL); 
@@ -139,9 +139,13 @@ static void *cpy(const void *data)
 }
 
 
-static r2_int16 cmp(const void *i, const void *j)
+static r2_int16 cmp(const void *d1, const void *d2)
 {
-        return (*(int *)i) == (*(int *)j);
+        if(*((int *)d1) == *((int *)d2))
+                return 0; 
+        else if(*((int *)d1) < *((int *)d2))
+                return -1; 
+        else    return 1;
 }
 
 /**

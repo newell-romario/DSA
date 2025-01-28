@@ -821,6 +821,10 @@ struct r2_list*  r2_rbtree_range_query(const struct r2_rbtree *tree, void *lower
                         
                         
                         key  = tree->kcpy != NULL? tree->kcpy(k1->key): k1->key;
+                        if(key == NULL){
+                                keys = r2_destroy_list(keys);
+                                break;    
+                        }
                         if(r2_list_insert_at_back(keys, key) == FALSE){
                                 keys = r2_destroy_list(keys);
                                 break;

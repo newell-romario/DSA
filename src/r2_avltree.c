@@ -776,6 +776,10 @@ struct r2_list* r2_avltree_range_query(const struct r2_avltree *tree, void *lowe
                                 action(k1, arg);
 
                         key = tree->kcpy != NULL? tree->kcpy(k1->key): k1->key;
+                        if(key == NULL){
+                                keys =  r2_destroy_list(keys);
+                                break;    
+                        }
                         if(r2_list_insert_at_back(keys, key) == FALSE){
                                keys =  r2_destroy_list(keys);
                                break;
