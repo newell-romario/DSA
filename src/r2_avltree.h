@@ -68,7 +68,7 @@ struct r2_avltree{
         r2_fk  fk; /*A callback function that release memory used by key*/
         /*Used for bench marking number of comparisons*/
         #ifdef PROFILE_TREE
-                r2_int64 num_comparisons;
+                r2_uint64 num_comparisons;
         #endif 
 }; 
 

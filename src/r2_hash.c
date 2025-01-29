@@ -3,14 +3,15 @@
 #include <assert.h>
 #define WORD sizeof(void * )
 #define PSL     4
-
+#define TSIZE 32
+#define LOAD_FACTOR 0.75
 /********************File scope functions************************/
 static r2_uint64 r2_get_tsize(r2_uint64, r2_int16, r2_int16);
 static void r2_freenode(struct r2_cnode *,  r2_fk, r2_fd);
 static void r2_free_robinentry(struct r2_robinentry *, r2_fk, r2_fd);
 static struct r2_entry* r2_create_entry();
 static struct r2_cnode* r2_create_cnode();
-static void r2_chain_insert(struct r2_chain*, r2_uc*, void *, r2_uint64 ,r2_uint64);
+static r2_uint16 r2_chain_insert(struct r2_chain*, r2_uc*, void *, r2_uint64 ,r2_uint64);
 static void r2_chain_remove(struct r2_chain*, struct r2_cnode *, r2_fk, r2_fd, r2_cmp);
 static struct r2_cnode* r2_chain_search(const struct r2_chain *, r2_uc *, r2_uint64, r2_cmp);
 static struct r2_chaintable* r2_chaintable_resize(struct r2_chaintable *, r2_uint16);
@@ -29,7 +30,7 @@ static r2_uint16 r2_robintable_resize(struct r2_robintable*, r2_uint16);
  * 
  * 
  * @param hf                            Hash function.
- * @param prime                         When prime == 1, hash table size is prime, else hash table size is a power of two.
+ * @param prime                         When prime == 1, hash table size is prime, else hash table size is a power of two when prime == 2.
  * @param tsize                         Hash table size.
  * @param lf                            Load factor.
  * @param kcmp                          A callback comparison function to compare keys.
@@ -53,9 +54,9 @@ struct r2_chaintable* r2_create_chaintable(r2_int16 hf, r2_int16 prime, r2_uint6
         if(table != NULL){
                 table->nsize  = 0;
                 table->prime  = prime;
-                table->tsize  = tsize != 0 && prime != 1? tsize :  r2_get_tsize(tsize, 1, table->prime); 
+                table->tsize  = r2_get_tsize(tsize, 3, table->prime); 
                 table->hf     = hfs[hf];
-                table->lf     = lf == 0? .75: lf;
+                table->lf     = lf == 0? LOAD_FACTOR: lf;
                 table->kcmp   = kcmp; 
                 table->dcmp   = dcmp; 
                 table->kcpy   = kcpy; 
@@ -153,39 +154,43 @@ static r2_uint64 r2_get_tsize(r2_uint64 tsize, r2_int16 op, r2_int16 prime)
                                         12582917, 25165843, 50331653, 100663319, 201326611, 402653189, 805306457, 1610612741,
                                         2147483647};
         
-        r2_uint64 nsize = tsize; /*new table size*/
+        r2_uint64 nsize; /*table size*/
         if(prime == 1){
-                /**
-                 * Find the next prime.
-                 */
-                        nsize = PRIMES[0];
                         r2_int16 i = 0; 
-                        for(;PRIMES[i] < tsize; ++i, nsize = PRIMES[i]);
-                        
+                        for(nsize = PRIMES[0]; PRIMES[i] < tsize && i < 27; ++i, nsize = PRIMES[i]);
                         switch(op){
                                 case 1: 
                                         if(nsize != PRIMES[26])
                                                 nsize = PRIMES[i + 1];    
                                 break; 
                                 case 2:
-                                        if(i > 0)
+                                        if(nsize != PRIMES[0])
                                                 nsize = PRIMES[i - 1]; 
                                 break;
+                                default: 
+                                        if(tsize != nsize && nsize != PRIMES[26])
+                                                nsize = PRIMES[i + 1];    
                         }
- 
         }else{
-                nsize = tsize == 0? 2 : tsize;
+                if((~tsize + 1) != tsize){
+                        nsize = 1; 
+                        while(nsize < tsize); 
+                                nsize <<= 1;
+                }
                 switch(op){
-                                case 1: 
-                                        nsize = nsize << 1; 
-                                        /*checking for overflow*/
-                                        if(nsize  < tsize)
-                                               nsize = tsize;  
-                                break; 
-                                case 2:
-                                        if(nsize != 2)
-                                                nsize = nsize >> 1;  
-                                break;
+                        case 1: 
+                                nsize = nsize << 1; 
+                                /*checking for overflow*/
+                                if(nsize  < tsize)
+                                        nsize = tsize;  
+                        break; 
+                        case 2:
+                                nsize = nsize >> 1;  
+                        break;
+                        default:
+                                nsize = TSIZE > tsize? TSIZE : tsize;
+                        break;
+
                 }           
         } 
         return nsize;
@@ -198,20 +203,20 @@ static r2_uint64 r2_get_tsize(r2_uint64 tsize, r2_int16 op, r2_int16 prime)
  * @param key                           Key.
  * @param data                          Data.
  * @param length                        Key Length.
- * @return struct r2_chaintable*        Returns hash table.
+ * @return struct r2_chaintable*        Returns TRUE upon successful insertion, else FALSE.
  */
-struct r2_chaintable* r2_chaintable_put(struct r2_chaintable *table, r2_uc *key, void *data, r2_uint64 length)
+r2_uint16 r2_chaintable_put(struct r2_chaintable *table, r2_uc *key, void *data, r2_uint64 length)
 {
         r2_uint64 hash = table->hf(key, length, table->tsize);
         assert(hash < table->tsize);
         struct r2_cnode *node = r2_chain_search(&table->chain[hash], key, length, table->kcmp); 
-
+        r2_uint16 SUCCESS = TRUE;
         if(node == NULL){
                 if(((r2_ldbl)table->nsize/table->tsize) >= table->lf){
                         table   = r2_chaintable_resize(table, 1);
                         hash    = table->hf(key, length, table->tsize);
                 }
-                r2_chain_insert(&table->chain[hash], key, data, hash,length);
+                SUCCESS =  r2_chain_insert(&table->chain[hash], key, data, hash, length);
                 table->nsize++;
         }else{
                 node->entry->key        = key;
@@ -219,7 +224,7 @@ struct r2_chaintable* r2_chaintable_put(struct r2_chaintable *table, r2_uc *key,
                 node->entry->length     = length;
         }
 
-        return table;
+        return SUCCESS;
 }
 
 
@@ -230,17 +235,14 @@ struct r2_chaintable* r2_chaintable_put(struct r2_chaintable *table, r2_uc *key,
  * @param key                           Key.
  * @param length                        Key length.
  * @param entry                         Stores the entry value found.
- * @return struct r2_chaintable*        Returns hash table.
  */
-struct r2_chaintable* r2_chaintable_get(struct r2_chaintable *table, r2_uc *key, r2_uint64 length, struct r2_entry *entry)
+void r2_chaintable_get(struct r2_chaintable *table, r2_uc *key, r2_uint64 length, struct r2_entry *entry)
 {       
         r2_uint64 hash = table->hf(key, length, table->tsize);
         assert(hash < table->tsize);
         struct r2_cnode *node = r2_chain_search(&table->chain[hash], key, length, table->kcmp); 
         if(node != NULL)
                 *entry = *(node->entry);
-        
-        return table;
 }
 
 /**
@@ -249,14 +251,14 @@ struct r2_chaintable* r2_chaintable_get(struct r2_chaintable *table, r2_uc *key,
  * @param table                         Hash table.
  * @param key                           Key.
  * @param length                        Key length.
- * @return struct r2_chaintable*        Returns hash table.
+ * @return r2_uint16                    Returns TRUE upon successful deletion, else FALSE.
  */
-struct r2_chaintable* r2_chaintable_del(struct r2_chaintable *table, r2_uc *key, r2_uint64 length)
+r2_uint16 r2_chaintable_del(struct r2_chaintable *table, r2_uc *key, r2_uint64 length)
 {
         r2_uint64 hash = table->hf(key, length, table->tsize);
         assert(hash < table->tsize);
         struct r2_cnode *node = r2_chain_search(&table->chain[hash], key, length, table->kcmp); 
-
+        r2_uint16 SUCCESS     = FALSE;
         if(node != NULL){
                 r2_chain_remove(&table->chain[hash], 
                                 node,
@@ -267,9 +269,9 @@ struct r2_chaintable* r2_chaintable_del(struct r2_chaintable *table, r2_uc *key,
                 --table->nsize;
                 if(table->nsize > 0 && table->nsize <= (table->tsize / 8))
                         table = r2_chaintable_resize(table, 2);
-        }
-        
-        return table; 
+                SUCCESS = TRUE;
+        }     
+        return SUCCESS; 
 }
 
 
@@ -341,7 +343,6 @@ struct r2_robintable* r2_create_robintable(r2_int16 hf, r2_int16 prime, r2_uint6
                 r2_hash_fnv,
                 r2_hash_dbj
         }; 
-
         struct r2_robintable* table  = malloc(sizeof(struct r2_robintable)); 
         if(table != NULL){
                 tsize = tsize != 0 && prime != 1? tsize : r2_get_tsize(tsize, 1, prime); 
@@ -349,7 +350,7 @@ struct r2_robintable* r2_create_robintable(r2_int16 hf, r2_int16 prime, r2_uint6
                 if(table->cells != NULL){
                         table->nsize    = 0; 
                         table->tsize    = tsize;
-                        table->lf       = lf == 0? .75 : lf;
+                        table->lf       = lf == 0? LOAD_FACTOR : lf;
                         table->psl      = psl == 0? PSL: psl; 
                         table->hf       = hfs[hf]; 
                         table->prime    = prime; 
@@ -378,9 +379,9 @@ struct r2_robintable* r2_create_robintable(r2_int16 hf, r2_int16 prime, r2_uint6
  * @param key                           Key.
  * @param data                          Data.
  * @param length                        Key Length.
- * @return struct r2_robintable*        Returns hash table.
+ * @return r2_uint16                    Returns TRUE upon successful insertion, else FALSE.
  */
-struct r2_robintable* r2_robintable_put(struct r2_robintable *table, r2_uc *key, void *data, r2_uint64 length)
+r2_uint16 r2_robintable_put(struct r2_robintable *table, r2_uc *key, void *data, r2_uint64 length)
 {
         r2_uint64 hash = table->hf(key, length, table->tsize);
         assert(hash < table->tsize);
@@ -389,7 +390,7 @@ struct r2_robintable* r2_robintable_put(struct r2_robintable *table, r2_uc *key,
         struct r2_key j;
         struct r2_robinentry *pos = NULL;
         struct r2_robinentry *rentry = malloc(sizeof(struct r2_robinentry));
-
+        r2_uint16 SUCCESS = FALSE;
         if(rentry != NULL && table->tsize != table->nsize){
                 /**
                  * Key and associated data that will be inserted.
@@ -408,8 +409,8 @@ struct r2_robintable* r2_robintable_put(struct r2_robintable *table, r2_uc *key,
                  * looking for a record P where its psl is smaller than the current psl.
                  * Once found, record P gives up its spot to rentry and rentry becomes the new
                  * record P. Record P continues probing to find the next appropriate position in the table. 
-                 * We continue this displacement until we hit a null which means no more displacement
-                 * can happen. We just take the spot of null since no element exists there.
+                 * We continue this displacement until we hit a NULL which means no more displacement
+                 * can happen. We just take the spot of NULL since no element exists there.
                  * 
                  */
                 pos = table->cells[hash + psl]; 
@@ -424,7 +425,8 @@ struct r2_robintable* r2_robintable_put(struct r2_robintable *table, r2_uc *key,
                                 pos->entry.key = key; 
                                 pos->entry.data = data;
                                 free(rentry);
-                                return table; 
+                                SUCCESS = TRUE;
+                                return SUCCESS; 
                         }
                                 
 
@@ -435,7 +437,6 @@ struct r2_robintable* r2_robintable_put(struct r2_robintable *table, r2_uc *key,
                                 psl  = rentry->psl; 
                                 hash = rentry->hash;
                         }
-
                         ++psl;
                         pos = table->cells[(hash + psl) % table->tsize]; 
                 }
@@ -443,14 +444,11 @@ struct r2_robintable* r2_robintable_put(struct r2_robintable *table, r2_uc *key,
                 rentry->psl  = psl; 
                 table->cells[(hash + psl) % table->tsize] = rentry; 
                 ++table->nsize;
-
+                SUCCESS = TRUE;
                 if(((r2_ldbl)table->nsize / table->tsize) >= table->lf)
                         r2_robintable_resize(table, 1);
-        }else{
-                perror("Table full or out of memory");
         }
-        
-        return table; 
+        return SUCCESS; 
 }
 
 /**
@@ -460,9 +458,8 @@ struct r2_robintable* r2_robintable_put(struct r2_robintable *table, r2_uc *key,
  * @param key                           Key.
  * @param length                        Key length.
  * @param entry                         Stores the entry value found.
- * @return struct r2_robintable*        Returns hash table.
  */
-struct r2_robintable* r2_robintable_get(struct r2_robintable *table, r2_uc *key,  r2_uint64 length, struct r2_entry *entry)
+void r2_robintable_get(struct r2_robintable *table, r2_uc *key,  r2_uint64 length, struct r2_entry *entry)
 {
         r2_uint64 hash = table->hf(key, length, table->tsize);
         assert(hash < table->tsize);
@@ -476,15 +473,11 @@ struct r2_robintable* r2_robintable_get(struct r2_robintable *table, r2_uc *key,
                         *entry = table->cells[hash]->entry;
                         break;
                 }
-
                 if(psl > table->cells[hash]->psl)
                         break;
                 ++psl;
                 hash  = (hash + 1) % table->tsize;
         }
-
-
-        return table;
 }
 
 /**
@@ -494,14 +487,14 @@ struct r2_robintable* r2_robintable_get(struct r2_robintable *table, r2_uc *key,
  * @param table                         Hash table.
  * @param key                           Key.
  * @param length                        Key length.
- * @return struct r2_robintable*        Returns hash table.
+ * @return r2_uint16                    Returns TRUE upon successful deletion, else FALSE.
  */
-struct r2_robintable* r2_robintable_del(struct r2_robintable *table, r2_uc *key, r2_uint64 length)
+r2_uint16 r2_robintable_del(struct r2_robintable *table, r2_uc *key, r2_uint64 length)
 {
         r2_uint64 hash  = table->hf(key, length, table->tsize);
         assert(hash < table->tsize);
         r2_uint64 psl   = 0; 
-        r2_uint16 found = FALSE;
+        r2_uint16 FOUND = FALSE;
         struct r2_key k = {.key = key, .len = length}; 
         struct r2_key j;
         struct r2_robinentry *entry = table->cells[hash];
@@ -510,7 +503,7 @@ struct r2_robintable* r2_robintable_del(struct r2_robintable *table, r2_uc *key,
                 j.key = entry->entry.key; 
                 j.len = entry->entry.length;
                 if(table->kcmp(&k, &j) == 0){
-                        found = TRUE;
+                        FOUND = TRUE;
                         r2_free_robinentry(entry, table->fk, table->fd);
                         table->cells[hash] = NULL;
                         --table->nsize;
@@ -526,7 +519,7 @@ struct r2_robintable* r2_robintable_del(struct r2_robintable *table, r2_uc *key,
         }
         
         /*Perform backward shifting*/
-        if(found == TRUE){
+        if(FOUND == TRUE){
                 r2_uint16 RESIZE = FALSE;
                 if(table->nsize > 0 && (table->nsize < table->tsize / 8))
                         RESIZE = r2_robintable_resize(table, 2);
@@ -541,12 +534,11 @@ struct r2_robintable* r2_robintable_del(struct r2_robintable *table, r2_uc *key,
                                 /*Stopping out of bounds error.*/
                                 entry = table->cells[(hash + 1) % table->tsize];
                         }
-
                         table->cells[hash] = NULL;
                 }
         }
         
-        return table; 
+        return FOUND; 
 }
 
 
@@ -594,7 +586,7 @@ static r2_uint16  r2_robintable_resize(struct r2_robintable *table, r2_uint16 op
                         table->tsize = tsize;
                         for(r2_uint64 i = 0; i < osize; ++i){
                                 if(cells[i] != NULL){
-                                        table = r2_robintable_put(table, cells[i]->entry.key, cells[i]->entry.data, cells[i]->entry.length);
+                                        r2_robintable_put(table, cells[i]->entry.key, cells[i]->entry.data, cells[i]->entry.length);
                                 }
                         }  
 
@@ -733,12 +725,13 @@ r2_uint64 r2_hash_wee(const unsigned char *key, r2_uint64 length, r2_uint64 tsiz
  * @param data          Data.
  * @param hash          Hash.
  * @param length        Key length.
+ * @return r2_uint16    Returns TRUE upon successful insertion, else NULL.
  */
-static void r2_chain_insert(struct r2_chain *chain, r2_uc *key,void *data, r2_uint64 hash,r2_uint64 length)
+static r2_uint16 r2_chain_insert(struct r2_chain *chain, r2_uc *key,void *data, r2_uint64 hash,r2_uint64 length)
 {
         struct r2_entry *entry = NULL; 
         struct r2_cnode *node  = NULL; 
-
+        r2_uint16 SUCCESS = FALSE;
         entry = r2_create_entry(); 
         if(entry != NULL){
                 node = r2_create_cnode(); 
@@ -758,8 +751,10 @@ static void r2_chain_insert(struct r2_chain *chain, r2_uc *key,void *data, r2_ui
                         node->prev  = chain->tail; 
                         chain->tail = node;
                         ++chain->csize;
+                        SUCCESS = TRUE;
                 }else free(entry); 
         }
+        return SUCCESS;
 }
 
 /**

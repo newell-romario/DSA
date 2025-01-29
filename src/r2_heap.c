@@ -82,10 +82,16 @@ r2_uint16 r2_pq_empty(const struct r2_pq *pq)
  */
 static struct r2_pq* r2_bubble_down(struct r2_pq *pq,  r2_uint64 parent)
 {
+        #ifdef PROFILE_HEAP
+                pq->ncomp = 0;
+        #endif
         r2_uint64 left      = 0;/*left child*/
         r2_uint64 right     = 0;/*right child*/
         r2_uint64 cswap     = 0;/*child that will be swapped with parent*/ 
         do{
+                #ifdef PROFILE_HEAP
+                        ++pq->ncomp;
+                #endif
                 left  = 2 * parent;
                 right = 2 * parent + 1;
                 if(right <= pq->ncount){
@@ -121,7 +127,13 @@ static struct r2_pq* r2_bubble_down(struct r2_pq *pq,  r2_uint64 parent)
 static struct r2_pq* r2_bubble_up(struct r2_pq *pq, r2_uint64 root)
 {
         r2_uint64 parent = root / 2; 
-        while(root > 1){
+        #ifdef PROFILE_HEAP
+                pq->ncomp = 0;
+        #endif
+        while(parent >= 1){
+                #ifdef PROFILE_HEAP
+                        ++pq->ncomp;
+                #endif
                 if(pq->kcmp(pq->data[root]->data, pq->data[parent]->data) == pq->type){
                         struct r2_locator *temp = pq->data[root];
                         pq->data[root]        = pq->data[parent];

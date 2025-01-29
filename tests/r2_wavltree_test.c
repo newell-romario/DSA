@@ -243,8 +243,8 @@ static void test_r2_wavltree_insert()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i){
-                 tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
-                 test_r2_wavltree_certify(tree->root);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                test_r2_wavltree_certify(tree->root);
         }
                
 

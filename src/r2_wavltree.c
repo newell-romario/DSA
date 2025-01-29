@@ -218,6 +218,9 @@ struct r2_wavlnode* r2_wavltree_search(struct r2_wavltree *tree, const void *key
 {
         struct r2_wavlnode *root = tree->root; 
         r2_int64 result = 0; 
+        #ifdef PROFILE_TREE
+                tree->num_comparisons = 0;
+        #endif 
         while(root != NULL){
                 #ifdef PROFILE_TREE
                         ++tree->num_comparisons;

@@ -366,10 +366,13 @@ struct r2_rbnode* r2_rbtree_search(struct r2_rbtree *tree, void *key)
 {
         struct r2_rbnode *root  = tree->root; 
         r2_int64 result = 0;
+        #ifdef PROFILE_TREE
+                tree->num_comparisons = 0;
+        #endif 
         while(root != NULL){
                 #ifdef PROFILE_TREE
                         ++tree->num_comparisons;
-                #endif 
+                #endif
                 result = tree->kcmp(key, root->key); 
                 if(result > 0)
                         root = root->right;

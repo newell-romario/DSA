@@ -359,6 +359,9 @@ struct r2_avlnode* r2_avltree_search(struct r2_avltree *tree, const void *key)
 {
         struct r2_avlnode *root = tree->root; 
         r2_int64 result = 0;
+        #ifdef PROFILE_TREE
+                tree->num_comparisons = 0;
+        #endif 
         while(root != NULL){ 
                 #ifdef PROFILE_TREE
                         ++tree->num_comparisons;

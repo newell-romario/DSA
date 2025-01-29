@@ -41,7 +41,7 @@ static void test_r2_create_chaintable()
         assert(table->kcmp == cmp); 
         assert(table->dcmp == cmp); 
         assert(table->nsize == 0); 
-        assert(table->tsize == 256 || table->tsize == 251 || table->tsize == 97); 
+        assert(table->tsize == 53); 
         assert(table->fk == NULL); 
         assert(table->fd == NULL);
         assert(table->dcpy == NULL); 
@@ -50,6 +50,7 @@ static void test_r2_create_chaintable()
         r2_destroy_chaintable(table);
 }
 
+
 /**
  * @brief       Tests destroy functionality for hash table.
  * 
@@ -57,13 +58,15 @@ static void test_r2_create_chaintable()
 static void test_r2_destroy_chaintable()
 {
         struct r2_chaintable * table  = r2_create_chaintable(3, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
-        assert(r2_destroy_chaintable(table) == NULL); 
+        assert(r2_destroy_chaintable(table) == NULL);
+
         table  = r2_create_chaintable(0, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         for(r2_uint64 i = 0 ; i < 17; ++i)
-                table = r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i]));
+                r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i]));
         
         assert(r2_destroy_chaintable(table) == NULL); 
 }
+
 
 /**
  * @brief       Tests the hash table put functionality.
@@ -73,17 +76,13 @@ static void test_r2_chaintable_put()
 {
         struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         for(r2_uint64 i = 0 ; i < 17; ++i)
-                table = r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i]));
+               assert(r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i])) == TRUE);
         
         assert(table->nsize == 17); 
-        struct r2_entry entry = {.data = NULL, .key = NULL, .length = 0}; 
-        table = r2_chaintable_get(table, strings[0],strlen(strings[0]), &entry);
-        assert(strcmp(entry.key, strings[0]) == 0); 
-        assert(strlen(entry.key) ==  strlen(strings[0])); 
-        assert(strcmp(entry.data, strings[0]) == 0);
-        assert(strlen(entry.data) ==  strlen(strings[0])); 
         r2_destroy_chaintable(table);
 }
+
+
 
 /**
  * @brief       Tests the hash table get functionality.
@@ -94,19 +93,16 @@ static void test_r2_chaintable_get()
         struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         struct r2_entry entry;
         for(r2_uint64 i = 0 ; i < 17; ++i){
-                entry.key  = 0;
-                entry.data = NULL; 
-                entry.length = 0;
-                table = r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i]));
-                table = r2_chaintable_get(table, strings[i],strlen(strings[i]), &entry);
+                entry.key  = NULL;
+                entry.data = NULL;
+                r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i]));
+                r2_chaintable_get(table, strings[i], strlen(strings[i]), &entry);
                 assert(strcmp(entry.key, strings[i]) == 0); 
-                assert(strlen(entry.key) ==  strlen(strings[i])); 
                 assert(strcmp(entry.data, strings[i]) == 0);
-                assert(strlen(entry.data) ==  strlen(strings[i])); 
-        }
-                
+        }                
         r2_destroy_chaintable(table);
 }
+
 
 /**
  * @brief       Tests the del functionality of hash table.
@@ -116,17 +112,17 @@ static void test_r2_chaintable_del()
 {
         struct r2_chaintable * table  = r2_create_chaintable(0, 1, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         for(r2_uint64 i = 0 ; i < 17; ++i)
-                table = r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i]));
+                 r2_chaintable_put(table, strings[i], strings[i], strlen(strings[i]));
 
-        table = r2_chaintable_del(table, strings[0], strlen(strings[0])); 
+        assert(r2_chaintable_del(table, strings[0], strlen(strings[0])) == TRUE);
         assert(table->nsize == 16); 
         struct r2_entry entry = {.data = NULL, .key = NULL, .length = 0}; 
-        table = r2_chaintable_get(table, strings[0], strlen(strings[0]), &entry);
+        r2_chaintable_get(table, strings[0], strlen(strings[0]), &entry);
         assert(entry.data == NULL); 
         assert(entry.key == NULL); 
-        assert(entry.length == 0);
+
         for(r2_uint64 i = 0 ; i < 17; ++i)
-                table = r2_chaintable_del(table, strings[i], strlen(strings[i]));
+                r2_chaintable_del(table, strings[i], strlen(strings[i]));
 
         r2_destroy_chaintable(table);
 }
@@ -143,14 +139,13 @@ static void test_r2_create_robintable()
         assert(table->prime == 1); 
         assert(table->psl == 4); 
         assert(table->nsize == 0);
-        assert(table->tsize == 97); 
+        assert(table->tsize == 53); 
         assert(table->kcmp  == cmp);
         assert(table->dcmp  == cmp); 
         assert(table->kcpy  == NULL);
         assert(table->dcpy  == NULL); 
         assert(table->fk    == NULL); 
         assert(table->fd    == NULL);
-      
         r2_destroy_robintable(table);
 }
 
@@ -162,16 +157,9 @@ static void test_r2_robintable_put()
 {
         struct r2_robintable *table = r2_create_robintable(0, 1, 0, 0, .75,cmp, cmp, NULL, NULL, NULL, NULL);
         for(r2_uint64 i = 0; i < 17; ++i)
-                table = r2_robintable_put(table, strings[i], strings[i], strlen(strings[i]));
+               assert(r2_robintable_put(table, strings[i], strings[i], strlen(strings[i])) == TRUE);
         
         assert(table->nsize == 17);
-        struct r2_entry entry;
-        entry.key  = NULL; 
-        entry.data = NULL;
-        entry.length = 0; 
-        table = r2_robintable_get(table, strings[0], strlen(strings[0]), &entry);
-        assert(strcmp(entry.key, strings[0]) == 0); 
-        assert(strlen(entry.key) == strlen(strings[0]));
         r2_destroy_robintable(table);
 }
 
@@ -187,20 +175,13 @@ static void test_r2_robintable_get()
         entry.data = NULL;
         entry.length = 0; 
         for(r2_uint64 i = 0; i < 17; ++i){
-                table = r2_robintable_put(table, strings[i], strings[i], strlen(strings[i]));
-                table = r2_robintable_get(table, strings[i], strlen(strings[i]), &entry);
+                r2_robintable_put(table, strings[i], strings[i], strlen(strings[i]));
+                r2_robintable_get(table, strings[i], strlen(strings[i]), &entry);
                 assert(strcmp(entry.key, strings[i]) == 0); 
-                assert(strlen(entry.key) == strlen(strings[i]));
         }
-               
-        entry.key  = NULL; 
-        entry.data = NULL;
-        entry.length = 0; 
-        table = r2_robintable_get(table, "Softwares", strlen("Softwares"), &entry);
-        assert(entry.key == NULL); 
-        assert(entry.data == NULL); 
-        assert(entry.length == 0);
 
+        r2_robintable_get(table, "Softwares", strlen("Softwares"), &entry);
+        assert(entry.key == NULL); 
         r2_destroy_robintable(table);
 }
 
@@ -212,26 +193,24 @@ static void test_r2_robintable_del()
 {
         struct r2_robintable *table = r2_create_robintable(0, 1, 0, 0, .75, cmp, cmp, NULL, NULL, NULL, NULL);
         for(r2_uint64 i = 0; i < 17; ++i)
-                table = r2_robintable_put(table, strings[i], strings[i], strlen(strings[i]));    
+               r2_robintable_put(table, strings[i], strings[i], strlen(strings[i]));    
 
         for(r2_uint64 i = 0; i < 17; ++i)
-                table = r2_robintable_del(table, strings[i], strlen(strings[i]));
+              assert(r2_robintable_del(table, strings[i], strlen(strings[i])) == TRUE);
 
        r2_destroy_robintable(table);
 }
+
+
 /**
  * @brief       Dump probe sequence length of each record to csv
  * 
  */
-static void 
-
-
-
-test_r2_robintable_psl(struct r2_robintable *table)
+static void test_r2_robintable_psl(struct r2_robintable *table, const char *fn)
 {
         FILE *results = fopen("robintable.csv", "w");
         char key[300];
-        FILE *fp = fopen("enwiki-latest-all-titles.txt", "r");
+        FILE *fp = fopen(fn, "r");
         r2_uint64 line = 0; 
         struct r2_key j;
         struct r2_key k;
@@ -370,7 +349,7 @@ static void test_r2_chaintable_generate()
                         break;
     
                 printf("\n%d)(Key = %s,val = %s)", ++line, key, key);
-                table = r2_chaintable_put(table, key, key, strlen(key));
+                 r2_chaintable_put(table, key, key, strlen(key));
         }
         r2_uint64 ncells = 0;
         r2_uint64 nentries = 0;
@@ -402,7 +381,7 @@ static void test_r2_chaintable_generate()
                         r2_chaintable_get(table, del, strlen(del), &entry);
                         assert(entry.key != NULL);
                         assert(strcmp(entry.key, del) == 0);
-                        table = r2_chaintable_del(table, del, strlen(del));
+                        r2_chaintable_del(table, del, strlen(del));
                         entry.key = entry.data = NULL;
                         r2_chaintable_get(table, del, strlen(del), &entry);
                         assert(entry.key == NULL);
@@ -430,10 +409,10 @@ static void test_r2_robintable_generate()
                         break;
 
                 printf("\n%d)(Key = %s,val = %s)", ++line, key, key);
-                table = r2_robintable_put(table, key, key, strlen(key));
+                r2_robintable_put(table, key, key, strlen(key));
         }
 
-        test_r2_robintable_psl(table);
+        test_r2_robintable_psl(table, "words.txt");
 
 
         struct r2_entry entry = {.data= NULL, .key = NULL, .length = 0};
@@ -444,8 +423,7 @@ static void test_r2_robintable_generate()
                 entry.key  = entry.data = NULL;
                 r2_robintable_get(table, del, strlen(del), &entry); 
                 assert(entry.key != NULL);
-                assert(strcmp(entry.key, del) == 0);
-                table = r2_robintable_del(table, del, strlen(del));
+                r2_robintable_del(table, del, strlen(del));
                 entry.key  = entry.data = NULL;
                 r2_robintable_get(table, del, strlen(del), &entry); 
                 assert(entry.key == NULL);
@@ -453,6 +431,8 @@ static void test_r2_robintable_generate()
         fclose(fp);
         r2_destroy_robintable(table);
 }
+
+
 static void test_r2_robintable_stats()
 {
         struct r2_robintable *table = r2_create_robintable(2, 1, 0, 0, .80, cmp, cmp, NULL, NULL, free,  NULL);
@@ -468,19 +448,59 @@ static void test_r2_robintable_stats()
                 if(line == 5000000)
                         break;
                 printf("\n%d)(Key = %s,val = %s)", ++line, key, key);
-                table = r2_robintable_put(table, key, key, strlen(key));
+                r2_robintable_put(table, key, key, strlen(key));
         }
-
-        test_r2_robintable_psl(table);
+        
         fclose(fp);
+        test_r2_robintable_psl(table, "enwiki-latest-all-titles.txt");
+    
         r2_destroy_robintable(table);       
 }
+
+static void test_r2_chaintable_stats()
+{
+        struct r2_chaintable *table = r2_create_chaintable(2, 1, 0, .80, cmp, cmp, NULL, NULL, free,  NULL);
+        char *key   = NULL; 
+        r2_uint64 l = 300; 
+        FILE * fp   = fopen("enwiki-latest-all-titles.txt", "r");
+        r2_uint64 line = 0; 
+        while(TRUE){
+                key = malloc(sizeof(char) *l); 
+                if(fscanf(fp, "%s", key) != 1)
+                        break;
+
+                if(line == 5000000)
+                        break;
+                printf("\n%d)(Key = %s,val = %s)", ++line, key, key);
+                r2_chaintable_put(table, key, key, strlen(key));
+        }
+        r2_uint64 ncells = 0;
+        r2_uint64 nentries = 0;
+        for(r2_uint64 i = 0; i < table->tsize; ++i){
+                if(table->chain[i].csize != 0){
+                        ncells++; 
+                        nentries += table->chain[i].csize;
+                }
+        } 
+        printf("\nAverage chain length: %lf", (double)nentries/ ncells);
+        struct r2_chain *chain  = test_r2_longest_chain(table);
+        printf("\nLongest chain: %d", chain->csize); 
+        printf("\nLongest chain: ");
+        test_r2_print_chain(test_r2_longest_chain(table));
+        printf("\nFirst Index: %d", test_r2_chaintable_first_index(table));
+        printf("\nLast Index: %d", test_r2_chaintable_last_index(table));
+        test_r2_chaintable_print(table);
+        fclose(fp);
+        r2_destroy_chaintable(table);
+}
+
+
 /**
  * @brief               Sends the chain length to a file in cwd.
  * 
  * @param table         Hash table
  */
-static void test_r2_chaintable_print(const struct r2_chaintable *table)
+static void    test_r2_chaintable_print(const struct r2_chaintable *table)
 {
         FILE *fp = fopen("chaintable.csv", "w");
         struct r2_cnode *head = NULL;
@@ -525,9 +545,8 @@ static r2_int16 cmp(const void *a, const void *b)
 
 
 
-void test_r2_chaintable_run()
+void test_r2_hashtable_run()
 {
-       
         test_r2_create_chaintable();
         test_r2_destroy_chaintable();
         test_r2_chaintable_put();
@@ -537,7 +556,8 @@ void test_r2_chaintable_run()
         test_r2_robintable_put();
         test_r2_robintable_get();
         test_r2_robintable_del();
-      //test_r2_chaintable_generate();
-       // test_r2_robintable_generate();
-         test_r2_robintable_stats();
+        test_r2_chaintable_generate();
+        test_r2_robintable_generate();
+        test_r2_robintable_stats();
+        test_r2_chaintable_stats();
 }

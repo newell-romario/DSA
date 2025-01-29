@@ -60,8 +60,8 @@ struct r2_graph* r2_create_graph(r2_cmp vmcp, r2_cmp gcmp, r2_fk fv, r2_fk fk, r
         if(graph != NULL){
                 graph->nvertices = 0; 
                 graph->nedges    = 0; 
-                graph->gat       = r2_create_robintable(1, 1, 0, 0, .75, gcmp, NULL, NULL, NULL, fk, fd);
-                graph->vertices  = r2_create_robintable(1, 1, 0, 0, .75, vmcp, NULL, NULL, NULL, fv, free);
+                graph->gat       = r2_create_robintable(1, 1, 0, 0, 0, gcmp, NULL, NULL, NULL, fk, fd);
+                graph->vertices  = r2_create_robintable(1, 1, 0, 0, 0, vmcp, NULL, NULL, NULL, fv, free);
                 graph->vlist     = r2_create_list(NULL, NULL, NULL);
                 graph->elist     = r2_create_list(NULL, NULL, NULL);
                 graph->vcmp      = vmcp;
@@ -133,16 +133,16 @@ struct r2_graph* r2_graph_add_vertex(struct r2_graph *graph, r2_uc *vk, r2_uint6
                 if(vertex != NULL){
                         vertex->vkey  = vk; 
                         vertex->len   = len;
-                        graph->vertices  = r2_robintable_put(graph->vertices, vk, vertex, len);
+                        r2_robintable_put(graph->vertices, vk, vertex, len);
                         /**
                          * Searching for the same vertex just added.
                          * 
                          */
                         struct r2_entry entry = {.data = NULL, .key = NULL, .length = 0};
-                        graph->vertices  = r2_robintable_get(graph->vertices, vk, len ,&entry);
+                        r2_robintable_get(graph->vertices, vk, len ,&entry);
                         if(entry.key == vk){
                                 /*Adding vertex to vlist.*/
-                                graph->vlist = r2_list_insert_at_back(graph->vlist, vertex); 
+                                r2_list_insert_at_back(graph->vlist, vertex); 
                                 struct r2_listnode *rear = r2_listnode_last(graph->vlist);
                                 /*Checking if insertion was successful.*/
                                 if(rear != NULL && rear->data == vertex){
@@ -238,7 +238,7 @@ struct r2_graph* r2_graph_add_edge(struct r2_graph *graph, r2_uc *src, r2_uint64
                         edge->src  = vertex[0]; 
                         edge->dest = vertex[1];
                         edge->weight = weight; 
-                        vertex[0]->edges = r2_robintable_put(vertex[0]->edges, dest, edge, dlen);
+                        r2_robintable_put(vertex[0]->edges, dest, edge, dlen);
                         ++vertex[0]->nedges;
                         /*Checking if we successfully inserted the edge*/
                         struct r2_entry entry = {.data = NULL, .key = NULL, .length = 0};
@@ -247,7 +247,7 @@ struct r2_graph* r2_graph_add_edge(struct r2_graph *graph, r2_uc *src, r2_uint64
                                 goto CLEANUP; 
 
                         /*Adding edge to elist*/
-                        vertex[0]->elist = r2_list_insert_at_back(vertex[0]->elist, edge);
+                        r2_list_insert_at_back(vertex[0]->elist, edge);
                         struct r2_listnode *rear = r2_listnode_last(vertex[0]->elist);
                         edge->pos[0] = rear;
                         
@@ -255,7 +255,7 @@ struct r2_graph* r2_graph_add_edge(struct r2_graph *graph, r2_uc *src, r2_uint64
                         if(rear == NULL || rear->data != edge)
                                 goto CLEANUP; 
                         
-                        graph->elist = r2_list_insert_at_back(graph->elist, edge);
+                        r2_list_insert_at_back(graph->elist, edge);
                         ++graph->nedges;
                         rear = r2_listnode_last(graph->elist);
                         edge->pos[1] = rear;
@@ -266,7 +266,7 @@ struct r2_graph* r2_graph_add_edge(struct r2_graph *graph, r2_uc *src, r2_uint64
                         
                                 
                         /*Add vertex metadata*/
-                        vertex[0]->out = r2_list_insert_at_back(vertex[0]->out, vertex[1]); 
+                        r2_list_insert_at_back(vertex[0]->out, vertex[1]); 
                         rear = r2_listnode_last(vertex[0]->out);
                         edge->pos[2] = rear;
 
@@ -274,7 +274,7 @@ struct r2_graph* r2_graph_add_edge(struct r2_graph *graph, r2_uc *src, r2_uint64
                         if(rear == NULL || rear->data != vertex[1])
                                  goto CLEANUP; 
                         
-                        vertex[1]->in = r2_list_insert_at_back(vertex[1]->in, vertex[0]); 
+                        r2_list_insert_at_back(vertex[1]->in, vertex[0]); 
                         rear = r2_listnode_last(vertex[1]->in);
                         edge->pos[3] = rear;
                         /*Checking if insertion was successfully*/
@@ -346,7 +346,7 @@ struct r2_graph*  r2_graph_del_edge(struct r2_graph *graph,  r2_uc *src, r2_uint
  */
 void r2_graph_add_attributes(struct r2_graph *graph, r2_uc *key, void *data, r2_uint64 len)
 {
-        graph->gat =  r2_robintable_put(graph->gat, key, data, len);
+        r2_robintable_put(graph->gat, key, data, len);
 }
 
 /**
@@ -436,7 +436,7 @@ static struct r2_vertex* r2_create_vertex(r2_cmp cmp)
 void r2_vertex_add_attributes(struct r2_vertex *vertex, r2_uc *key, void *data, r2_uint64 len, r2_cmp cmp)
 {
         vertex->vat->kcmp = cmp; 
-        vertex->vat = r2_robintable_put(vertex->vat, key, data, len);
+        r2_robintable_put(vertex->vat, key, data, len);
 }
 
 /**
@@ -467,7 +467,7 @@ void* r2_vertex_get_attributes(struct r2_vertex *vertex, r2_uc *key, r2_uint64 l
 void r2_vertex_del_attributes(struct r2_vertex *vertex, r2_uc *key, r2_uint64 len, r2_cmp cmp)
 {
         vertex->vat->kcmp = cmp;
-        vertex->vat = r2_robintable_del(vertex->vat, key, len);
+        r2_robintable_del(vertex->vat, key, len);
 }
 
 /**
@@ -509,7 +509,7 @@ static struct r2_edge*  r2_create_edge()
 void r2_edge_add_attributes(struct r2_edge *edge, r2_uc *key, void *data, r2_uint64 len, r2_cmp cmp)
 {
         edge->eat->kcmp = cmp;
-        edge->eat = r2_robintable_put(edge->eat, key, data, len); 
+        r2_robintable_put(edge->eat, key, data, len); 
 }
 
 /**
@@ -540,7 +540,7 @@ void* r2_edge_get_attributes(struct r2_edge *edge, r2_uc *key, r2_uint64 len, r2
 void r2_edge_del_attributes(struct r2_edge *edge, r2_uc *key, r2_uint64 len, r2_cmp cmp)
 {
         edge->eat->kcmp = cmp;
-        edge->eat = r2_robintable_del(edge->eat, key, len);
+        r2_robintable_del(edge->eat, key, len);
 }
 
 /**
@@ -581,7 +581,7 @@ static void r2_free_vertex(struct r2_graph *graph, struct r2_vertex *vertex)
         r2_destroy_list(vertex->elist); 
         r2_destroy_list(vertex->out);
         r2_destroy_list(vertex->in);
-        graph->vertices = r2_robintable_del(graph->vertices, vertex->vkey, vertex->len);
+        r2_robintable_del(graph->vertices, vertex->vkey, vertex->len);
 }
 
 /**
@@ -596,22 +596,22 @@ static void r2_free_edge(struct r2_graph *graph,  struct r2_edge *edge)
         struct r2_vertex *dest = edge->dest;
 
         if(edge->pos[0] != NULL)
-                src->elist   =  r2_list_delete(src->elist, edge->pos[0]);
+                r2_list_delete(src->elist, edge->pos[0]);
         
         if(edge->pos[1] != NULL){
-                graph->elist =  r2_list_delete(graph->elist, edge->pos[1]); 
+                r2_list_delete(graph->elist, edge->pos[1]); 
                 --graph->nedges;
         }
                 
         if(edge->pos[2] != NULL)
-               src->out =  r2_list_delete(src->out, edge->pos[2]);
+               r2_list_delete(src->out, edge->pos[2]);
 
         if(edge->pos[3] != NULL)
-               dest->in = r2_list_delete(dest->in, edge->pos[3]);
+               r2_list_delete(dest->in, edge->pos[3]);
         
         r2_destroy_robintable(edge->eat); 
         if(src != NULL){
-                src->edges = r2_robintable_del(src->edges, dest->vkey, dest->len);
+                r2_robintable_del(src->edges, dest->vkey, dest->len);
                 --src->nedges;
         }
 
@@ -650,14 +650,14 @@ void r2_graph_bfs(struct r2_graph *graph, struct r2_vertex *source,r2_act action
         struct r2_vertex   *vertex = NULL; 
         struct r2_entry  entry = {.key = NULL, .data = NULL, .length  = 0};
         r2_uint64 count = 0;   
-        queue = r2_queue_enqueue(queue, source);
+        r2_queue_enqueue(queue, source);
         if(r2_queue_empty(queue) == TRUE){
                 FAILED = TRUE;
                 goto CLEANUP;
         }
 
         state[count] = GREY; 
-        processed = r2_robintable_put(processed, source->vkey, &state[count], source->len);   
+        r2_robintable_put(processed, source->vkey, &state[count], source->len);   
         entry.key = entry.data = NULL;
         r2_robintable_get(processed, source->vkey, source->len, &entry);
         if(entry.key == NULL){
@@ -684,8 +684,8 @@ void r2_graph_bfs(struct r2_graph *graph, struct r2_vertex *source,r2_act action
                         if(vstate == NULL){
                                 vstate    = &state[++count];
                                 *vstate   = GREY; 
-                                processed = r2_robintable_put(processed, vertex->vkey, vstate, vertex->len);
-                                queue = r2_queue_enqueue(queue, vertex);
+                                r2_robintable_put(processed, vertex->vkey, vstate, vertex->len);
+                                r2_queue_enqueue(queue, vertex);
                                 if(r2_queue_rear(queue)->data != vertex){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
@@ -697,7 +697,7 @@ void r2_graph_bfs(struct r2_graph *graph, struct r2_vertex *source,r2_act action
                 r2_robintable_get(processed, source->vkey, source->len, &entry);
                 vstate = entry.data;
                 *vstate = BLACK;
-                queue   = r2_queue_dequeue(queue);
+                r2_queue_dequeue(queue);
         }while(r2_queue_empty(queue) != TRUE && count != graph->nvertices);
         CLEANUP:
                 if(queue != NULL)
@@ -743,7 +743,7 @@ void r2_graph_dfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
         r2_uint64 count = 0;
 
         state[count] = GREY;
-        processed = r2_robintable_put(processed, source->vkey, &state[count], source->len);
+        r2_robintable_put(processed, source->vkey, &state[count], source->len);
         entry.key = entry.data = NULL;
         r2_robintable_get(processed, source->vkey, source->len, &entry);
         if(entry.key == NULL){
@@ -771,14 +771,14 @@ void r2_graph_dfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
                                 
                                 vstate    = &state[++count];
                                 *vstate   = GREY; 
-                                processed = r2_robintable_put(processed, dest->vkey, vstate, dest->len);
+                                r2_robintable_put(processed, dest->vkey, vstate, dest->len);
                                 entry.key = entry.data = NULL;
                                 r2_robintable_get(processed, dest->vkey,dest->len, &entry);
                                 if(entry.key == NULL){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
                                 }
-                                stack     = r2_arrstack_push(stack, edge->pos[0]);
+                                r2_arrstack_push(stack, edge->pos[0]);
                                 if(r2_arrstack_top(stack) != edge->pos[0]){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
@@ -802,7 +802,7 @@ void r2_graph_dfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
                                 edge      = head->data; 
                                 source    = edge->src;
                         }
-                        stack     = r2_arrstack_pop(stack);
+                        r2_arrstack_pop(stack);
                 }    
         }while(head != NULL);
         CLEANUP:
@@ -862,12 +862,12 @@ struct r2_bfstree* r2_graph_bfs_tree(struct r2_graph *graph, struct r2_vertex *s
         count = 0;
         tree[count].vertex = source;
         tree[count].state  = GREY;
-        queue = r2_queue_enqueue(queue, &tree[count]);
+        r2_queue_enqueue(queue, &tree[count]);
         if(r2_queue_empty(queue) == TRUE){
                 FAILED = TRUE;
                 goto CLEANUP;
         }
-        positions = r2_robintable_put(positions, source->vkey, &tree[count], source->len);
+        r2_robintable_put(positions, source->vkey, &tree[count], source->len);
         entry.key = entry.data = NULL;
         r2_robintable_get(positions, source->vkey, source->len, &entry);
         if(entry.key == NULL){
@@ -902,12 +902,12 @@ struct r2_bfstree* r2_graph_bfs_tree(struct r2_graph *graph, struct r2_vertex *s
                                 tree[count].parent = root->pos;
                                 tree[count].dist   = root->dist + 1; 
                                 ++root->children.end;
-                                queue = r2_queue_enqueue(queue, &tree[count]);
+                                r2_queue_enqueue(queue, &tree[count]);
                                 if(r2_queue_rear(queue)->data != &tree[count]){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
                                 }
-                                positions = r2_robintable_put(positions, dest->vkey, &tree[count], dest->len);   
+                                r2_robintable_put(positions, dest->vkey, &tree[count], dest->len);   
                                 entry.key = entry.data = NULL;
                                 r2_robintable_get(positions, dest->vkey, dest->len, &entry);
                                 if(entry.key == NULL){
@@ -919,7 +919,7 @@ struct r2_bfstree* r2_graph_bfs_tree(struct r2_graph *graph, struct r2_vertex *s
                 }
                 bfs->ncount++;
                 root->state = BLACK;
-                queue   = r2_queue_dequeue(queue);
+                r2_queue_dequeue(queue);
         }while(r2_queue_empty(queue) != TRUE && count != graph->nvertices);
 
         CLEANUP:
@@ -1000,7 +1000,7 @@ struct r2_dfstree* r2_graph_dfs_tree(struct r2_graph *graph, struct r2_vertex *s
         root->vertex = source; 
         root->start  = count;
         root->state  = GREY;
-        positions = r2_robintable_put(positions, source->vkey, &tree[count], source->len);
+        r2_robintable_put(positions, source->vkey, &tree[count], source->len);
         entry.key = entry.data = NULL;
         r2_robintable_get(positions, source->vkey, source->len, &entry);
         if(entry.key == NULL){
@@ -1027,7 +1027,7 @@ struct r2_dfstree* r2_graph_dfs_tree(struct r2_graph *graph, struct r2_vertex *s
                                 tree[count].start  = count;
                                 tree[count].parent = root->pos;
                                 tree[count].dist   = root->dist + 1;
-                                positions = r2_robintable_put(positions, dest->vkey, &tree[count], dest->len);
+                                r2_robintable_put(positions, dest->vkey, &tree[count], dest->len);
                                 entry.key = entry.data = NULL;
                                 r2_robintable_get(positions, dest->vkey, dest->len, &entry);
                                 if(entry.key == NULL){
@@ -1035,7 +1035,7 @@ struct r2_dfstree* r2_graph_dfs_tree(struct r2_graph *graph, struct r2_vertex *s
                                         goto CLEANUP;
                                 }
 
-                                stack  = r2_arrstack_push(stack, edge->pos[0]);
+                                r2_arrstack_push(stack, edge->pos[0]);
                                 if(r2_arrstack_top(stack) != edge->pos[0]){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
@@ -1065,7 +1065,7 @@ struct r2_dfstree* r2_graph_dfs_tree(struct r2_graph *graph, struct r2_vertex *s
                                 edge      = head->data; 
                                 source    = edge->src;
                         }
-                        stack     = r2_arrstack_pop(stack);
+                        r2_arrstack_pop(stack);
                 }    
         }while(head != NULL);
         CLEANUP:
@@ -1140,7 +1140,7 @@ struct r2_list* r2_graph_has_path(struct r2_graph *graph, struct r2_vertex *src,
         r2_uint64 count = 0;
         while(head != NULL){
                 vertex = head->data; 
-                parents   = r2_robintable_put(parents, vertex->vkey, NULL, vertex->len);
+                r2_robintable_put(parents, vertex->vkey, NULL, vertex->len);
                 entry.key = entry.data = NULL;
                 r2_robintable_get(parents, vertex->vkey, vertex->len, &entry);
                 if(entry.key == NULL){
@@ -1152,14 +1152,14 @@ struct r2_list* r2_graph_has_path(struct r2_graph *graph, struct r2_vertex *src,
         }
 
         struct r2_vertex *source = src;
-        queue = r2_queue_enqueue(queue, source);
+        r2_queue_enqueue(queue, source);
         if(r2_queue_empty(queue) == TRUE){
                 FAILED = TRUE;
                 goto CLEANUP;
         }
         count = 0;
         state[count] = GREY; 
-        processed = r2_robintable_put(processed, source->vkey, &state[count], source->len);   
+       r2_robintable_put(processed, source->vkey, &state[count], source->len);   
         entry.key = entry.data = NULL;
         r2_robintable_get(processed, source->vkey, source->len, &entry);
         if(entry.key == NULL){
@@ -1184,9 +1184,9 @@ struct r2_list* r2_graph_has_path(struct r2_graph *graph, struct r2_vertex *src,
                         if(vstate == NULL){
                                 vstate    = &state[++count];
                                 *vstate   = GREY; 
-                                processed = r2_robintable_put(processed, vertex->vkey, vstate, vertex->len);
-                                parents = r2_robintable_put(parents, vertex->vkey, source, vertex->len);
-                                queue   = r2_queue_enqueue(queue, vertex);
+                                r2_robintable_put(processed, vertex->vkey, vstate, vertex->len);
+                                r2_robintable_put(parents, vertex->vkey, source, vertex->len);
+                               r2_queue_enqueue(queue, vertex);
                                 if(r2_queue_rear(queue)->data != vertex){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
@@ -1198,12 +1198,12 @@ struct r2_list* r2_graph_has_path(struct r2_graph *graph, struct r2_vertex *src,
                 r2_robintable_get(processed, source->vkey, source->len, &entry);
                 vstate = entry.data;
                 *vstate = BLACK;
-                queue  = r2_queue_dequeue(queue);
+                r2_queue_dequeue(queue);
         }while(r2_queue_empty(queue) != TRUE && count != graph->nvertices);
 
         struct r2_vertex *parent = NULL;
         do{
-                paths = r2_list_insert_at_front(paths, dest);
+                r2_list_insert_at_front(paths, dest);
                 if(r2_listnode_first(paths) == NULL ||r2_listnode_first(paths)->data != dest){
                         FAILED = TRUE; 
                         goto CLEANUP;
@@ -1218,7 +1218,7 @@ struct r2_list* r2_graph_has_path(struct r2_graph *graph, struct r2_vertex *src,
                 }
                 dest = parent;
         }while(dest != src);
-        paths = r2_list_insert_at_front(paths, src);
+        r2_list_insert_at_front(paths, src);
         CLEANUP:
                 if(queue != NULL)
                         r2_destroy_queue(queue); 
@@ -1258,7 +1258,7 @@ struct r2_list* r2_graph_bfs_has_path_tree(struct r2_bfstree *tree, struct r2_ve
                 struct r2_vertex *parent = NULL; 
                 r2_int64 pos = ((struct r2_bfsnode *)entry.data)->pos; 
                 do{
-                        path = r2_list_insert_at_front(path, dest);
+                        r2_list_insert_at_front(path, dest);
                         pos  = tree->tree[pos].parent;
                         if(pos != -1){
                                 parent = tree->tree[pos].vertex;
@@ -1269,7 +1269,7 @@ struct r2_list* r2_graph_bfs_has_path_tree(struct r2_bfstree *tree, struct r2_ve
                         
                       dest = parent;
                 }while(parent != src);
-                path = r2_list_insert_at_front(path, src);
+                r2_list_insert_at_front(path, src);
         }
         CLEANUP: 
                 return path; 
@@ -1297,7 +1297,7 @@ struct r2_list* r2_graph_dfs_has_path_tree(struct r2_dfstree *tree, struct r2_ve
                 struct r2_vertex *parent = NULL; 
                 r2_int64 pos = ((struct r2_dfsnode *)entry.data)->pos; 
                 do{
-                        path = r2_list_insert_at_front(path, dest);
+                       r2_list_insert_at_front(path, dest);
                         pos  = tree->tree[pos].parent;
                         if(pos != -1){
                                 parent = tree->tree[pos].vertex;
@@ -1308,7 +1308,7 @@ struct r2_list* r2_graph_dfs_has_path_tree(struct r2_dfstree *tree, struct r2_ve
                         
                       dest = parent;
                 }while(parent != src);
-                path = r2_list_insert_at_front(path, src);
+                r2_list_insert_at_front(path, src);
         }
         CLEANUP: 
                 return path; 
@@ -1333,7 +1333,7 @@ struct r2_list* r2_graph_bfs_tree_children(struct r2_bfstree *bfs, struct r2_ver
                         r2_uint64 pos = root->pos; 
                         for(r2_uint64 i = bfs->tree[pos].children.start; i < bfs->tree[pos].children.end; ++i){
                                 child = bfs->tree[i].vertex; 
-                                children = r2_list_insert_at_back(children, child); 
+                                r2_list_insert_at_back(children, child); 
                                 if(r2_listnode_last(children) == NULL || r2_listnode_last(children)->data != child){
                                         children =  r2_destroy_list(children);
                                         break;
@@ -1369,7 +1369,7 @@ struct r2_list* r2_graph_dfs_tree_children(struct r2_dfstree *dfs, struct r2_ver
                 for(;start < end && pos < dfs->ncount; ++start, ++pos){
                         child = dfs->tree[pos].vertex;
                         if(dfs->tree[pos].parent == root->pos){
-                                children = r2_list_insert_at_back(children, child); 
+                                r2_list_insert_at_back(children, child); 
                                 if(r2_listnode_last(children) == NULL || r2_listnode_last(children)->data != child){
                                         children = r2_destroy_list(children); 
                                         break;
@@ -1494,7 +1494,7 @@ struct r2_components* r2_graph_connected_components(struct r2_graph *graph)
         r2_uint16 *vstate = NULL;
         while(head != NULL){
                 src = head->data; 
-                processed    = r2_robintable_put(processed, src->vkey, &state[count], src->len);
+                r2_robintable_put(processed, src->vkey, &state[count], src->len);
                 entry.key = entry.data = NULL;
                 r2_robintable_get(processed, src->vkey, src->len, &entry);
                 if(entry.key == NULL){
@@ -1601,7 +1601,7 @@ static struct r2_dfstree* r2_graph_dfs_tree_components(struct r2_graph *graph, s
         root->vertex = source; 
         root->start  = count;
         root->state  = GREY;
-        positions = r2_robintable_put(positions, source->vkey, &tree[count], source->len);
+        r2_robintable_put(positions, source->vkey, &tree[count], source->len);
         entry.key = entry.data = NULL;
         r2_robintable_get(positions, source->vkey, source->len, &entry);
         if(entry.key == NULL){
@@ -1630,7 +1630,7 @@ static struct r2_dfstree* r2_graph_dfs_tree_components(struct r2_graph *graph, s
                                 tree[count].start  = count;
                                 tree[count].parent = root->pos;
                                 tree[count].dist   = root->dist + 1;
-                                positions = r2_robintable_put(positions, dest->vkey, &tree[count], dest->len);
+                                r2_robintable_put(positions, dest->vkey, &tree[count], dest->len);
                                 entry.key = entry.data = NULL;
                                 *vstate = GREY;
                                 r2_robintable_get(positions, dest->vkey, dest->len, &entry);
@@ -1639,7 +1639,7 @@ static struct r2_dfstree* r2_graph_dfs_tree_components(struct r2_graph *graph, s
                                         goto CLEANUP;
                                 }
 
-                                stack  = r2_arrstack_push(stack, edge->pos[0]);
+                                r2_arrstack_push(stack, edge->pos[0]);
                                 if(r2_arrstack_top(stack) != edge->pos[0]){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
@@ -1672,7 +1672,7 @@ static struct r2_dfstree* r2_graph_dfs_tree_components(struct r2_graph *graph, s
                                 edge      = head->data; 
                                 source    = edge->src;
                         }
-                        stack     = r2_arrstack_pop(stack);
+                        r2_arrstack_pop(stack);
                 }    
         }while(head != NULL);
         CLEANUP:
@@ -1786,7 +1786,7 @@ struct r2_bipartite* r2_graph_is_bipartite(struct r2_graph *graph)
                         /*Update state of vertex*/
                         vstate    = &state[count];
                         *vstate   = GREY; 
-                        processed = r2_robintable_put(processed, vertex->vkey, vstate, vertex->len);
+                        r2_robintable_put(processed, vertex->vkey, vstate, vertex->len);
                         entry.key = entry.data = NULL;
                         r2_robintable_get(processed, vertex->vkey, vertex->len, &entry);
                         if(entry.key == NULL){
@@ -1796,21 +1796,21 @@ struct r2_bipartite* r2_graph_is_bipartite(struct r2_graph *graph)
                         /*Get group*/
                         color = &colors[count];
                         *color = 0;
-                        groups = r2_robintable_put(groups, vertex->vkey, color, vertex->len);  
+                        r2_robintable_put(groups, vertex->vkey, color, vertex->len);  
                         entry.key = entry.data = NULL;
                         r2_robintable_get(groups, vertex->vkey, vertex->len, &entry);
                         if(entry.key == NULL){
                                 FAILED = TRUE; 
                                 goto CLEANUP;
                         }
-                        queue  = r2_queue_enqueue(queue, vertex);
+                        r2_queue_enqueue(queue, vertex);
                         if(r2_queue_rear(queue)->data != vertex){
                                 FAILED = TRUE; 
                                 goto CLEANUP;
                         }
                         
                         
-                        list =  sets->sets[*color] = r2_list_insert_at_back(sets->sets[*color], vertex); 
+                        r2_list_insert_at_back(sets->sets[*color], vertex); 
                         if(r2_listnode_last(list)->data != vertex){
                                 FAILED = TRUE; 
                                 goto CLEANUP;
@@ -1834,7 +1834,7 @@ struct r2_bipartite* r2_graph_is_bipartite(struct r2_graph *graph)
                                         if(vstate == NULL){
                                                 vstate    = &state[count];
                                                 *vstate   = GREY; 
-                                                processed = r2_robintable_put(processed, vertex->vkey, vstate, vertex->len);
+                                                r2_robintable_put(processed, vertex->vkey, vstate, vertex->len);
                                                 entry.key = entry.data = NULL;
                                                 r2_robintable_get(processed, vertex->vkey, vertex->len, &entry);
                                                 if(entry.key == NULL){
@@ -1845,19 +1845,19 @@ struct r2_bipartite* r2_graph_is_bipartite(struct r2_graph *graph)
                                                 color     = &colors[count];
                                                 *color    = !(*srcolor);
                                                 entry.key = entry.data = NULL;
-                                                groups = r2_robintable_put(groups, vertex->vkey, color, vertex->len);  
+                                                r2_robintable_put(groups, vertex->vkey, color, vertex->len);  
                                                 r2_robintable_get(groups, vertex->vkey, vertex->len, &entry);
                                                 if(entry.key == NULL){
                                                         FAILED = TRUE; 
                                                         goto CLEANUP;
                                                 } 
 
-                                                list =  sets->sets[*color] = r2_list_insert_at_back(sets->sets[*color], vertex);                                        
+                                                r2_list_insert_at_back(sets->sets[*color], vertex);                                        
                                                 if(r2_listnode_last(list)->data != vertex){
                                                         FAILED = TRUE; 
                                                         goto CLEANUP;
                                                 }
-                                                queue     = r2_queue_enqueue(queue, vertex);
+                                                r2_queue_enqueue(queue, vertex);
                                                 if(r2_queue_rear(queue)->data != vertex){
                                                         FAILED = TRUE; 
                                                         goto CLEANUP;
@@ -1875,7 +1875,7 @@ struct r2_bipartite* r2_graph_is_bipartite(struct r2_graph *graph)
                                 r2_robintable_get(processed, src->vkey, src->len, &entry);
                                 vstate = entry.data;
                                 *vstate = BLACK;
-                                queue  =  r2_queue_dequeue(queue);
+                                r2_queue_dequeue(queue);
                         }while(r2_queue_empty(queue) != TRUE);
                         
                 }
@@ -1960,7 +1960,7 @@ r2_int16 r2_graph_has_cycle(struct r2_graph *graph)
                 if(vstate == NULL){
                         vstate    = &state[count++];
                         *vstate   = GREY; 
-                        processed = r2_robintable_put(processed, source->vkey, vstate, source->len);
+                        r2_robintable_put(processed, source->vkey, vstate, source->len);
                         if(source->elist != NULL)
                                 head  = r2_listnode_first(source->elist);
                         do{
@@ -1973,13 +1973,13 @@ r2_int16 r2_graph_has_cycle(struct r2_graph *graph)
                                         if(vstate == NULL){
                                                 vstate    = &state[count++];
                                                 *vstate   = GREY; 
-                                                processed = r2_robintable_put(processed, dest->vkey, vstate, dest->len);
+                                                r2_robintable_put(processed, dest->vkey, vstate, dest->len);
                                                 entry.key = entry.data = NULL;
                                                 r2_robintable_get(processed, dest->vkey,dest->len, &entry);
                                                 if(entry.key == NULL)
                                                         goto CLEANUP;
                                                 
-                                                stack     = r2_arrstack_push(stack, edge->pos[0]);
+                                               r2_arrstack_push(stack, edge->pos[0]);
                                                 if(r2_arrstack_top(stack) != edge->pos[0])
                                                         goto CLEANUP;
                                                 
@@ -2007,7 +2007,7 @@ r2_int16 r2_graph_has_cycle(struct r2_graph *graph)
                                                 edge      = head->data; 
                                                 source    = edge->src;
                                         }
-                                        stack     = r2_arrstack_pop(stack);
+                                        r2_arrstack_pop(stack);
                                 }    
                         }while(head != NULL);
                 }
@@ -2055,14 +2055,14 @@ struct r2_list* r2_graph_topological_sort(struct r2_graph *graph)
                 vertex = head->data; 
                 count[i] = vertex->in->lsize; 
                 if(count[i] == 0){
-                        queue = r2_queue_enqueue(queue, vertex);
+                        r2_queue_enqueue(queue, vertex);
                         node = r2_queue_rear(queue);
                         if(node == NULL || node->data != vertex){
                                 FAILED = TRUE; 
                                 goto CLEANUP;
                         }
                 }else{
-                        indegree = r2_robintable_put(indegree, vertex->vkey, &count[i], vertex->len); 
+                        r2_robintable_put(indegree, vertex->vkey, &count[i], vertex->len); 
                         entry.key = entry.data =  NULL; 
                         r2_robintable_get(indegree, vertex->vkey, vertex->len, &entry); 
                         if(entry.key == NULL){
@@ -2078,7 +2078,7 @@ struct r2_list* r2_graph_topological_sort(struct r2_graph *graph)
         r2_uint64 *in = NULL; 
         while(r2_queue_empty(queue) != TRUE){
                 vertex = r2_queue_front(queue)->data;
-                top = r2_list_insert_at_back(top, vertex); 
+                r2_list_insert_at_back(top, vertex); 
                 if(r2_listnode_last(top) == NULL || r2_listnode_last(top)->data != vertex){
                         FAILED = TRUE; 
                         goto CLEANUP;
@@ -2092,18 +2092,18 @@ struct r2_list* r2_graph_topological_sort(struct r2_graph *graph)
                                 in = entry.data; 
                                 *in = *in -1; 
                                 if(*in == 0){
-                                        queue = r2_queue_enqueue(queue, vertex); 
+                                        r2_queue_enqueue(queue, vertex); 
                                         node = r2_queue_rear(queue);
                                         if(node == NULL || node->data != vertex){
                                                 FAILED = TRUE; 
                                                 goto CLEANUP;
                                         }
-                                        indegree = r2_robintable_del(indegree, vertex->vkey, vertex->len);
+                                        r2_robintable_del(indegree, vertex->vkey, vertex->len);
                                 }
                         }
                         head = head->next;
                 }
-                queue =  r2_queue_dequeue(queue);
+                r2_queue_dequeue(queue);
         }
 
         CLEANUP:
@@ -2212,7 +2212,7 @@ struct r2_components* r2_graph_tarjan_strongly_connected_components(struct r2_gr
                         vertices[start].dist    = 0;
                         vertices[start].parent  = -1;
                         vertices[start].state   = GREY;
-                        processed = r2_robintable_put(processed, source->vkey, &vertices[start], source->len);
+                        r2_robintable_put(processed, source->vkey, &vertices[start], source->len);
                         ++start;
                         entry.key = entry.data = NULL;
                         r2_robintable_get(processed, source->vkey, source->len, &entry);
@@ -2286,7 +2286,7 @@ static void r2_graph_tarjan_tree_components(r2_uint64 *time, struct r2_vertex *s
                                 vertices[*time].dist   = root->dist + 1;
                                 vertices[*time].state  = GREY;
                                 vertices[*time].parent = root->start;
-                                processed = r2_robintable_put(processed, dest->vkey, &vertices[*time], dest->len);
+                                r2_robintable_put(processed, dest->vkey, &vertices[*time], dest->len);
                                 *time = *time + 1;
                                 entry.key = entry.data = NULL;
                                 r2_robintable_get(processed, dest->vkey, dest->len, &entry);
@@ -2295,7 +2295,7 @@ static void r2_graph_tarjan_tree_components(r2_uint64 *time, struct r2_vertex *s
                                         goto CLEANUP;
                                 }
 
-                                stack  = r2_arrstack_push(stack, edge->pos[0]);
+                                r2_arrstack_push(stack, edge->pos[0]);
                                 if(r2_arrstack_top(stack) != edge->pos[0]){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
@@ -2332,7 +2332,7 @@ static void r2_graph_tarjan_tree_components(r2_uint64 *time, struct r2_vertex *s
                         if(root->low == root->start){
                              forest->cc[forest->ncount++] =   r2_tarjan_followers(vertices, root, followers, graph) ;
                         }else{
-                                followers = r2_arrstack_push(followers, root);
+                                r2_arrstack_push(followers, root);
                                 if(r2_arrstack_top(followers) != root){
                                         FAILED  = TRUE; 
                                         goto CLEANUP;
@@ -2349,7 +2349,7 @@ static void r2_graph_tarjan_tree_components(r2_uint64 *time, struct r2_vertex *s
                                 //if(child->incomponent != TRUE)
                                 root->low = child->low < root->low? child->low : root->low;
                         }
-                        stack     = r2_arrstack_pop(stack);
+                        r2_arrstack_pop(stack);
                 }    
         }while(head != NULL);
 
@@ -2400,7 +2400,7 @@ static struct r2_dfstree* r2_tarjan_followers(struct r2_dfsinfo *vertices, struc
         tree[count].dist   = 0;
         dfs->ncount++;
 
-        positions = r2_robintable_put(positions, source->vkey, &tree[count], source->len);
+        r2_robintable_put(positions, source->vkey, &tree[count], source->len);
         struct r2_entry entry = {.key = NULL, .data = NULL, .length = 0};
         r2_robintable_get(positions, source->vkey, source->len, &entry);
         if(entry.key == NULL){
@@ -2427,7 +2427,7 @@ static struct r2_dfstree* r2_tarjan_followers(struct r2_dfsinfo *vertices, struc
                 tree[count].start  = root->start; 
                 tree[count].end    = root->end;
                 tree[count].state  = BLACK;
-                positions = r2_robintable_put(positions, source->vkey, &tree[count], source->len);
+                r2_robintable_put(positions, source->vkey, &tree[count], source->len);
                 entry.key = entry.data = NULL;
                 r2_robintable_get(positions, source->vkey, source->len, &entry);
                 if(entry.key == NULL){
@@ -2438,7 +2438,7 @@ static struct r2_dfstree* r2_tarjan_followers(struct r2_dfsinfo *vertices, struc
                 ++dfs->ncount;
                 root->low = INFINITY;
                // root->incomponent = INFINITY;
-                followers = r2_arrstack_pop(followers);
+                r2_arrstack_pop(followers);
                 root = r2_arrstack_top(followers); 
         }
         
@@ -2531,7 +2531,7 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, r2_uint16 order)
                 vstate = entry.data;
                 if(vstate == NULL){
                         state[count] = GREY;
-                        processed = r2_robintable_put(processed, source->vkey, &state[count], source->len);  
+                        r2_robintable_put(processed, source->vkey, &state[count], source->len);  
                         entry.key = entry.data = NULL;
                         r2_robintable_get(processed, source->vkey, source->len, &entry);       
                         if(entry.key == NULL){
@@ -2541,7 +2541,7 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, r2_uint16 order)
 
                         /*preorder*/
                         if(order == 0){
-                                list = r2_list_insert_at_back(list, source); 
+                                r2_list_insert_at_back(list, source); 
                                 if(r2_listnode_last(list)->data != source){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
@@ -2561,7 +2561,7 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, r2_uint16 order)
                                         if(vstate == NULL){
                                                 /*preorder*/
                                                 if(order == 0){
-                                                        list = r2_list_insert_at_back(list, dest);  
+                                                        r2_list_insert_at_back(list, dest);  
                                                         if(r2_listnode_last(list)->data != dest){
                                                                 FAILED = TRUE; 
                                                                 goto CLEANUP;
@@ -2570,14 +2570,14 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, r2_uint16 order)
 
                                                 vstate    = &state[++count];
                                                 *vstate   = GREY; 
-                                                processed = r2_robintable_put(processed, dest->vkey, vstate, dest->len);
+                                                r2_robintable_put(processed, dest->vkey, vstate, dest->len);
                                                 entry.key = entry.data = NULL;
                                                 r2_robintable_get(processed, dest->vkey,dest->len, &entry);
                                                 if(entry.key == NULL){
                                                         FAILED = TRUE; 
                                                         goto CLEANUP;
                                                 }
-                                                stack     = r2_arrstack_push(stack, edge->pos[0]);
+                                                r2_arrstack_push(stack, edge->pos[0]);
                                                 if(r2_arrstack_top(stack) != edge->pos[0]){
                                                         FAILED = TRUE; 
                                                         goto CLEANUP;
@@ -2601,12 +2601,12 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, r2_uint16 order)
                                         /*postorder*/
                                         struct r2_listnode node = {.data = source}; 
                                         if(order == 1){
-                                                list = r2_list_insert_at_back(list, source); 
+                                                r2_list_insert_at_back(list, source); 
                                                 node = *r2_listnode_last(list);
                                         }      
                                         /*reverse postorder*/
                                         else if(order == 2){
-                                                list = r2_list_insert_at_front(list, source);
+                                                r2_list_insert_at_front(list, source);
                                                 node = *r2_listnode_first(list); 
                                         }
                                         if(node.data != source){
@@ -2618,7 +2618,7 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, r2_uint16 order)
                                                 edge      = head->data; 
                                                 source    = edge->src;
                                         }
-                                        stack     = r2_arrstack_pop(stack);
+                                        r2_arrstack_pop(stack);
                                 }    
                         }while(head != NULL);
                 }
@@ -2675,7 +2675,7 @@ struct r2_components* r2_graph_strongly_connected_components(struct r2_graph *gr
         r2_uint16 *vstate = NULL;
         while(head != NULL){
                 src = head->data; 
-                processed    = r2_robintable_put(processed, src->vkey, &state[count], src->len);
+                r2_robintable_put(processed, src->vkey, &state[count], src->len);
                 entry.key = entry.data = NULL;
                 r2_robintable_get(processed, src->vkey, src->len, &entry);
                 if(entry.key == NULL){
@@ -2827,14 +2827,14 @@ struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *graph, r2_uc *src, r2_uint
                 goto CLEANUP;
         }
 
-        processed = r2_robintable_put(processed, source->vkey, l, source->len);
+        r2_robintable_put(processed, source->vkey, l, source->len);
         r2_robintable_get(processed, source->vkey, source->len, &entry);
         if(entry.key == NULL){
                 FAILED = TRUE; 
                 goto CLEANUP;
         }
 
-        positions = r2_robintable_put(positions, source->vkey, &tree[count], source->len);
+        r2_robintable_put(positions, source->vkey, &tree[count], source->len);
         entry.key = entry.data = NULL; 
         r2_robintable_get(positions, source->vkey, source->len, &entry);
         if(entry.key == NULL){
@@ -2861,7 +2861,7 @@ struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *graph, r2_uc *src, r2_uint
                                 tree[count].dist   = relax(root->dist, edge->weight); /*possible custom function*/
                                 tree[count].parent = root->pos; 
                                 m =  r2_pq_insert(pq, &tree[count]);
-                                processed = r2_robintable_put(processed, dest->vkey, m, dest->len);
+                                r2_robintable_put(processed, dest->vkey, m, dest->len);
                                 entry.key = entry.data = NULL; 
                                 r2_robintable_get(processed, dest->vkey, dest->len, &entry);
                                 if(entry.key == NULL){
@@ -2870,7 +2870,7 @@ struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *graph, r2_uc *src, r2_uint
                                                 
                                 }
 
-                                positions = r2_robintable_put(positions, dest->vkey, &tree[count], dest->len);
+                                r2_robintable_put(positions, dest->vkey, &tree[count], dest->len);
                                 entry.key = entry.data = NULL; 
                                 r2_robintable_get(positions, dest->vkey, dest->len, &entry);
                                 if(entry.key == NULL){

@@ -1,6 +1,7 @@
 #ifndef R2_HEAP_H_
 #define R2_HEAP_H_
 #include "r2_types.h"
+#define PROFILE_HEAP
 /**
  * A heap is a common way of implementing the priority queue data structure. A priority queue data structure is concerned with
  * storing the elements by their associated priority (i.e. elements with lower priorities are stored first or elements with higher priority are stored first). 
@@ -61,6 +62,9 @@ struct r2_pq{
         r2_cmp kcmp;/*A callback comparison function*/
         r2_fd  fd;/*A callback function frees memory used by data*/
         r2_cpy cpy;/*A callback function to copy key*/
+        #ifdef PROFILE_HEAP
+                r2_uint64 ncomp;/*number of comparison*/
+        #endif
 };
 
 struct r2_pq* r2_create_priority_queue(r2_uint64, r2_uint16, r2_cmp, r2_fd, r2_cpy);

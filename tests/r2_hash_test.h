@@ -17,7 +17,8 @@ static void test_r2_create_robintable();
 static void test_r2_robintable_put();
 static void test_r2_robintable_get();
 static void test_r2_robintable_del();
-static void test_r2_robintable_psl(struct r2_robintable *);
+static void test_r2_robintable_psl(struct r2_robintable *, const char *);
 static void test_r2_robintable_stats();
-void test_r2_chaintable_run();
+static void test_r2_chaintable_stats();
+void test_r2_hashtable_run();
 #endif
