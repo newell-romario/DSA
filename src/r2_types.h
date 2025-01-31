@@ -13,6 +13,7 @@ typedef long long int           r2_int64;
 typedef unsigned long long      size_t;       
 typedef long double             r2_ldbl;
 typedef unsigned char           r2_uc;
+typedef char r2_c;
 
 /*A callback function used to create a copy of any value.*/
 typedef void* (*r2_cpy)(const void *); 

@@ -1033,6 +1033,5 @@ void test_r2_avltree_run()
         test_r2_avltree_rangequery();
         test_r2_avltree_compare();
         test_r2_avltree_copy();
-        //test_r2_avltree_generate();
         test_r2_avltree_stats();
 }

@@ -19,7 +19,7 @@ static void test_r2_wavltree_get_keys()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         void **keys = r2_wavltree_get_keys(tree);
 
@@ -46,7 +46,7 @@ static void test_r2_wavltree_get_values()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+               r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         void **values = r2_wavltree_get_values(tree);
 
@@ -73,7 +73,7 @@ static void test_r2_wavltree_at()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);   
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);   
 
         struct r2_wavlnode *root  = r2_wavltree_at(tree->root, 0); 
         assert(root != NULL); 
@@ -97,7 +97,7 @@ static void test_r2_wavlnode_min()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         struct r2_wavlnode *root = r2_wavlnode_min(tree->root);
         assert(root->data == &arr[2]);
@@ -115,7 +115,7 @@ static void test_r2_wavlnode_max()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         struct r2_wavlnode *root = r2_wavlnode_max(tree->root);
         assert(root->data == &arr[7]);
@@ -133,7 +133,7 @@ static void test_r2_wavlnode_successor()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         struct r2_wavlnode *root = r2_wavltree_search(tree, &arr[4]); 
         struct r2_wavlnode *successor = r2_wavlnode_successor(root);
@@ -159,7 +159,7 @@ static void test_r2_wavlnode_predecessor()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         struct r2_wavlnode *root = r2_wavltree_search(tree, &arr[4]); 
         struct r2_wavlnode *predecessor = r2_wavlnode_predecessor(root);
@@ -186,7 +186,7 @@ static void test_r2_wavltree_empty()
         assert(r2_wavltree_empty(tree) == TRUE); 
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         assert(r2_wavltree_empty(tree) != TRUE);   
 
@@ -334,10 +334,10 @@ static void test_r2_wavltree_delete()
         struct r2_wavlnode *root = NULL;
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         /*Delete 1*/
-        tree = r2_wavltree_delete(tree, &arr[2]); 
+        r2_wavltree_delete(tree, &arr[2]); 
         test_r2_wavltree_certify(tree->root);
         assert(tree->ncount == 8);
         root = r2_wavltree_search(tree, &arr[2]);
@@ -351,7 +351,7 @@ static void test_r2_wavltree_delete()
         assert(root->right->data == &arr[1]);
         
         /*Delete 2*/
-        tree = r2_wavltree_delete(tree, &arr[1]); 
+        r2_wavltree_delete(tree, &arr[1]); 
         test_r2_wavltree_certify(tree->root);
         root = r2_wavltree_search(tree, &arr[1]);
         assert(root == NULL);
@@ -369,7 +369,7 @@ static void test_r2_wavltree_delete()
         assert(root->right->ncount == 1);
 
         /*Delete 5*/
-        tree = r2_wavltree_delete(tree, &arr[3]); 
+        r2_wavltree_delete(tree, &arr[3]); 
         test_r2_wavltree_certify(tree->root);
         root = r2_wavltree_search(tree, &arr[3]);
         assert(root == NULL);
@@ -382,7 +382,7 @@ static void test_r2_wavltree_delete()
         assert(root->right->data == &arr[7]);
 
         /*Delete 7*/
-        tree = r2_wavltree_delete(tree, &arr[7]); 
+        r2_wavltree_delete(tree, &arr[7]); 
         test_r2_wavltree_certify(tree->root);
         root = r2_wavltree_search(tree, &arr[7]);
         assert(root == NULL);
@@ -406,7 +406,7 @@ static void test_r2_wavltree_delete()
         assert(root->right->ncount == 1);
 
         /*Delete 1.5*/
-        tree = r2_wavltree_delete(tree, &arr[8]); 
+        r2_wavltree_delete(tree, &arr[8]); 
         test_r2_wavltree_certify(tree->root);
         root = r2_wavltree_search(tree, &arr[8]);
         assert(root == NULL);
@@ -420,7 +420,7 @@ static void test_r2_wavltree_delete()
 
 
         /*Delete 6*/
-        tree = r2_wavltree_delete(tree, &arr[6]); 
+        r2_wavltree_delete(tree, &arr[6]); 
         test_r2_wavltree_certify(tree->root);
         root = r2_wavltree_search(tree, &arr[6]);
         assert(root == NULL);
@@ -437,8 +437,8 @@ static void test_r2_wavltree_delete()
 
         /*Insert 3.6. Then delete 3*/
         double  key = 3.6; 
-        tree = r2_wavltree_insert(tree, &key, &key);
-        tree = r2_wavltree_delete(tree, &arr[0]); 
+        r2_wavltree_insert(tree, &key, &key);
+        r2_wavltree_delete(tree, &arr[0]); 
         test_r2_wavltree_certify(tree->root);
         root = r2_wavltree_search(tree, &arr[0]);
         assert(root == NULL);
@@ -454,8 +454,8 @@ static void test_r2_wavltree_delete()
         assert(root->left->ncount == 1);
 
         /*Insert 3. Then delete 4*/
-        tree = r2_wavltree_insert(tree, &arr[0], &arr[0]);
-        tree = r2_wavltree_delete(tree, &arr[4]); 
+        r2_wavltree_insert(tree, &arr[0], &arr[0]);
+        r2_wavltree_delete(tree, &arr[4]); 
         test_r2_wavltree_certify(tree->root);
         root = r2_wavltree_search(tree, &arr[4]);
         assert(root == NULL);
@@ -476,11 +476,11 @@ static void test_r2_wavltree_delete()
 
         tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);   
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);   
 
         for(int i = 0; i < 9; ++i){
                 test_r2_wavltree_certify(tree->root);
-                tree = r2_wavltree_delete(tree,  &arr[i]);
+                r2_wavltree_delete(tree,  &arr[i]);
                 test_r2_wavltree_certify(tree->root);
         }
                 
@@ -501,7 +501,7 @@ static void test_r2_wavltree_search()
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i){
 
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
                 root = r2_wavltree_search(tree, &arr[i]); 
                 assert(root->data == &arr[i]);
         }
@@ -525,7 +525,7 @@ static void test_r2_destroy_wavltree()
         struct r2_wavlnode *root = NULL;
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
          
 
         /*Destroy tree*/
@@ -554,7 +554,7 @@ static void test_r2_wavltree_inorder()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         printf("\n/*******************************************WAVL Inorder Traversal************************/\n");
         r2_wavltree_inorder(tree->root, print_node, NULL);
@@ -590,7 +590,7 @@ static void test_r2_wavltree_postorder()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         printf("\n/*******************************************WAVL Postorder Traversal************************/\n");
         r2_wavltree_postorder(tree->root, print_node, NULL);
@@ -622,7 +622,7 @@ static void test_r2_wavltree_preorder()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);
 
         printf("\n/*******************************************WAVL Preorder Traversal************************/\n");
         r2_wavltree_preorder(tree->root, print_node, NULL);
@@ -687,7 +687,7 @@ static void test_r2_wavltree_copy()
         
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);  
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);  
 
 
         /*Shallow comparison*/
@@ -745,7 +745,7 @@ static void test_r2_wavltree_compare()
 
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);  
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);  
 
        
         /*Shallow comparison*/
@@ -785,7 +785,7 @@ static void test_r2_wavltree_range_query()
         struct r2_wavltree *tree = r2_create_wavltree(cmp, cmp, NULL, NULL, NULL, NULL);
         double arr[] = {3, 2, 1, 5, 4, 3.5, 6, 7, 1.5};
         for(int i = 0; i < 9; ++i)
-                tree = r2_wavltree_insert(tree, &arr[i], &arr[i]);    
+                r2_wavltree_insert(tree, &arr[i], &arr[i]);    
         double range[2] = {2, 6}; 
        
         printf("\n /*****************WAVL Range Query************/\n");
@@ -853,7 +853,7 @@ static void test_r2_wavltree_stats()
                         key = malloc(sizeof(r2_uint64));  
                         *key = a[i];
                         before = clock();
-                        wavl = r2_wavltree_insert(wavl, key, key);
+                        r2_wavltree_insert(wavl, key, key);
                         elapse += (clock() - before)/(r2_ldbl)CLOCKS_PER_SEC;
                 }
 
@@ -920,7 +920,6 @@ void test_r2_wavltree_run()
         test_r2_wavltree_postorder(); 
         test_r2_wavltree_preorder();
         test_r2_wavltree_range_query();
-       // test_r2_wavltree_generate();
         test_r2_wavltree_stats();
 }
 
@@ -959,14 +958,14 @@ static void test_r2_wavltree_generate()
 
         for(int i = 0; i < 100000;++i){  
              fscanf(dataset, "%lld", &data[i]);
-             wavl = r2_wavltree_insert(wavl, &data[i], &data[i]); 
+             r2_wavltree_insert(wavl, &data[i], &data[i]); 
         }
 
         test_r2_wavltree_certify(wavl->root); 
         test_r2_wavltree_is_binary_tree(wavl->root, cmp2);
  
         for(int i = 0; i < 100000;++i){
-                wavl = r2_wavltree_delete(wavl, &data[i]); 
+                r2_wavltree_delete(wavl, &data[i]); 
                 test_r2_wavltree_certify(wavl->root);
                 test_r2_wavltree_is_binary_tree(wavl->root, cmp2);
         }

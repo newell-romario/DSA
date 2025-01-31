@@ -258,8 +258,8 @@ static void test_r2_robintable_psl(struct r2_robintable *table, const char *fn)
 
 static r2_int16 cmp2(const void *a, const void *b)
 {
-        const long long int *c = ((struct r2_key *)a)->key; 
-        const long long int *d = ((struct r2_key *)b)->key; 
+        const long long int *c = (r2_int64 *)((struct r2_key *)a)->key; 
+        const long long int *d = (r2_int64 *)((struct r2_key *)b)->key; 
 
        if(*c == *d)
                 return 0; 
@@ -482,15 +482,15 @@ static void test_r2_chaintable_stats()
                         nentries += table->chain[i].csize;
                 }
         } 
+        fclose(fp);
         printf("\nAverage chain length: %lf", (double)nentries/ ncells);
         struct r2_chain *chain  = test_r2_longest_chain(table);
         printf("\nLongest chain: %d", chain->csize); 
         printf("\nLongest chain: ");
         test_r2_print_chain(test_r2_longest_chain(table));
         printf("\nFirst Index: %d", test_r2_chaintable_first_index(table));
-        printf("\nLast Index: %d", test_r2_chaintable_last_index(table));
+        printf("\nLast Index: %d",  test_r2_chaintable_last_index(table));
         test_r2_chaintable_print(table);
-        fclose(fp);
         r2_destroy_chaintable(table);
 }
 

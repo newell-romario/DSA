@@ -884,6 +884,5 @@ void test_r2_rbtree_run()
         test_r2_rbtree_compare();
         test_r2_rbtree_getkeys();
         test_r2_rbtree_getvalues();
-        //test_r2_rbtree_generate();
         test_r2_rbtree_stats();
 }

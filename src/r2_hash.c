@@ -168,7 +168,7 @@ static r2_uint64 r2_get_tsize(r2_uint64 tsize, r2_int16 op, r2_int16 prime)
                                                 nsize = PRIMES[i - 1]; 
                                 break;
                                 default: 
-                                        if(tsize != nsize && nsize != PRIMES[26])
+                                        if(tsize > 0 && tsize != nsize && nsize != PRIMES[26])
                                                 nsize = PRIMES[i + 1];    
                         }
         }else{
@@ -241,6 +241,8 @@ void r2_chaintable_get(struct r2_chaintable *table, r2_uc *key, r2_uint64 length
         r2_uint64 hash = table->hf(key, length, table->tsize);
         assert(hash < table->tsize);
         struct r2_cnode *node = r2_chain_search(&table->chain[hash], key, length, table->kcmp); 
+        entry->key = entry->data = NULL; 
+        entry->length = 0;
         if(node != NULL)
                 *entry = *(node->entry);
 }
@@ -345,7 +347,7 @@ struct r2_robintable* r2_create_robintable(r2_int16 hf, r2_int16 prime, r2_uint6
         }; 
         struct r2_robintable* table  = malloc(sizeof(struct r2_robintable)); 
         if(table != NULL){
-                tsize = tsize != 0 && prime != 1? tsize : r2_get_tsize(tsize, 1, prime); 
+                tsize =  r2_get_tsize(tsize, 3, prime); 
                 table->cells = malloc(sizeof(struct r2_robinentry*) * tsize); 
                 if(table->cells != NULL){
                         table->nsize    = 0; 
@@ -466,6 +468,8 @@ void r2_robintable_get(struct r2_robintable *table, r2_uc *key,  r2_uint64 lengt
         struct r2_key k = {.key = key, .len = length}; 
         struct r2_key j;
         r2_uint64 psl = 0; 
+        entry->length = 0;
+        entry->key = entry->data = NULL; 
         while(table->cells[hash] != NULL){
                 j.key = table->cells[hash]->entry.key;
                 j.len = table->cells[hash]->entry.length;
@@ -725,7 +729,7 @@ r2_uint64 r2_hash_wee(const unsigned char *key, r2_uint64 length, r2_uint64 tsiz
  * @param data          Data.
  * @param hash          Hash.
  * @param length        Key length.
- * @return r2_uint16    Returns TRUE upon successful insertion, else NULL.
+ * @return r2_uint16    Returns TRUE upon successful insertion, else FALSE.
  */
 static r2_uint16 r2_chain_insert(struct r2_chain *chain, r2_uc *key,void *data, r2_uint64 hash,r2_uint64 length)
 {
