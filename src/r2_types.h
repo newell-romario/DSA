@@ -12,6 +12,7 @@ typedef long int                r2_int32;
 typedef long long int           r2_int64;   
 typedef unsigned long long      size_t;       
 typedef long double             r2_ldbl;
+typedef double                  r2_dbl;
 typedef unsigned char           r2_uc;
 typedef char r2_c;
 

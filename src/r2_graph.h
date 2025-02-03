@@ -78,11 +78,10 @@ r2_uint16   r2_edge_add_attributes(struct r2_edge*, r2_uc *, void *, r2_uint64, 
 r2_uint16   r2_edge_del_attributes(struct r2_edge*, r2_uc *, r2_uint64, r2_cmp);
 void*  r2_edge_get_attributes(struct r2_edge*, r2_uc *, r2_uint64, r2_cmp);
 
-/**************************************************Graph Algorithms******************************************************/
-
-struct r2_components{
+/**************************************************Graph Algorithms********************************************/
+struct r2_forest{
         r2_uint64 ncount;/*number of components*/
-        struct r2_graph *forest;/*different components*/
+        struct r2_graph **tree;/*different components*/
 };
 
 
@@ -100,17 +99,16 @@ r2_uint16 r2_graph_has_path(struct r2_graph *, struct r2_vertex *, struct r2_ver
 r2_uint16 r2_graph_has_cycle(struct r2_graph *);
 r2_uint16 r2_graph_strongly_connected(struct r2_graph *);
 r2_uint16 r2_graph_is_bipartite(struct r2_graph *);
+r2_uint16 r2_graph_is_connected(struct r2_graph *);
 struct r2_graph* r2_graph_bfs_tree(struct r2_graph *, struct r2_vertex *); 
 struct r2_graph* r2_graph_dfs_tree(struct r2_graph *, struct r2_vertex *);
 struct r2_list*  r2_graph_children(struct r2_graph *, struct r2_vertex *); 
 struct r2_vertex* r2_graph_parent(struct r2_graph *, struct r2_vertex *);
-struct r2_components* r2_graph_cc(struct r2_graph *);
-struct r2_components* r2_graph_destroy_cc(struct r2_components *);
-struct r2_components* r2_graph_tarjan_strongly_connected_components(struct r2_graph *);
-
-
-struct r2_components* r2_graph_strongly_connected_components(struct r2_graph *);
+struct r2_forest* r2_graph_cc(struct r2_graph *);
+struct r2_forest* r2_graph_destroy_cc(struct r2_forest *);
+struct r2_forest* r2_graph_tscc(struct r2_graph *);
+struct r2_forest* r2_graph_kcc(struct r2_graph *);
 struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
 struct r2_dfstree* r2_graph_bellman_ford(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
-/************************************Graph Algorithms*******************************************/
+/*************************************************Graph Algorithms*******************************************/
 #endif 

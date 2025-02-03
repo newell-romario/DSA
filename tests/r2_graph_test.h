@@ -36,13 +36,9 @@ static void test_r2_graph_connected_components();
 static void test_r2_graph_is_connected();
 static void test_r2_graph_is_bipartite();
 static void test_r2_graph_bipartite_set();
+static void test_r2_graph_tscc();
 
-
-static void test_r2_graph_tarjan_strongly_connected_components();
-
-static void test_r2_graph_strongly_connected_components();
-static void test_r2_graph_strongly_connected();
 static void test_r2_graph_dijkstra();
-static void test_r2_graph_large_network();
+static void test_r2_graph_stats();
 void test_r2_graph_run();
 #endif
