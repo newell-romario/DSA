@@ -63,6 +63,7 @@ struct r2_chaintable* r2_create_chaintable(r2_int16 hf, r2_int16 prime, r2_uint6
                 table->dcpy   = dcpy;
                 table->fk     = fk;
                 table->fd     = fd;
+                table->contract = FALSE;
                 table->chain  = malloc(sizeof(struct r2_chain) * table->tsize);
                 if(table->chain != NULL){
                         /*Initializes hash table*/
@@ -89,7 +90,7 @@ struct r2_chaintable* r2_destroy_chaintable(struct r2_chaintable *table)
 {
         struct r2_cnode *head  = NULL; 
         struct r2_cnode  *prev = NULL; 
-        for(r2_uint64 i = 0; i < table->tsize; ++i){
+        for(r2_uint64 i = 0; i < table->tsize && table->nsize != 0; ++i){
                 if(table->chain[i].csize != 0){
                         head = table->chain[i].head; 
                         while(head != NULL){
@@ -362,6 +363,7 @@ struct r2_robintable* r2_create_robintable(r2_int16 hf, r2_int16 prime, r2_uint6
                         table->dcpy     = dcpy; 
                         table->fk       = fk; 
                         table->fd       = fd; 
+                        table->contract = FALSE;
                         for(r2_uint64 i = 0; i < table->tsize; ++i)
                                 table->cells[i] = NULL;   
                 }else{
@@ -554,7 +556,7 @@ r2_uint16 r2_robintable_del(struct r2_robintable *table, r2_uc *key, r2_uint64 l
  */
 struct r2_robintable* r2_destroy_robintable(struct r2_robintable *table)
 {
-        for(r2_uint64 i = 0; i < table->tsize; ++i){
+        for(r2_uint64 i = 0; i < table->tsize && table->nsize != 0; ++i){
                 if(table->cells[i] != NULL)
                         r2_free_robinentry(table->cells[i], table->fk, table->fd);
         }

@@ -21,6 +21,7 @@ struct r2_edge{
          */
         struct r2_listnode *pos[4];
         struct r2_robintable *eat;/*edge attributes*/
+        r2_uint16 nat;/*mirrors nat attribute in graph*/ 
 }; 
 
 
@@ -36,7 +37,8 @@ struct r2_vertex{
         struct r2_list *out;/*out degree*/    
         struct r2_list *elist;/*contains all the edges for this vertex*/
         struct r2_robintable *edges;/*edges*/
-        struct r2_robintable *vat;/*vertex attributes*/  
+        struct r2_robintable *vat;/*vertex attributes*/ 
+        r2_uint16 nat;/*mirors nat attribute in graph*/ 
         r2_uint64 nedges;/*number of edges*/     
 };
 
@@ -57,7 +59,7 @@ struct r2_graph{
      r2_fk  fv;/*callback function that releases the memory used by vkey*/
      r2_fk  fk;/*callback function that releases the memory used by a key in gat*/
      r2_fk  fd;/*callback function that releases the memory used by a value in data*/
-     r2_uint16 vat; /*do not create atrribute for edge or vertex in subgraph*/
+     r2_uint16 nat; /*do not create atrribute for edge or vertex in subgraph*/
 };
 
 struct r2_graph* r2_create_graph(r2_cmp, r2_cmp, r2_fk, r2_fk, r2_fk);
@@ -78,7 +80,7 @@ r2_uint16   r2_edge_add_attributes(struct r2_edge*, r2_uc *, void *, r2_uint64, 
 r2_uint16   r2_edge_del_attributes(struct r2_edge*, r2_uc *, r2_uint64, r2_cmp);
 void*  r2_edge_get_attributes(struct r2_edge*, r2_uc *, r2_uint64, r2_cmp);
 
-/**************************************************Graph Algorithms********************************************/
+/**************************************************Graph Algorithms*********************************************/
 struct r2_forest{
         r2_uint64 ncount;/*number of components*/
         struct r2_graph **tree;/*different components*/
@@ -88,6 +90,7 @@ struct r2_forest{
 void r2_graph_bfs(struct r2_graph *, struct r2_vertex *, r2_act, void *);
 void r2_graph_dfs(struct r2_graph *, struct r2_vertex *, r2_act, void *);
 struct r2_graph* r2_graph_transpose(struct r2_graph *);
+struct r2_graph* r2_graph_path_tree(struct r2_graph *,  struct r2_vertex *, struct r2_vertex *);
 struct r2_list* r2_graph_bipartite_set(struct r2_graph *, r2_uint16);
 struct r2_list* r2_graph_dfs_traversals(struct r2_graph *, struct r2_vertex *, r2_uint16);
 struct r2_list* r2_graph_topological_sort(struct r2_graph *);
@@ -108,6 +111,7 @@ struct r2_forest* r2_graph_cc(struct r2_graph *);
 struct r2_forest* r2_graph_destroy_cc(struct r2_forest *);
 struct r2_forest* r2_graph_tscc(struct r2_graph *);
 struct r2_forest* r2_graph_kcc(struct r2_graph *);
+struct r2_forest* r2_graph_bcc(struct r2_graph *);
 struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
 struct r2_dfstree* r2_graph_bellman_ford(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
 /*************************************************Graph Algorithms*******************************************/

@@ -8,21 +8,22 @@
 #include <stdio.h>
 #include <math.h>
 /********************File scope functions************************/
-
+static void r2_free_edge_data(void *);
+static void r2_free_vertex_data(void *);
 static void r2_free_vertex(struct r2_graph *, struct r2_vertex *);
 static void r2_free_edge(struct r2_graph *,  struct r2_edge *);
 static void r2_free_list(void *);
 static r2_int16 r2_cmp_edge(const void *, const void *);
 static struct r2_vertex* r2_create_vertex(r2_cmp, r2_uint16);
 static struct r2_edge*   r2_create_edge(r2_uint16);
-static struct r2_graph*  r2_graph_components(struct r2_graph *, struct r2_vertex *, struct r2_robintable *);
+static struct r2_graph*  r2_graph_components(struct r2_graph *, struct r2_vertex *, struct r2_robintable *, r2_int64);
 static void action(void *, void*);
-static struct r2_graph* r2_graph_build_tscc(struct r2_graph *, struct r2_vertex *, struct r2_robintable *, r2_uint16 *, r2_dbl *);
+static struct r2_graph* r2_graph_build_tscc(struct r2_graph *, struct r2_vertex *, struct r2_robintable *, r2_uint64 *);
 /**
  * WHITE - We have not started to process the adjacency list of this vertex.
  * GREY  - We have started to process this vertex but haven't completed processing. 
  * BLACK - We have completed processing the vertex.
- * YELLOW - We have started processing this vertex in tscc
+ * YELLOW - A vertex is already apart of a component
  */
 const r2_uint16 WHITE = 0; 
 const r2_uint16 GREY  = 1;
@@ -49,7 +50,7 @@ struct r2_graph* r2_create_graph(r2_cmp vmcp, r2_cmp gcmp, r2_fk fv, r2_fk fk, r
                 graph->nvertices = 0; 
                 graph->nedges    = 0; 
                 graph->gat       = r2_create_robintable(1, 1, 0, 0, 0, gcmp, NULL, NULL, NULL, fk, fd);
-                graph->vertices  = r2_create_robintable(1, 1, 0, 0, 0, vmcp, NULL, NULL, NULL, fv, free);
+                graph->vertices  = r2_create_robintable(1, 1, 0, 0, .55, vmcp, NULL, NULL, NULL, fv, r2_free_vertex_data);
                 graph->vlist     = r2_create_list(NULL, NULL, NULL);
                 graph->elist     = r2_create_list(NULL, NULL, NULL);
                 graph->vcmp      = vmcp;
@@ -57,7 +58,7 @@ struct r2_graph* r2_create_graph(r2_cmp vmcp, r2_cmp gcmp, r2_fk fv, r2_fk fk, r
                 graph->fv        = fv; 
                 graph->fk        = fk;
                 graph->fd        = fd;
-                graph->vat       = FALSE;
+                graph->nat       = FALSE;
                 /**
                  * All metadata related to the graph is important. 
                  * If we can't allocate necessary structures for the metadata,
@@ -90,12 +91,7 @@ struct r2_graph* r2_create_graph(r2_cmp vmcp, r2_cmp gcmp, r2_fk fv, r2_fk fk, r
  */
 struct r2_graph* r2_destroy_graph(struct r2_graph *graph)
 {
-        struct r2_vertex *vertex = NULL;
-        while(r2_list_empty(graph->vlist) != TRUE){
-                vertex = r2_listnode_first(graph->vlist)->data;
-                r2_free_vertex(graph, vertex);
-        }
-        if(graph->vat == FALSE)
+        if(graph->nat == FALSE)
                 r2_destroy_robintable(graph->gat); 
         
         r2_destroy_list(graph->elist); 
@@ -119,7 +115,7 @@ r2_uint16 r2_graph_add_vertex(struct r2_graph *graph, r2_uc *vk, r2_uint64 len)
         struct r2_vertex *vertex = r2_graph_get_vertex(graph, vk, len); 
         r2_uint16 SUCCESS = FALSE;
         if(vertex == NULL){
-                vertex = r2_create_vertex(graph->vcmp, graph->vat);
+                vertex = r2_create_vertex(graph->vcmp, graph->nat);
                 if(vertex != NULL){
                         vertex->vkey  = vk; 
                         vertex->len   = len;
@@ -133,6 +129,7 @@ r2_uint16 r2_graph_add_vertex(struct r2_graph *graph, r2_uc *vk, r2_uint64 len)
                         SUCCESS = TRUE;
                 }         
         }else SUCCESS = TRUE;
+
         return SUCCESS;
 }
 
@@ -203,7 +200,7 @@ r2_uint16 r2_graph_add_edge(struct r2_graph *graph, r2_uc *src, r2_uint64 slen, 
         struct r2_edge *edge = r2_graph_get_edge(graph, src, slen, dest, dlen); 
         if(edge == NULL){
                 /*Creating edge*/
-                edge = r2_create_edge(graph->vat);  
+                edge = r2_create_edge(graph->nat);  
                 if(edge != NULL){
                         /*Getting or adding vertices to graph*/
                         vertex[0] = r2_graph_get_vertex(graph, src,  slen); 
@@ -244,6 +241,7 @@ r2_uint16 r2_graph_add_edge(struct r2_graph *graph, r2_uc *src, r2_uint64 slen, 
 
                 }else 
                         goto CLEANUP; 
+
                 SUCCESS = TRUE;
                 goto FINAL;
         }else{
@@ -348,11 +346,11 @@ r2_uint16 r2_graph_del_attributes(struct r2_graph *graph, r2_uc *key, r2_uint64 
 /**
  * @brief                       Creates an empty vertex.
  * @param cmp                   Comparison callback
- * @param vat                   IF TRUE the vertex is created without the attribute hash table. 
+ * @param nat                   IF TRUE the vertex is created without the attribute hash table. 
  *  
  * @return struct r2_vertex*    Returns an empty vertex, else NULL.
  */
-static struct r2_vertex* r2_create_vertex(r2_cmp cmp,  r2_uint16 vat)
+static struct r2_vertex* r2_create_vertex(r2_cmp cmp,  r2_uint16 nat)
 {
         struct r2_vertex *vertex = malloc(sizeof(struct r2_vertex));
         if(vertex != NULL){
@@ -362,12 +360,11 @@ static struct r2_vertex* r2_create_vertex(r2_cmp cmp,  r2_uint16 vat)
                 vertex->in              = r2_create_list(NULL, NULL, NULL);  
                 vertex->out             = r2_create_list(NULL, NULL, NULL); 
                 vertex->elist           = r2_create_list(NULL, NULL, NULL); 
-                vertex->edges           = r2_create_robintable(1, 1, 0, 0, .75, cmp, NULL, NULL, NULL, NULL, free);
+                vertex->edges           = r2_create_robintable(1, 1, 0, 0, .55, cmp, NULL, NULL, NULL, NULL, r2_free_edge_data);
                 vertex->nedges          = 0;
-                vertex->vat             = vat == TRUE? NULL : r2_create_robintable(1, 1, 0, 0, .75, NULL, NULL, NULL, NULL, NULL, NULL);
-
-                
-                if(vertex->in == NULL || vertex->out == NULL || vertex->elist == NULL   || vertex->edges == NULL || (vat == FALSE && vertex->vat == NULL)){
+                vertex->vat             = nat == TRUE? NULL : r2_create_robintable(1, 1, 0, 0, .75, NULL, NULL, NULL, NULL, NULL, NULL);
+                vertex->nat             = nat;
+                if(vertex->in == NULL || vertex->out == NULL || vertex->elist == NULL   || vertex->edges == NULL || (nat == FALSE && vertex->vat == NULL)){
                         /**
                          * All metadata related to the vertex is important. 
                          * If we fail to allocated memory for any metadata, then construction 
@@ -386,11 +383,11 @@ static struct r2_vertex* r2_create_vertex(r2_cmp cmp,  r2_uint16 vat)
                         if(vertex->edges != NULL)
                                 r2_destroy_robintable(vertex->edges); 
 
-                        free(vertex); 
-                        vertex = NULL;   
+                        if(nat == FALSE && vertex->vat != NULL)
+                                r2_destroy_robintable(vertex->vat);   
 
-                        if(vat == FALSE && vertex->vat != NULL)
-                                r2_destroy_robintable(vertex->vat);         
+                        free(vertex); 
+                        vertex = NULL;         
                 }
         } 
         return vertex; 
@@ -446,23 +443,24 @@ r2_uint16 r2_vertex_del_attributes(struct r2_vertex *vertex, r2_uc *key, r2_uint
 
 /**
  * @brief                       Creates an empty edge.
- * @param vat                   If TRUE edge is created without attribute hash table.
+ * @param nat                   If TRUE edge is created without attribute hash table.
  * @return struct r2_edge*      Returns an empty edge, else NULL.
  */
-static struct r2_edge*  r2_create_edge(r2_uint16 vat)
+static struct r2_edge*  r2_create_edge(r2_uint16 nat)
 {
         struct r2_edge *edge = malloc(sizeof(struct r2_edge)); 
         if(edge != NULL){
                 edge->src         = NULL; 
                 edge->dest        = NULL; 
+                edge->nat         = nat;
                 for(r2_uint64 i = 0; i < 4; ++i)
                         edge->pos[i] = NULL; 
-                edge->eat         = vat == TRUE? NULL : r2_create_robintable(1, 1, 0, 0, .75, NULL, NULL, NULL, NULL, NULL, NULL); 
+                edge->eat         = nat == TRUE? NULL : r2_create_robintable(1, 1, 0, 0, .75, NULL, NULL, NULL, NULL, NULL, NULL); 
                 /**
                  * All metadata is important. Failure to allocate requisite memory is considered
                  * a failure to create edge.
                  */
-                if(vat == FALSE && edge->eat == NULL){
+                if(nat == FALSE && edge->eat == NULL){
                         free(edge); 
                         edge = NULL;
                 }
@@ -526,13 +524,13 @@ r2_uint16 r2_edge_del_attributes(struct r2_edge *edge, r2_uc *key, r2_uint64 len
  */
 static void r2_free_vertex(struct r2_graph *graph, struct r2_vertex *vertex)
 {
-        /*Removing vertex from list*/
+        /*Removing vertex from graph list of vertices*/
         if(vertex->pos != NULL){
                 r2_list_delete(graph->vlist, vertex->pos);
                 --graph->nvertices;
         }
 
-       /*Freeing edges*/
+        /*Freeing edges*/
         struct r2_listnode *node = r2_listnode_first(vertex->elist); 
         while(node != NULL){
                 r2_free_edge(graph, node->data);
@@ -540,8 +538,8 @@ static void r2_free_vertex(struct r2_graph *graph, struct r2_vertex *vertex)
         }
 
         /*Need to check all vertices that are incident on this vertex*/
-        struct r2_vertex *src  = NULL; 
-        struct r2_edge *edge = NULL;
+        struct r2_vertex *src    = NULL; 
+        struct r2_edge *edge     = NULL;
         node = r2_listnode_first(vertex->in);
         while(node != NULL){
                 src  = node->data;
@@ -549,14 +547,7 @@ static void r2_free_vertex(struct r2_graph *graph, struct r2_vertex *vertex)
                 r2_free_edge(graph, edge);
                 node = r2_listnode_first(vertex->in);
         }
-
-
-        r2_destroy_robintable(vertex->edges); 
-        if(graph->vat == FALSE)
-                r2_destroy_robintable(vertex->vat);
-        r2_destroy_list(vertex->elist); 
-        r2_destroy_list(vertex->out);
-        r2_destroy_list(vertex->in);
+ 
         r2_robintable_del(graph->vertices, vertex->vkey, vertex->len);
 }
 
@@ -585,8 +576,6 @@ static void r2_free_edge(struct r2_graph *graph,  struct r2_edge *edge)
         if(edge->pos[3] != NULL)
                r2_list_delete(dest->in, edge->pos[3]);
         
-        if(graph->vat == FALSE)
-                r2_destroy_robintable(edge->eat); 
         if(src != NULL){
                 r2_robintable_del(src->edges, dest->vkey, dest->len);
                 --src->nedges;
@@ -613,7 +602,7 @@ r2_uint16 r2_graph_has_cycle(struct r2_graph *graph)
         * The initial state of a vertex is always WHITE. As we perform the breadth first search 
         * the states change from WHITE => GREY => BLACK.
         */
-        r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
+        r2_uint16 *state = malloc(sizeof(r2_uint16) * graph->nvertices);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || stack == NULL)
                 goto CLEANUP; 
@@ -625,7 +614,7 @@ r2_uint16 r2_graph_has_cycle(struct r2_graph *graph)
         struct r2_edge     *edge   = NULL;
         struct r2_entry    entry   = {.key = NULL, .data = NULL, .length  = 0};
         r2_uint16 *vstate = NULL;
-        r2_uint64 count = 0;
+        r2_int64 count = -1;
         
         vertex  = r2_listnode_first(graph->vlist);
         while(vertex != NULL){
@@ -633,7 +622,7 @@ r2_uint16 r2_graph_has_cycle(struct r2_graph *graph)
                 r2_robintable_get(processed, source->vkey, source->len, &entry);
                 vstate    = entry.data; 
                 if(vstate == NULL){
-                        vstate    = &state[count++];
+                        vstate    = &state[++count];
                         *vstate   = GREY; 
                         if(r2_robintable_put(processed, source->vkey, vstate, source->len) != TRUE)
                                 goto CLEANUP;
@@ -647,14 +636,14 @@ r2_uint16 r2_graph_has_cycle(struct r2_graph *graph)
                                         r2_robintable_get(processed, dest->vkey, dest->len, &entry);
                                         vstate = entry.data; 
                                         if(vstate == NULL){
-                                                vstate    = &state[count++];
+                                                vstate    = &state[++count];
                                                 *vstate   = GREY;
                                                 if(r2_robintable_put(processed, dest->vkey, vstate, dest->len) != TRUE ||
                                                 r2_arrstack_push(stack, edge->pos[0]) != TRUE)
                                                         goto CLEANUP;
 
                                                 source  = dest;
-                                                head    = source->elist != NULL? r2_listnode_first(source->elist) : NULL;
+                                                head    = r2_listnode_first(source->elist);
                                                 if(head == NULL)
                                                         break;
 
@@ -666,19 +655,18 @@ r2_uint16 r2_graph_has_cycle(struct r2_graph *graph)
                                         head = head->next; 
                                 }
 
-                                if(head == NULL){
-                                        r2_robintable_get(processed, source->vkey, source->len, &entry);
-                                        vstate    = entry.data; 
-                                        *vstate   = BLACK; 
-                                        head      = r2_arrstack_top(stack);
-                                        if(head != NULL){
-                                                edge      = head->data; 
-                                                source    = edge->src;
-                                                head      = head->next;
-                                        }else
-                                                source = NULL;
-                                        r2_arrstack_pop(stack);
-                                }    
+                                
+                                r2_robintable_get(processed, source->vkey, source->len, &entry);
+                                vstate    = entry.data; 
+                                *vstate   = BLACK; 
+                                head      = r2_arrstack_top(stack);
+                                if(head != NULL){
+                                        edge      = head->data; 
+                                        source    = edge->src;
+                                        head      = head->next;
+                                }else
+                                        source = NULL;
+                                r2_arrstack_pop(stack);              
                         }while(source != NULL);
                 }
                 vertex = vertex->next;
@@ -703,9 +691,9 @@ r2_uint16 r2_graph_has_cycle(struct r2_graph *graph)
  */
 struct r2_graph* r2_graph_transpose(struct r2_graph *graph)
 {
-        struct r2_graph *transpose = r2_create_graph(graph->vcmp, graph->gcmp, NULL, NULL, NULL); 
+        struct r2_graph *transpose = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd); 
         if(transpose != NULL){
-                transpose->vat = TRUE;
+                transpose->nat = TRUE;
                 struct r2_vertex   *src    = NULL;
                 struct r2_vertex   *dest   = NULL;
                 struct r2_listnode *head   = r2_listnode_first(graph->elist);
@@ -738,16 +726,13 @@ struct r2_graph* r2_graph_transpose(struct r2_graph *graph)
                 while(head != NULL){
                         src = head->data; 
                         att[0] = src->vat;
-                        src = r2_graph_get_vertex(graph, src->vkey, src->len);
-                        if(src == NULL){
-                                src = head->data;
-                                if(r2_graph_add_vertex(transpose, src->vkey, src->len) != TRUE){
-                                        transpose = r2_destroy_graph(transpose); 
-                                        break;
-                                } 
-                                src = r2_graph_get_vertex(transpose, src->vkey, src->len);
-                                src->vat = att[0];
-                        }
+                        if(r2_graph_add_vertex(transpose, src->vkey, src->len) != TRUE){
+                                transpose = r2_destroy_graph(transpose); 
+                                break;
+                        } 
+
+                        src = r2_graph_get_vertex(transpose, src->vkey, src->len);
+                        src->vat = att[0];
                         head = head->next;
                 }
         }
@@ -774,7 +759,7 @@ void r2_graph_bfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
         * The initial state of a vertex is always WHITE. As we perform the breadth first search 
         * the states change from WHITE => GREY => BLACK.
         */
-        r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
+        r2_uint16 *state = malloc(sizeof(r2_uint16) * graph->nvertices);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || queue == NULL){
                 FAILED = TRUE; 
@@ -783,6 +768,7 @@ void r2_graph_bfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
 
         struct r2_listnode *head   = NULL;
         struct r2_vertex   *dest   = NULL; 
+        struct r2_edge     *edge   = NULL;
         struct r2_entry  entry = {.key = NULL, .data = NULL, .length  = 0};
         r2_uint64 count = 0;   
         
@@ -806,10 +792,10 @@ void r2_graph_bfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
         r2_uint16 *vstate = NULL;
         do{
                 source = r2_queue_front(queue)->data;
-                head   = r2_listnode_first(source->out);
-
+                head   = r2_listnode_first(source->elist);
                 while(head != NULL){
-                        dest    = head->data; 
+                        edge = head->data;
+                        dest = edge->dest; 
                         /**
                          * Checking to see if the vertex is being processed. 
                          * If the vertex doesn't exist in the hash table then processing hasn't 
@@ -865,6 +851,7 @@ r2_uint16 r2_graph_strongly_connected(struct r2_graph *graph)
                 CONNECTED =  bfs[0]->nvertices == bfs[1]->nvertices;
                 r2_destroy_graph(bfs[0]); 
                 r2_destroy_graph(bfs[1]);
+                r2_destroy_graph(transpose);
         }
         return CONNECTED;
 }
@@ -887,7 +874,7 @@ void r2_graph_dfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
         * The initial state of a vertex is always WHITE. As we perform the breadth first search 
         * the states change from WHITE => GREY => BLACK.
         */
-        r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
+        r2_uint16 *state = malloc(sizeof(r2_uint16) * graph->nvertices);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || stack == NULL){
                 FAILED = TRUE; 
@@ -898,11 +885,11 @@ void r2_graph_dfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
         struct r2_vertex   *dest  = NULL;
         struct r2_edge     *edge  = NULL;
         struct r2_entry    entry  = {.key = NULL, .data = NULL, .length  = 0};
-        r2_uint64 count = 0;
+        r2_int64 count = -1;
 
         /*Updating source state in hash table*/
         source = source == NULL? r2_listnode_first(graph->vlist)->data : source;
-        state[count] = GREY;
+        state[++count] = GREY;
         if(r2_robintable_put(processed, source->vkey, &state[count], source->len) != TRUE){
                 FAILED = TRUE; 
                 goto CLEANUP;
@@ -935,7 +922,7 @@ void r2_graph_dfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
                                 }
                                 
                                 source  = dest;
-                                head    = source->elist != NULL? r2_listnode_first(source->elist) : NULL;
+                                head    = r2_listnode_first(source->elist);
                                 if(head == NULL)
                                         break;
                                 continue;          
@@ -943,18 +930,17 @@ void r2_graph_dfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
                         head = head->next; 
                 }
 
-                if(head == NULL){
-                        r2_robintable_get(processed, source->vkey, source->len, &entry);
-                        vstate    = entry.data;
-                        *vstate   = BLACK; 
-                        head      = r2_arrstack_top(stack);
-                        if(head != NULL){
-                                edge      = head->data; 
-                                source    = edge->src;
-                                head      = head->next;
-                        }else source = NULL;
-                        r2_arrstack_pop(stack);
-                }    
+                
+                r2_robintable_get(processed, source->vkey, source->len, &entry);
+                vstate    = entry.data;
+                *vstate   = BLACK; 
+                head      = r2_arrstack_top(stack);
+                if(head != NULL){
+                        edge      = head->data; 
+                        source    = edge->src;
+                        head      = head->next;
+                }else source = NULL;
+                r2_arrstack_pop(stack);
         }while(source != NULL);
         CLEANUP:
                 if(stack != NULL)
@@ -984,7 +970,7 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, struct r2_vertex
         struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
         /*Stores vertices in specific order*/
         struct r2_list *list = r2_create_list(NULL, NULL, NULL);
-        r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
+        r2_uint16 *state = malloc(sizeof(r2_uint16) * graph->nvertices);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || stack == NULL || list == NULL){
                 FAILED = TRUE; 
@@ -995,7 +981,7 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, struct r2_vertex
         struct r2_vertex   *dest  = NULL;
         struct r2_edge     *edge  = NULL;
         struct r2_entry    entry  = {.key = NULL, .data = NULL, .length  = 0};
-        r2_uint64 count = 0;
+        r2_int64 count = -1;
         
         struct r2_listnode *cur = r2_listnode_first(graph->vlist);
         r2_uint16 *vstate = NULL;
@@ -1006,7 +992,7 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, struct r2_vertex
                 r2_robintable_get(processed, source->vkey, source->len, &entry);
                 vstate = entry.data;
                 if(vstate == NULL){
-                        state[count] = GREY;
+                        state[++count] = GREY;
                         if(r2_robintable_put(processed, source->vkey, &state[count], source->len) != TRUE){
                                 FAILED = TRUE; 
                                 goto CLEANUP;
@@ -1056,34 +1042,33 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, struct r2_vertex
                                         head = head->next; 
                                 }
 
-                                if(head == NULL){
-                                        r2_robintable_get(processed, source->vkey, source->len, &entry);
-                                        vstate    = entry.data;
-                                        *vstate   = BLACK; 
-                                        head      = r2_arrstack_top(stack);
-                                        /*postorder*/
-                                        struct r2_listnode node = {.data = source}; 
-                                        if(order == 1){
-                                                if(r2_list_insert_at_back(list, source) != TRUE){
-                                                        FAILED = TRUE; 
-                                                        goto CLEANUP;
-                                                }
-                                        }      
-                                        /*reverse postorder*/
-                                        else if(order == 2){
-                                                if(r2_list_insert_at_front(list, source) != TRUE){
-                                                        FAILED = TRUE; 
-                                                        goto CLEANUP;                                                        
-                                                }
+                                r2_robintable_get(processed, source->vkey, source->len, &entry);
+                                vstate    = entry.data;
+                                *vstate   = BLACK; 
+                                head      = r2_arrstack_top(stack);
+                                /*postorder*/
+                                struct r2_listnode node = {.data = source}; 
+                                if(order == 1){
+                                        if(r2_list_insert_at_back(list, source) != TRUE){
+                                                FAILED = TRUE; 
+                                                goto CLEANUP;
                                         }
+                                }      
+                                /*reverse postorder*/
+                                else if(order == 2){
+                                        if(r2_list_insert_at_front(list, source) != TRUE){
+                                                FAILED = TRUE; 
+                                                goto CLEANUP;                                                        
+                                        }
+                                }
 
-                                        if(head != NULL){
-                                                edge      = head->data; 
-                                                source    = edge->src;
-                                                head      = head->next;
-                                        }else source = NULL;
-                                        r2_arrstack_pop(stack);
-                                }    
+                                if(head != NULL){
+                                        edge      = head->data; 
+                                        source    = edge->src;
+                                        head      = head->next;
+                                }else source = NULL;
+                                r2_arrstack_pop(stack);
+                                   
                         }while(source!= NULL);
                 }
                 if(ENTIRE_GRAPH == FALSE)
@@ -1126,6 +1111,8 @@ struct r2_list* r2_graph_topological_sort(struct r2_graph *graph)
         struct r2_listnode *head  = r2_listnode_first(graph->vlist); 
         struct r2_queuenode *node = NULL;
         struct r2_vertex *source  = NULL;
+        struct r2_vertex *dest    = NULL;
+        struct r2_edge    *edge   = NULL;
         struct r2_entry entry; 
         r2_uint64 i = 0; 
         r2_uint64 nvertices = 0;
@@ -1155,19 +1142,20 @@ struct r2_list* r2_graph_topological_sort(struct r2_graph *graph)
                         goto CLEANUP;
                 }
 
-                head  = r2_listnode_first(source->out);
+                head  = r2_listnode_first(source->elist);
                 while(head != NULL){
-                        source = head->data; 
-                        r2_robintable_get(indegree, source->vkey, source->len, &entry);
+                        edge   = head->data;
+                        dest   = edge->dest; 
+                        r2_robintable_get(indegree, dest->vkey, dest->len, &entry);
                         if(entry.key != NULL){
                                 in = entry.data; 
                                 *in = *in -1; 
                                 if(*in == 0){
-                                        if(r2_queue_enqueue(queue, source) != TRUE){
+                                        if(r2_queue_enqueue(queue, dest) != TRUE){
                                                 FAILED = TRUE; 
                                                 goto CLEANUP;
                                         }
-                                        if(r2_robintable_del(indegree, source->vkey, source->len) != TRUE){
+                                        if(r2_robintable_del(indegree, dest->vkey, dest->len) != TRUE){
                                                 FAILED = TRUE; 
                                                 goto CLEANUP;
                                         }
@@ -1222,6 +1210,7 @@ struct r2_list* r2_graph_topological_sort_edges(struct r2_graph *graph)
         struct r2_queuenode *node = NULL;
         struct r2_vertex *source  = NULL;
         struct r2_vertex *dest    = NULL;
+        struct r2_edge *edge      = NULL; 
         struct r2_entry entry; 
         r2_uint64 i = 0; 
         r2_uint64 nvertices = 0;
@@ -1246,15 +1235,16 @@ struct r2_list* r2_graph_topological_sort_edges(struct r2_graph *graph)
         r2_uint64 *in = NULL; 
         while(r2_queue_empty(queue) != TRUE){
                 source = r2_queue_front(queue)->data;
-                head  = r2_listnode_first(source->out);
+                head  = r2_listnode_first(source->elist);
                 while(head != NULL){
-                        dest = head->data; 
+                        edge = head->data;
+                        dest = edge->dest; 
                         r2_robintable_get(indegree, dest->vkey, dest->len, &entry);
                         if(entry.key != NULL){
                                 in = entry.data; 
                                 *in = *in -1; 
                                 if(*in == 0){
-                                        if(r2_list_insert_at_back(top, r2_graph_get_edge(graph, source->vkey, source->len, dest->vkey, dest->len)) != TRUE){
+                                        if(r2_list_insert_at_back(top, edge) != TRUE){
                                                 FAILED = TRUE; 
                                                 goto CLEANUP;
                                         }
@@ -1305,7 +1295,7 @@ r2_uint16 r2_graph_has_path(struct r2_graph *graph, struct r2_vertex *src, struc
         r2_uint16 PATH  = FALSE;
         r2_int16 FAILED = FALSE;
         struct r2_queue *queue = r2_create_queue(NULL, NULL, NULL);
-        r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
+        r2_uint16 *state = malloc(sizeof(r2_uint16) * graph->nvertices);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || queue == NULL ){
                 FAILED = TRUE; 
@@ -1314,6 +1304,7 @@ r2_uint16 r2_graph_has_path(struct r2_graph *graph, struct r2_vertex *src, struc
                 
         struct r2_listnode *head   = r2_listnode_first(graph->vlist); 
         struct r2_vertex   *destination = NULL;
+        struct r2_edge *edge = NULL;
         struct r2_vertex *source   = src;
         struct r2_entry  entry     = {.key = NULL, .data = NULL, .length  = 0};
         struct r2_key a = {.key = 0, .len = 0}; 
@@ -1335,7 +1326,7 @@ r2_uint16 r2_graph_has_path(struct r2_graph *graph, struct r2_vertex *src, struc
         r2_uint16 *vstate = NULL;
         do{
                 source = r2_queue_front(queue)->data;
-                head   = r2_listnode_first(source->out);
+                head   = r2_listnode_first(source->elist);
                 a.key = source->vkey; 
                 a.len = source->len;
                 if(graph->vcmp(&a, &b) == 0){
@@ -1343,7 +1334,8 @@ r2_uint16 r2_graph_has_path(struct r2_graph *graph, struct r2_vertex *src, struc
                         break;
                 }
                 while(head != NULL){
-                        destination = head->data; 
+                        edge = head->data;
+                        destination = edge->dest; 
                         /**
                          * Checking to see if the vertex is being processed. 
                          * If the vertex doesn't exist in the hash table then processing hasn't 
@@ -1410,10 +1402,10 @@ struct r2_list* r2_graph_get_paths(struct r2_graph *graph, struct r2_vertex *src
         struct r2_edge     *edge         = NULL;
         struct r2_listnode *head         = NULL; 
         struct r2_entry    entry         = {.key = NULL, .data = NULL, .length  = 0};
-        r2_uint64 count = 0;
+        r2_int64 count = -1;
 
         /*Adding source to path*/
-        path[count] = source;
+        path[++count] = source;
         if(r2_robintable_put(onpath, source->vkey, &path[count], source->len) != TRUE){
                 FAILED = TRUE; 
                 goto CLEANUP;
@@ -1457,23 +1449,19 @@ struct r2_list* r2_graph_get_paths(struct r2_graph *graph, struct r2_vertex *src
                         }
                         head = head->next; 
                 }
-
-                if(head == NULL){
-                        if(r2_robintable_del(onpath, source->vkey, source->len) != TRUE){
-                                FAILED = TRUE; 
-                                goto CLEANUP;
-                        }
-                        head      = r2_arrstack_top(stack);
-                        if(head != NULL){
-                                edge      = head->data; 
-                                source    = edge->src;
-                                head = head->next;
-                                --count;
-                        }else{
-                                source = NULL;
-                        }
-                        r2_arrstack_pop(stack);
-                }    
+                
+                if(r2_robintable_del(onpath, source->vkey, source->len) != TRUE){
+                        FAILED = TRUE; 
+                        goto CLEANUP;
+                }
+                head      = r2_arrstack_top(stack);
+                if(head != NULL){
+                        edge      = head->data; 
+                        source    = edge->src;
+                        head = head->next;
+                        --count;
+                }else source = NULL;
+                r2_arrstack_pop(stack); 
         }while(source != NULL);
         CLEANUP:
                 if(FAILED == TRUE && paths != NULL){
@@ -1587,6 +1575,49 @@ struct r2_list* r2_graph_path_get_edges(struct r2_graph *graph, struct r2_list *
 }
 
 /**
+ * @brief                       Builds the path tree starting from source to destination.
+ * 
+ * @param graph                 Graph.
+ * @param src                   Source.
+ * @param dest                  Dest.
+ * @return struct r2_graph*     Returns path tree, else NULL.
+ */
+struct r2_graph* r2_graph_path_tree(struct r2_graph *graph,  struct r2_vertex *src, struct r2_vertex *dest)
+{
+        r2_uint16 FAILED = FALSE; 
+        struct r2_graph *path = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd); 
+        struct r2_list  *edges = r2_graph_get_paths_edges(graph, src, dest);
+        if(path == NULL || edges == NULL){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        path->nat = TRUE;
+        struct r2_listnode *head = r2_listnode_first(edges); 
+        struct r2_edge *edge     = NULL; 
+        while (head != NULL){
+                edge = head->data;
+                src  = edge->src;
+                dest = edge->dest;
+                if(r2_graph_add_edge(path, src->vkey, src->len, dest->vkey, dest->len) != TRUE){
+                        FAILED = TRUE;
+                        goto CLEANUP;
+                }
+                head = head->next;
+        }
+        
+        CLEANUP:
+                if(edges != NULL)
+                        r2_destroy_list(edges); 
+                
+                if(FAILED == TRUE && path != NULL)
+                        path = r2_destroy_graph(path);
+                
+
+        return path; 
+}
+
+/**
  * @brief                       Performs BFS on graph.
  *                              The BFS tree is a really a subgraph of the original graph. Additonally, 
  *                              a tree is a rooted graph and because of this, it's more natural to 
@@ -1610,7 +1641,7 @@ struct r2_graph* r2_graph_bfs_tree(struct r2_graph *graph, struct r2_vertex *sou
         * The initial state of a vertex is always WHITE. As we perform the breadth first search 
         * the states change from WHITE => GREY => BLACK.
         */
-        r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
+        r2_uint16 *state = malloc(sizeof(r2_uint16) * graph->nvertices);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || queue == NULL || bfs == NULL){
                 FAILED = TRUE; 
@@ -1618,7 +1649,7 @@ struct r2_graph* r2_graph_bfs_tree(struct r2_graph *graph, struct r2_vertex *sou
         }
 
         bfs->gat = graph->gat;
-        bfs->vat = TRUE;
+        bfs->nat = TRUE;
         struct r2_listnode *head   = NULL;
         struct r2_vertex   *src    = NULL;
         struct r2_vertex   *dest   = NULL;
@@ -1658,10 +1689,10 @@ struct r2_graph* r2_graph_bfs_tree(struct r2_graph *graph, struct r2_vertex *sou
         do{
                 source = r2_queue_front(queue)->data;
                 att[0]  = source->vat;
-                head   = r2_listnode_first(source->out);
+                head   = r2_listnode_first(source->elist);
                 while(head != NULL){
-                        dest = head->data; 
-                        edge = r2_graph_get_edge(graph, source->vkey, source->len, dest->vkey, dest->len);
+                        edge = head->data;
+                        dest = edge->dest; 
                         /**
                          * Checking to see if the vertex is being processed. 
                          * If the vertex doesn't exist in the hash table then processing hasn't 
@@ -1684,9 +1715,9 @@ struct r2_graph* r2_graph_bfs_tree(struct r2_graph *graph, struct r2_vertex *sou
                                         FAILED = TRUE; 
                                         goto CLEANUP;
                                 }
-                                src  = r2_graph_get_vertex(bfs, dest->vkey, dest->len);
+                                src  = r2_graph_get_vertex(bfs, source->vkey, source->len);
                                 dest = r2_graph_get_vertex(bfs, dest->vkey, dest->len);
-                                edge = r2_graph_get_edge(bfs, source->vkey, source->len, dest->vkey, dest->len);
+                                edge = r2_graph_get_edge(bfs, src->vkey, src->len, dest->vkey, dest->len);
                                 src->vat  = att[0];
                                 dest->vat = att[1];
                                 edge->eat = att[2];
@@ -1738,14 +1769,14 @@ struct r2_graph* r2_graph_dfs_tree(struct r2_graph *graph, struct r2_vertex *sou
         * The initial state of a vertex is always WHITE. As we perform the breadth first search 
         * the states change from WHITE => GREY => BLACK.
         */
-        r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
+        r2_uint16 *state = malloc(sizeof(r2_uint16) * graph->nvertices);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || stack == NULL || dfs == NULL){
                 FAILED = TRUE; 
                 goto CLEANUP; 
         }
 
-        dfs->vat = TRUE; 
+        dfs->nat = TRUE; 
         dfs->gat = graph->gat;
         struct r2_listnode *head  = NULL; 
         struct r2_listnode *src   = NULL;
@@ -1754,12 +1785,12 @@ struct r2_graph* r2_graph_dfs_tree(struct r2_graph *graph, struct r2_vertex *sou
         struct r2_entry    entry  = {.key = NULL, .data = NULL, .length  = 0};
         struct r2_vertex *v[2];
         struct r2_robintable *att = NULL; 
-        r2_uint64 count = 0;
+        r2_int64 count = -1;
 
         /*Updating source state in hash table*/
         source = source == NULL? r2_listnode_first(graph->vlist)->data : source;
         att = source->vat; 
-        state[count] = GREY;
+        state[++count] = GREY;
         if(r2_robintable_put(processed, source->vkey, &state[count], source->len) != TRUE){
                 FAILED = TRUE; 
                 goto CLEANUP;
@@ -1895,7 +1926,7 @@ r2_uint16 r2_graph_is_bipartite(struct r2_graph *graph)
          *  Uses GREY AND WHITE to represent sets.
          *  
          */
-        r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
+        r2_uint16 *state = malloc(sizeof(r2_uint16) * graph->nvertices);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || queue == NULL){
                 FAILED = TRUE; 
@@ -1903,18 +1934,19 @@ r2_uint16 r2_graph_is_bipartite(struct r2_graph *graph)
         }
 
         struct r2_listnode *head   = r2_listnode_first(graph->vlist);
+        struct r2_edge *edge       = NULL;
         struct r2_listnode *cur    = NULL;
         struct r2_vertex   *dest   = NULL; 
         struct r2_vertex   *source = NULL;
         struct r2_entry  entry = {.key = NULL, .data = NULL, .length  = 0};
-        r2_uint64 count   = 0;   
+        r2_int64 count   = -1;   
         r2_uint16 *curset = NULL;
         r2_uint16 *vstate = NULL;
         while(head != NULL){
                 source  = head->data;
                 r2_robintable_get(processed, source->vkey, source->len, &entry);
                 if(entry.key == NULL){
-                        state[count] = WHITE; 
+                        state[++count] = WHITE; 
                         if(r2_queue_enqueue(queue, source) != TRUE || 
                         r2_robintable_put(processed, source->vkey, &state[count], source->len) != TRUE){
                                 FAILED = TRUE;
@@ -1925,9 +1957,10 @@ r2_uint16 r2_graph_is_bipartite(struct r2_graph *graph)
                                 source = r2_queue_front(queue)->data;
                                 r2_robintable_get(processed, source->vkey, source->len, &entry);
                                 curset = entry.data;
-                                cur    = r2_listnode_first(source->out);
+                                cur    = r2_listnode_first(source->elist);
                                 while(cur != NULL){
-                                        dest    = cur->data; 
+                                        edge = cur->data;
+                                        dest = edge->dest; 
                                         /**
                                          * @brief Determining appropriate set.
                                          * 
@@ -1970,8 +2003,8 @@ r2_uint16 r2_graph_is_bipartite(struct r2_graph *graph)
 /**
  * @brief                       Returns all the vertices in a set 0 or 1. 
  * 
- * @param graph                 Graph 
- * @param set                   set.
+ * @param graph                 Graph. 
+ * @param set                   Set.
  * @return struct r2_list*      Returns list containing vertices, else NULL.
  */
 struct r2_list* r2_graph_bipartite_set(struct r2_graph *graph, r2_uint16 set)
@@ -1995,7 +2028,7 @@ struct r2_list* r2_graph_bipartite_set(struct r2_graph *graph, r2_uint16 set)
          *  Uses GREY AND WHITE to represent sets.
          *  
          */
-        state = malloc(sizeof(r2_int16) * graph->nvertices);
+        state = malloc(sizeof(r2_uint16) * graph->nvertices);
         processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || queue == NULL || group == NULL){
                 FAILED = TRUE; 
@@ -2003,18 +2036,19 @@ struct r2_list* r2_graph_bipartite_set(struct r2_graph *graph, r2_uint16 set)
         }
 
         struct r2_listnode *head   = r2_listnode_first(graph->vlist);
+        struct r2_edge     *edge   = NULL;
         struct r2_listnode *cur    = NULL;
         struct r2_vertex   *dest   = NULL; 
         struct r2_vertex   *source = NULL;
         struct r2_entry  entry = {.key = NULL, .data = NULL, .length  = 0};
-        r2_uint64 count   = 0;   
+        r2_int64 count    = -1;   
         r2_uint16 *curset = NULL;
         r2_uint16 *vstate = NULL;
         while(head != NULL){
                 source  = head->data;
                 r2_robintable_get(processed, source->vkey, source->len, &entry);
                 if(entry.key == NULL){
-                        state[count] = WHITE; 
+                        state[++count] = WHITE; 
                         if(r2_queue_enqueue(queue, source) != TRUE || 
                         r2_robintable_put(processed, source->vkey, &state[count], source->len) != TRUE){
                                 FAILED = TRUE;
@@ -2029,9 +2063,10 @@ struct r2_list* r2_graph_bipartite_set(struct r2_graph *graph, r2_uint16 set)
                                 source = r2_queue_front(queue)->data;
                                 r2_robintable_get(processed, source->vkey, source->len, &entry);
                                 curset = entry.data;
-                                cur    = r2_listnode_first(source->out);
+                                cur    = r2_listnode_first(source->elist);
                                 while(cur != NULL){
-                                        dest    = cur->data; 
+                                        edge = cur->data;
+                                        dest = edge->dest; 
                                         /**
                                          * @brief Determining appropriate set.
                                          * 
@@ -2087,6 +2122,7 @@ struct r2_forest* r2_graph_cc(struct r2_graph *graph)
 {
         r2_int16 FAILED = FALSE;
         r2_uint64 count = 0;
+        r2_int64 ID = -1;
         struct r2_graph *cc = NULL; /*component*/
         struct r2_graph **tree = NULL;
         struct r2_forest *forest = NULL;
@@ -2095,7 +2131,7 @@ struct r2_forest* r2_graph_cc(struct r2_graph *graph)
         * The initial state of a vertex is always WHITE. As we perform the breadth first search 
         * the states change from WHITE => GREY => BLACK.
         */
-        r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
+        r2_int64 *state = malloc(sizeof(r2_int64) * graph->nvertices);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
         struct r2_list *components = r2_create_list(NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || components == NULL){
@@ -2107,7 +2143,7 @@ struct r2_forest* r2_graph_cc(struct r2_graph *graph)
         struct r2_listnode *head = r2_listnode_first(graph->vlist);
         struct r2_vertex *source =  NULL;
         struct r2_entry entry = {.key = NULL, .data = NULL, .length = 0}; 
-        r2_uint16 *vstate = NULL;
+        r2_int64 *vstate = NULL;
         while(head != NULL){
                 source = head->data;
                 state[count] = WHITE; 
@@ -2120,14 +2156,14 @@ struct r2_forest* r2_graph_cc(struct r2_graph *graph)
         }
 
         /*Processing graph*/
-        head = r2_listnode_first(graph->vlist);
+        head  = r2_listnode_first(graph->vlist);
         while(head != NULL){
                 source = head->data; 
                 r2_robintable_get(processed, source->vkey, source->len, &entry); 
                 vstate = entry.data;
                 if(*vstate == WHITE){
-                        *vstate = GREY; 
-                        cc = r2_graph_components(graph, source, processed);
+                        *vstate = (r2_uint64)source; 
+                        cc = r2_graph_components(graph, source, processed, ID--);
                         if(cc == NULL){
                                 FAILED = TRUE;
                                 goto CLEANUP;
@@ -2140,6 +2176,7 @@ struct r2_forest* r2_graph_cc(struct r2_graph *graph)
                                 goto CLEANUP;
    
                         }
+                        ++count;
                 }
                 head = head->next;
         }
@@ -2192,9 +2229,10 @@ struct r2_forest* r2_graph_cc(struct r2_graph *graph)
  * @param graph                         Graph.
  * @param source                        Source.
  * @param processed                     Hash table containing state of each vertices in the graph.
+ * @param id                            Unique identifier for each component
  * @return struct r2_graph*             Returns BFS tree, else NULL.
  */
-static struct r2_graph* r2_graph_components(struct r2_graph *graph, struct r2_vertex *source,  struct r2_robintable *processed)
+static struct r2_graph* r2_graph_components(struct r2_graph *graph, struct r2_vertex *source,  struct r2_robintable *processed, r2_int64 id)
 {
         r2_int16 FAILED = FALSE;
         struct r2_graph *bfs   = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
@@ -2205,7 +2243,7 @@ static struct r2_graph* r2_graph_components(struct r2_graph *graph, struct r2_ve
         }
 
         bfs->gat = graph->gat;
-        bfs->vat = TRUE;
+        bfs->nat = TRUE;
         struct r2_listnode *head   = NULL;
         struct r2_vertex   *src    = NULL;
         struct r2_vertex   *dest   = NULL;
@@ -2231,14 +2269,14 @@ static struct r2_graph* r2_graph_components(struct r2_graph *graph, struct r2_ve
         src = r2_graph_get_vertex(bfs, source->vkey, source->len); 
         src->vat = source->vat;
 
-        r2_uint16 *vstate = NULL;
+        r2_int64 *vstate = NULL;
         do{
                 source = r2_queue_front(queue)->data;
-                att[0]  = source->vat;
-                head   = r2_listnode_first(source->out);
+                att[0] = source->vat;
+                head   = r2_listnode_first(source->elist);
                 while(head != NULL){
-                        dest = head->data; 
-                        edge = r2_graph_get_edge(graph, source->vkey, source->len, dest->vkey, dest->len);
+                        edge = head->data; 
+                        dest = edge->dest; 
                         /**
                          * Checking to see if the vertex is being processed. 
                          * If the vertex doesn't exist in the hash table then processing hasn't 
@@ -2249,30 +2287,30 @@ static struct r2_graph* r2_graph_components(struct r2_graph *graph, struct r2_ve
                         r2_robintable_get(processed, dest->vkey, dest->len, &entry);
                         vstate = entry.data;
                         if(*vstate == WHITE){
-                                *vstate   = GREY; 
-                                if(r2_robintable_put(processed, dest->vkey, vstate, dest->len) != TRUE || 
-                                r2_queue_enqueue(queue, dest) != TRUE){
+                                *vstate = id; 
+                                if(r2_queue_enqueue(queue, dest) != TRUE){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
                                 }
-
+                        }
+                        
+                        if(*vstate == id){
                                 if(r2_graph_add_edge(bfs, source->vkey, source->len, dest->vkey, dest->len)  != TRUE){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
                                 }
-                                src  = r2_graph_get_vertex(bfs, dest->vkey, dest->len);
+                                src  = r2_graph_get_vertex(bfs, source->vkey, source->len);
                                 dest = r2_graph_get_vertex(bfs, dest->vkey, dest->len);
-                                edge = r2_graph_get_edge(bfs, source->vkey, source->len, dest->vkey, dest->len);
+                                edge = r2_graph_get_edge(bfs, src->vkey, src->len, dest->vkey, dest->len);
                                 src->vat  = att[0];
                                 dest->vat = att[1];
                                 edge->eat = att[2];
                         }        
                         head = head->next; 
                 }
-
                 r2_robintable_get(processed, source->vkey, source->len, &entry);
                 vstate  = entry.data;
-                *vstate = BLACK;
+                *vstate = id;
                 r2_queue_dequeue(queue);
         }while(r2_queue_empty(queue) != TRUE);
         CLEANUP:
@@ -2373,13 +2411,13 @@ r2_uint16 r2_graph_is_connected(struct r2_graph *graph)
  */
 struct r2_forest* r2_graph_tscc(struct r2_graph *graph)
 {
-        r2_uint16 FAILED = FALSE;
+        r2_uint16 FAILED    = FALSE;
         struct r2_graph *cc = NULL;
         struct r2_forest *forest = malloc(sizeof(struct r2_forest));/*stores the connected components*/
         struct r2_list  *trees   = r2_create_list(NULL, NULL, NULL);/*stores a connected component*/
-        r2_dbl *pre = malloc(sizeof(r2_dbl) *graph->nvertices);/*stores preorder number of each vertex*/
-        r2_dbl *low = malloc(sizeof(r2_dbl) *graph->nvertices);/*stores low number of each vertex*/
-        r2_uint16 *state = malloc(sizeof(r2_uint16) *graph->nvertices);/*stores the state of each vertex*/
+        r2_dbl *pre  = malloc(sizeof(r2_dbl) * graph->nvertices);/*stores preorder number of each vertex*/
+        r2_dbl *low  = malloc(sizeof(r2_dbl) * graph->nvertices);/*stores low number of each vertex*/
+        r2_uint64 *state = malloc(sizeof(r2_uint64) * graph->nvertices);/*stores the state of each vertex*/
         struct r2_arrstack *stack       =  r2_arrstack_create_stack(0, NULL, NULL, NULL);/*store the current vertex depth first search is on*/
         struct r2_robintable *processed =  r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
         if(pre == NULL || low == NULL || state == NULL || stack == NULL || processed == NULL || forest == NULL){
@@ -2394,32 +2432,39 @@ struct r2_forest* r2_graph_tscc(struct r2_graph *graph)
         struct r2_edge     *edge     = NULL;
         struct r2_entry    entry     = {.key = NULL, .data = NULL, .length  = 0};
         r2_int64 count = -1;
-        r2_uint16 *vstate = NULL;
-        r2_uint64 pos[2];
+        r2_uint64 *vstate = NULL;
+        r2_uint64 pos[2] = {0, 0};
         while(head != NULL){
                 source = head->data;
                 r2_robintable_get(processed, source->vkey, source->len, &entry);
                 vstate = entry.data; 
                 if(vstate == NULL){
                         state[++count] = GREY; 
-                        pre[count]   = low[count] = count;
+                        pre[count] = low[count] = count;
                         if(r2_robintable_put(processed, source->vkey, &state[count], source->len) != TRUE){
                                 FAILED = TRUE; 
                                 goto CLEANUP;
                         }
 
-                        if(source->elist != NULL)
-                                cur = r2_listnode_first(source->elist);
+                        cur = r2_listnode_first(source->elist);
                         do{
                                 while(cur != NULL){
+                                        /*Get source index*/
+                                        r2_robintable_get(processed, source->vkey, source->len, &entry); 
+                                        vstate = entry.data; 
+                                        pos[1] = (vstate - state);
+
                                         edge = cur->data; 
                                         dest = edge->dest; 
+                                        /*Get destination index*/
                                         r2_robintable_get(processed, dest->vkey, dest->len, &entry);
-                                        vstate  = entry.data;
+                                        vstate = entry.data;
+                                        pos[0] = (vstate - state);
+
                                         if(vstate == NULL){
                                                 vstate = &state[++count]; 
-                                                pre[count] = low[count] = count;
                                                 *vstate = GREY; 
+                                                pre[count] = low[count] = count;
                                                 if(r2_robintable_put(processed, dest->vkey, vstate, dest->len) != TRUE 
                                                 || r2_arrstack_push(stack, edge->pos[0]) != TRUE){
                                                         FAILED = TRUE; 
@@ -2427,53 +2472,35 @@ struct r2_forest* r2_graph_tscc(struct r2_graph *graph)
                                                 } 
 
                                                 source = dest; 
-                                                cur    = source->elist != NULL? r2_listnode_first(source->elist) : NULL;
+                                                cur    =  r2_listnode_first(source->elist);
                                                 if(cur == NULL)
                                                         break;
                                                 continue;
-                                        /*Grey means we have a back or retreating edge to consider.*/
-                                        }else if(*vstate == GREY){
-                                                /**
-                                                 * @brief Vstate is a pointer that tracks the state of each vertex.
-                                                 * However we can use this pointer to locate the pre and low values of the vertex.
-                                                 * State, low and pre are parallel arrays meaning state[0], low[0], and pre[0]
-                                                 * is holding information relating to the same vertex. 
-                                                 * Knowing that, we can use some pointer arithmetics to get the index vstate points to.        
-                                                 */
-
-                                                /*Get destination index*/
-                                                pos[0] = (vstate - state);
-
-                                                /*Get source index*/
-                                                r2_robintable_get(processed, source->vkey, source->len, &entry); 
-                                                vstate = entry.data; 
-                                                pos[1] = (vstate - state);
-                                                /**
-                                                 * @brief Since we have a back/retreating edge. Tarjan specifically states we should 
-                                                 * see if dest.low is smaller. If it's smaller that means dest is an ancestor and 
-                                                 * is in the same connected component. This means we can take the edge (source, dest) to 
-                                                 * travel up the tree in an opposite direction. This creates a cycle. 
-                                                 * 
-                                                 */
-                                                low[pos[1]] = low[pos[0]] < low[pos[1]]? low[pos[0]] :  low[pos[1]];
                                         }
+                                        /**
+                                         * If we have reached here it is possible that we have back, forward or cross edge.
+                                         * We need to consider the case of a forward or back edge. If we have a back edge
+                                         * we need to check if we can reach an ancestor of source. If we have a forward 
+                                         * edge we still need to check if we can use that forward edge to reach some ancestor higher than
+                                         * the one we can reach from source.
+                                         */
+                                        if(*vstate != BLACK)
+                                                low[pos[1]] = low[pos[0]] < low[pos[1]]? low[pos[0]] :  low[pos[1]];
                                         cur = cur->next;
                                 }
 
                                 if(cur == NULL){
                                         r2_robintable_get(processed, source->vkey, source->len, &entry);
-                                        vstate    = entry.data;
-                                        *vstate   = BLACK; 
-                                        cur       = r2_arrstack_top(stack);
-                                        dest      = source; 
-                                        pos[1]    = (vstate - state);
-                                        
+                                        vstate       = entry.data;
+                                        pos[1]       = (vstate - state);
                                         /**
-                                         * @brief Checking if source is the leader of its component.
+                                         * @brief Checking if source is the leader of its component and creating 
+                                         * sub graph.
                                          * 
                                          */
                                         if(low[pos[1]] == pre[pos[1]]){
-                                                cc = r2_graph_build_tscc(graph, source, processed, state, low);
+                                                *vstate = YELLOW;
+                                                cc = r2_graph_build_tscc(graph, source, processed, state);
                                                 if(cc == NULL){
                                                         FAILED = TRUE;
                                                         goto CLEANUP;
@@ -2484,9 +2511,11 @@ struct r2_forest* r2_graph_tscc(struct r2_graph *graph)
                                                 }
                                         }
 
+                                        cur  = r2_arrstack_top(stack);
                                         if(cur != NULL){
                                                 edge   = cur->data; 
                                                 source = edge->src;
+                                                dest   = edge->dest;
                                                 /**
                                                  * @brief We are retreating up the tree. It is possible that our descendant has a back edge 
                                                  * that points to an ancestor of source. Check for this possibility.
@@ -2497,13 +2526,12 @@ struct r2_forest* r2_graph_tscc(struct r2_graph *graph)
                                                 pos[1] = (vstate - state);
 
                                                 r2_robintable_get(processed, dest->vkey, dest->len, &entry);
-                                                vstate  = entry.data;
+                                                vstate = entry.data;
                                                 pos[0] = (vstate - state);
-                                              
-                                                low[pos[1]] = low[pos[0]] < low[pos[1]]? low[pos[0]] :  low[pos[1]];
+                                                if(*vstate != BLACK)
+                                                        low[pos[1]] = low[pos[0]] < low[pos[1]]? low[pos[0]] :  low[pos[1]]; 
                                                 cur = cur->next;
                                         }else source = NULL;
-
                                         r2_arrstack_pop(stack);  
                                 }
                         }while(source != NULL);
@@ -2554,13 +2582,12 @@ struct r2_forest* r2_graph_tscc(struct r2_graph *graph)
 
                 if(trees != NULL)
                         r2_destroy_list(trees);
-                
-        
+
         return forest;
 }
 
 /**
- * @brief                      Builds the strongly connected starting from source.
+ * @brief                      Builds the strongly connected component starting from source.
  * 
  * @param graph                Graph.
  * @param source               Source.      
@@ -2568,28 +2595,29 @@ struct r2_forest* r2_graph_tscc(struct r2_graph *graph)
  * @param state                Stores the state of all vertices so far.
  * @return struct r2_graph*    Returns connected component, else NULL.
  */
-static struct r2_graph* r2_graph_build_tscc(struct r2_graph *graph, struct r2_vertex *source, struct r2_robintable *processed, r2_uint16 *state, r2_dbl *low)
+static struct r2_graph* r2_graph_build_tscc(struct r2_graph *graph, struct r2_vertex *source, struct r2_robintable *processed, r2_uint64 *state)
 {
         r2_int16 FAILED = FALSE;
-
-        struct r2_graph *bfs   = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
+        struct r2_graph *bfs    = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
         /*Holds vertices that are currently being processed*/
-        struct r2_queue *queue = r2_create_queue(NULL, NULL, NULL);
-        if(queue == NULL || bfs == NULL){
+        struct r2_queue *queue  = r2_create_queue(NULL, NULL, NULL);
+        struct r2_list  *vertices = r2_create_list(NULL, NULL, NULL);
+        if(queue == NULL || bfs == NULL || vertices == NULL){
                 FAILED = TRUE; 
                 goto CLEANUP;
         }
 
-        bfs->vat = TRUE; 
+        bfs->nat = TRUE; 
         bfs->gat = graph->gat;
         struct r2_listnode *head  = NULL; 
         struct r2_vertex   *src   = NULL;
         struct r2_vertex   *dest  = NULL;
         struct r2_edge     *edge  = NULL;
         struct r2_entry    entry  = {.key = NULL, .data = NULL, .length  = 0};
+        r2_uint64 *vstate = NULL;
         struct r2_robintable *att[3];
-        r2_uint64 pos[2];
-            
+        r2_uint16 ADD_EDGE = FALSE;
+        r2_uint16 ENQUEUE  = FALSE;
 
         /*Initializing queue with source vertex*/
         if(r2_queue_enqueue(queue, source) != TRUE){
@@ -2605,68 +2633,92 @@ static struct r2_graph* r2_graph_build_tscc(struct r2_graph *graph, struct r2_ve
 
         src = r2_graph_get_vertex(bfs, source->vkey, source->len);
         src->vat = source->vat;
-
-
-        r2_uint16 *vstate = NULL;
         do{
                 source = r2_queue_front(queue)->data;
                 att[0] = source->vat;
-                /*Getting source low number*/
+                
                 r2_robintable_get(processed, source->vkey, source->len, &entry);
-                vstate  = entry.data;
-                *vstate = YELLOW;
-                pos[1]  = (vstate - state);
+                vstate  = entry.data;               
+                if(r2_list_insert_at_back(vertices, vstate) != TRUE){
+                        FAILED = TRUE; 
+                        goto CLEANUP;
+                }
+
                 /*Processing source edge list*/
-                head   = r2_listnode_first(source->out);
+                head   = r2_listnode_first(source->elist);
                 while(head != NULL){
-                        dest = head->data; 
-                        edge = r2_graph_get_edge(graph, source->vkey, source->len, dest->vkey, dest->len);
+
+                        ADD_EDGE = FALSE;
+                        ENQUEUE  = FALSE;
+                        edge = head->data;
+                        dest = edge->dest;
 
                         att[1] = dest->vat;
                         att[2] = edge->eat;
-                        /*Getting destination low number*/
+
                         r2_robintable_get(processed, dest->vkey, dest->len, &entry);
-                        vstate = entry.data;
-                        pos[0] = (vstate - state);
-                        
+                        vstate  = entry.data;
                         /**
-                         * @brief We only enqueue a vertex the source and dest low are the same.
-                         * 
+                         * @brief If vertex is not apart of any component then it must be a part of this 
+                         *        component. Think of our implmentation as the S. R. Kosaraju implicit. 
+                         *        We start from the source and go down the tree. We can encounter components
+                         *        which would already be black. We don't have to worry about components 
+                         *        that haven't been reached as yet simple because we can't reach ancestor 
+                         *        of source. If thiS is the case then source can't be a the leader of the 
+                         *        component which holds for Tarjan algorithm.
                          */
-                        if(low[pos[1]]  == low[pos[0]]){
-                                /*Prevents an infinite loop. Stops a vertex that has already been added to the queue to be added again.*/
+                        if(*vstate != BLACK){
+                                ADD_EDGE = TRUE;
                                 if(*vstate != YELLOW)
-                                        if(r2_queue_enqueue(queue, dest) != TRUE){
-                                                FAILED = TRUE; 
-                                                goto CLEANUP;
-                                        }
-                                
+                                        ENQUEUE = TRUE;     
+                        }
+
+                        if(ENQUEUE == TRUE){
+                                if(r2_queue_enqueue(queue, dest) != TRUE){
+                                        FAILED = TRUE; 
+                                        goto CLEANUP;
+                                }
+                                *vstate  = YELLOW;
+                        }
+
+                        if(ADD_EDGE == TRUE){
                                 if(r2_graph_add_edge(bfs, source->vkey, source->len, dest->vkey, dest->len) != TRUE){
                                         FAILED = TRUE; 
                                         goto CLEANUP;
                                 }
-                                src  = r2_graph_get_vertex(bfs, dest->vkey, dest->len);
+                                src  = r2_graph_get_vertex(bfs, source->vkey, source->len);
                                 dest = r2_graph_get_vertex(bfs, dest->vkey, dest->len);
                                 edge = r2_graph_get_edge(bfs, source->vkey, source->len, dest->vkey, dest->len);
                                 src->vat  = att[0];
                                 dest->vat = att[1];
-                                edge->eat = att[2];
-                        }     
-                           
+                                edge->eat = att[2];  
+                        }
                         head = head->next; 
                 }
+                r2_robintable_get(processed, source->vkey, source->len, &entry);
+                vstate  = entry.data;
+                *vstate = YELLOW;
                 r2_queue_dequeue(queue);
         }while(r2_queue_empty(queue) != TRUE);
         
+        head = r2_listnode_first(vertices);
+        while(head != NULL){
+                vstate = head->data; 
+                *vstate = BLACK;
+                head = head->next; 
+        }
         CLEANUP:
                 if(queue != NULL)
                         r2_destroy_queue(queue); 
 
                 if(bfs != NULL && FAILED == TRUE)
                         bfs = r2_destroy_graph(bfs);
-
-        return bfs; 
+                
+                if(vertices != NULL)
+                        r2_destroy_list(vertices);
+        return bfs;         
 }
+
 
 /**
  * @brief                       Finds the strongly connected components in a digraph using S. R. Kosaraju algorithm.
@@ -2678,6 +2730,7 @@ struct r2_forest* r2_graph_kcc(struct r2_graph *graph)
 {
         r2_int16 FAILED = FALSE;
         r2_uint64 count = 0;
+        r2_int64 ID = -1;
         struct r2_graph *cc        = NULL; /*component*/
         struct r2_graph **tree     = NULL;
         struct r2_forest *forest   = NULL;
@@ -2688,7 +2741,7 @@ struct r2_forest* r2_graph_kcc(struct r2_graph *graph)
         * The initial state of a vertex is always WHITE. As we perform the breadth first search 
         * the states change from WHITE => GREY => BLACK.
         */
-        r2_uint16 *state = malloc(sizeof(r2_int16) * graph->nvertices);
+        r2_uint64 *state = malloc(sizeof(r2_uint64) * graph->nvertices);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
         struct r2_list *components = r2_create_list(NULL, NULL, NULL); 
         if(state == NULL || processed == NULL || components == NULL || topsort == NULL || transpose == NULL){
@@ -2700,7 +2753,7 @@ struct r2_forest* r2_graph_kcc(struct r2_graph *graph)
         struct r2_listnode *head = r2_listnode_first(graph->vlist);
         struct r2_vertex *source =  NULL;
         struct r2_entry entry = {.key = NULL, .data = NULL, .length = 0}; 
-        r2_uint16 *vstate = NULL;
+        r2_int64 *vstate = NULL;
         while(head != NULL){
                 source = head->data;
                 state[count] = WHITE; 
@@ -2713,15 +2766,15 @@ struct r2_forest* r2_graph_kcc(struct r2_graph *graph)
         }
 
         /*Processing graph*/
-        head = r2_listnode_first(topsort);
+        head  = r2_listnode_first(topsort);
         while(head != NULL){
                 source = head->data; 
                 r2_robintable_get(processed, source->vkey, source->len, &entry); 
                 vstate = entry.data;
                 if(*vstate == WHITE){
-                        *vstate = GREY; 
-                        source = r2_graph_get_vertex(transpose, source->vkey, source->len);
-                        cc = r2_graph_components(transpose, source, processed);
+                        source  = r2_graph_get_vertex(transpose, source->vkey, source->len);
+                        *vstate = ID--; 
+                        cc = r2_graph_components(transpose, source, processed, *vstate);
                         if(cc == NULL){
                                 FAILED = TRUE;
                                 goto CLEANUP;
@@ -2785,10 +2838,166 @@ struct r2_forest* r2_graph_kcc(struct r2_graph *graph)
         return forest;
 }
 
+
 /**
- * @brief          Free list of lists
+ * A biconnected graph is any graph in which the removal of a vertex doesn't disconnect the graph. 
+ * Another way of stating this, is all paths are distinct else from the source and destination vertex. 
  * 
- * @param list 
+ * If a graph is not biconnected then it has biconnected components in where the removal of vertex increases
+ * the number of components. In finding the biconnected components we can identify sections in the graph where redunancies exist,
+ * points of failure (articulation points and bridges).
+ * 
+ * We can use the ideas from the Tarjan Strongly Connected components to identify biconnected components.
+ * 
+ * To find the biconnected component we start with a DFS similar to the Tarjan strongly connected component algorithm. 
+ * For each unexplored vertex v we assign a number the first time it is reached by DFS. If our unexplored vertex v leads to an 
+ * explored vertex w that is not apart of a biconnected component then v.low = min(v.low, w.low).
+ * 
+ * Once we are post visiting a vertex we need to check if the vertex is an articulation point. If any of v children
+ * can reach an ancestor w of v then v can not be an articulation point simply because if we remove v then it's children
+ * can still reach w. 
+ * 
+ */
+
+/**
+ * @brief                               Returns the forest of biconnected components of an undirected graph.
+ * 
+ * @param graph                         Graph.
+ * @return struct r2_forest*            Returns biconnected components, else NULL.
+ */
+struct r2_forest* r2_graph_bcc(struct r2_graph *graph)
+{
+        r2_uint16 FAILED =  FALSE; 
+        r2_int64 *state = malloc(sizeof(r2_int64) * graph->nvertices);
+        r2_dbl *low = malloc(sizeof(r2_dbl) * graph->nvertices); 
+        r2_dbl *pre = malloc(sizeof(r2_dbl) * graph->nvertices);
+        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .80, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
+        struct r2_list *tree = r2_create_list(NULL, NULL, NULL);
+        struct r2_graph *bcc = NULL; 
+        struct r2_forest *forest = malloc(sizeof(struct r2_forest));
+        if(state == NULL || low == NULL || pre == NULL || stack == NULL || processed == NULL || tree == NULL || forest == NULL){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        struct r2_vertex *source = NULL; 
+        struct r2_vertex *dest   = NULL; 
+        struct r2_edge   *edge   = NULL; 
+        struct r2_listnode *cur  = NULL; 
+        struct r2_listnode *head = r2_listnode_first(graph->vlist); 
+        struct r2_entry entry = {.key = NULL, .data = NULL, .length = 0}; 
+        r2_int64 *vstate = NULL;
+        r2_int64 count = -1; 
+        r2_uint64 pos[2] = {0};
+        while(head != NULL){
+                source = head->data;
+                r2_robintable_get(processed, source->vkey, source->len, &entry);
+                vstate = entry.data;
+                if(vstate == NULL){
+                        vstate = &state[++count];
+                        *vstate = GREY; 
+                        pre[count] = low[count] = count; 
+                        if(r2_robintable_put(processed, source->vkey, vstate, source->len) != TRUE){
+                                FAILED = TRUE; 
+                                goto CLEANUP;
+                        }
+                        cur = r2_listnode_first(source->elist);
+                        do{
+                                while(cur != NULL){
+                                        edge = cur->data;
+                                        dest = edge->dest; 
+                                        
+                                        /*Getting index of source*/
+                                        r2_robintable_get(processed, source->vkey, source->len, &entry);
+                                        vstate = entry.data;
+                                        pos[1] = vstate - state;
+                                        
+                                        /*Getting index of dest and determining if we have already processed it.*/
+                                        r2_robintable_get(processed, dest->vkey, dest->len, &entry);
+                                        vstate = entry.data; 
+                                        pos[0] = vstate - state;
+                                        if(vstate == NULL){
+                                                vstate = &state[++count];
+                                                *vstate = GREY; 
+                                                pre[count] = low[count] = count;
+                                                if(r2_robintable_put(processed, dest->vkey, vstate, dest->len) != TRUE || 
+                                                r2_arrstack_push(stack, edge->pos[0]) != TRUE){
+                                                        FAILED = TRUE; 
+                                                        goto CLEANUP; 
+                                                }
+
+                                                source = dest; 
+                                                cur    = r2_listnode_first(source->elist); 
+                                                if(cur == NULL)
+                                                        break; 
+                                                continue;
+                                        }
+
+                                        /*Checking to see if any of our children can reach an ancestor higher than we can currently reach.*/
+                                        if(*vstate != BLACK)
+                                                low[pos[1]] = low[pos[0]] < low[pos[1]]? low[pos[0]] :  low[pos[1]];
+                                        cur  = cur->next;
+                                }
+                                
+                                dest = source;
+                                cur = r2_arrstack_top(stack); 
+                                if(cur != NULL){
+                                        edge = cur->data; 
+                                        source = edge->src; 
+                                        dest   = edge->dest;
+
+                                        /*Getting index of source*/
+                                        r2_robintable_get(processed, source->vkey, source->len, &entry);
+                                        vstate = entry.data;
+                                        pos[1] = vstate - state;
+                                        
+                                        /*Getting index of dest.*/
+                                        r2_robintable_get(processed, dest->vkey, dest->len, &entry);
+                                        vstate = entry.data; 
+                                        pos[0] = vstate - state;
+                                        
+                                        if(*vstate != BLACK)
+                                                low[pos[1]] = low[pos[0]] < low[pos[1]]? low[pos[0]] :  low[pos[1]];
+
+                                        if(low[pos[0]] >= pre[pos[1]]){
+                                                /*Source is an articulation point. Let's handle accordingly.*/
+                                        }
+                                        cur = cur->next;
+                                }else source =  NULL;
+                        
+                        }while(source != NULL);              
+                }
+                head = head->next; 
+        }
+
+        CLEANUP: 
+                if(processed != NULL)
+                        r2_destroy_robintable(processed); 
+                
+                if(pre != NULL)
+                        free(pre); 
+
+                if(low != NULL)
+                        free(low);
+
+                if(stack != NULL)
+                        r2_arrstack_destroy_stack(stack);
+
+                if(tree != NULL)
+                        r2_destroy_list(tree);
+
+                if(FAILED == TRUE && forest != NULL)
+                        r2_graph_destroy_cc(forest);
+                
+        
+        return forest;
+}
+
+/**
+ * @brief          Free list of lists.
+ * 
+ * @param list     List.
  */
 static void r2_free_list(void *list)
 {
@@ -2813,4 +3022,36 @@ static void action(void *a, void*b)
 {
         r2_uint64 *c = b; 
         *c = *c + 1;
+}
+
+/**
+ * @brief       Frees edge along with edge attribute table
+ * 
+ * @param edge  Edge
+ */
+static void r2_free_edge_data(void *edge)
+{
+        struct r2_edge *e = edge; 
+        if(e->eat != NULL && e->nat == FALSE)
+                r2_destroy_robintable(e->eat); 
+        
+        free(e);
+}
+
+/**
+ * @brief           Frees vertex along with vertex attribute table
+ * 
+ * @param vertex    Vertex
+ */
+static void r2_free_vertex_data(void *vertex)
+{
+        struct r2_vertex *v = vertex; 
+        if(v->vat != NULL && v->nat == FALSE)
+                r2_destroy_robintable(v->vat); 
+                
+        r2_destroy_robintable(v->edges); 
+        r2_destroy_list(v->elist); 
+        r2_destroy_list(v->out);
+        r2_destroy_list(v->in);
+        free(v);
 }

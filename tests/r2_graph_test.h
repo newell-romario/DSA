@@ -28,6 +28,7 @@ static void test_graph_topological_sort_edges();
 static void test_r2_graph_has_path();
 static void test_r2_graph_get_paths();
 static void test_r2_graph_get_paths_edges();
+static void test_r2_graph_path_tree();
 static void test_r2_graph_bfs_tree();
 static void test_r2_graph_dfs_tree();
 static void test_r2_graph_children(); 
@@ -36,8 +37,7 @@ static void test_r2_graph_connected_components();
 static void test_r2_graph_is_connected();
 static void test_r2_graph_is_bipartite();
 static void test_r2_graph_bipartite_set();
-static void test_r2_graph_tscc();
-
+static void test_r2_graph_scc();
 static void test_r2_graph_dijkstra();
 static void test_r2_graph_stats();
 void test_r2_graph_run();

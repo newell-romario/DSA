@@ -1,5 +1,112 @@
 
+/**
+ * @brief                      Builds the strongly connected starting from source.
+ * 
+ * @param graph                Graph.
+ * @param source               Source.      
+ * @param processed            Stores all vertices processed so far.
+ * @param state                Stores the state of all vertices so far.
+ * @return struct r2_graph*    Returns connected component, else NULL.
+ */
+static struct r2_graph* r2_graph_build_tscc(struct r2_graph *graph, struct r2_vertex *source, struct r2_robintable *processed, r2_uint16 *state, r2_dbl *low)
+{
+        r2_int16 FAILED = FALSE;
 
+        struct r2_graph *bfs   = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
+        /*Holds vertices that are currently being processed*/
+        struct r2_queue *queue = r2_create_queue(NULL, NULL, NULL);
+        if(queue == NULL || bfs == NULL){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        bfs->vat = TRUE; 
+        bfs->gat = graph->gat;
+        struct r2_listnode *head  = NULL; 
+        struct r2_vertex   *src   = NULL;
+        struct r2_vertex   *dest  = NULL;
+        struct r2_edge     *edge  = NULL;
+        struct r2_entry    entry  = {.key = NULL, .data = NULL, .length  = 0};
+        struct r2_robintable *att[3];
+        r2_uint64 pos[2];
+            
+
+        /*Initializing queue with source vertex*/
+        if(r2_queue_enqueue(queue, source) != TRUE){
+                FAILED = TRUE;
+                goto CLEANUP;
+        }
+
+        /*We need to insert the leader in this component*/
+        if(r2_graph_add_vertex(bfs, source->vkey, source->len) != TRUE){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        src = r2_graph_get_vertex(bfs, source->vkey, source->len);
+        src->vat = source->vat;
+
+
+        r2_uint16 *vstate = NULL;
+        do{
+                source = r2_queue_front(queue)->data;
+                att[0] = source->vat;
+                /*Getting source low number*/
+                r2_robintable_get(processed, source->vkey, source->len, &entry);
+                vstate  = entry.data;
+                *vstate = YELLOW;
+                pos[1]  = (vstate - state);
+                /*Processing source edge list*/
+                head   = r2_listnode_first(source->elist);
+                while(head != NULL){
+                        edge = head->data;
+                        dest = edge->dest;
+
+                        att[1] = dest->vat;
+                        att[2] = edge->eat;
+                        /*Getting destination low number*/
+                        r2_robintable_get(processed, dest->vkey, dest->len, &entry);
+                        vstate = entry.data;
+                        pos[0] = (vstate - state);
+                        
+                        /**
+                         * @brief We only enqueue a vertex the source and dest low are the same.
+                         * 
+                         */
+                        if(low[pos[1]]  == low[pos[0]]){
+                                /*Prevents an infinite loop. Stops a vertex that has already been added to the queue to be added again.*/
+                                if(*vstate != YELLOW)
+                                        if(r2_queue_enqueue(queue, dest) != TRUE){
+                                                FAILED = TRUE; 
+                                                goto CLEANUP;
+                                        }
+                                
+                                if(r2_graph_add_edge(bfs, source->vkey, source->len, dest->vkey, dest->len) != TRUE){
+                                        FAILED = TRUE; 
+                                        goto CLEANUP;
+                                }
+                                src  = r2_graph_get_vertex(bfs, dest->vkey, dest->len);
+                                dest = r2_graph_get_vertex(bfs, dest->vkey, dest->len);
+                                edge = r2_graph_get_edge(bfs, source->vkey, source->len, dest->vkey, dest->len);
+                                src->vat  = att[0];
+                                dest->vat = att[1];
+                                edge->eat = att[2];
+                        }     
+                           
+                        head = head->next; 
+                }
+                r2_queue_dequeue(queue);
+        }while(r2_queue_empty(queue) != TRUE);
+        
+        CLEANUP:
+                if(queue != NULL)
+                        r2_destroy_queue(queue); 
+
+                if(bfs != NULL && FAILED == TRUE)
+                        bfs = r2_destroy_graph(bfs);
+
+        return bfs; 
+}
 
 
 

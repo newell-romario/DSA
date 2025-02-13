@@ -4,6 +4,7 @@
 #include <stdio.h> 
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 static r2_int16 kcmp(const void *, const void *);
 static r2_int16 vcmp(const void *, const void *);
@@ -13,6 +14,7 @@ static void print_vertex(void *, void *);
 static r2_ldbl relax(r2_ldbl , r2_ldbl );
 static void print_dfstree_distances(struct r2_dfstree *);
 static void dumpcc(void *a, void *arg);
+static void dump_edges(struct r2_graph *);
 
 /**
  * Test create graph functionality.
@@ -1988,10 +1990,10 @@ static void test_r2_graph_connected_components()
 }
 
 /**
- * @brief Test Tarjan strongly connected components.
+ * @brief Test strongly connected components.
  * 
  */
-static void test_r2_graph_tscc()
+static void test_r2_graph_scc()
 {
         r2_uint64 vertices[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
         struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
@@ -2063,6 +2065,7 @@ static void test_r2_graph_tscc()
         assert(*source->vkey == 'e');
         head = head->next;
         assert(head == NULL);
+       
         r2_destroy_graph(graph);  
         r2_graph_destroy_cc(forest);
 
@@ -2130,8 +2133,74 @@ static void test_r2_graph_tscc()
         head = head->next; 
 
         assert(head == NULL);
-        r2_destroy_graph(graph);  
+
         r2_graph_destroy_cc(forest);
+        r2_destroy_graph(graph);  
+
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        for(r2_uint64 i = 0; i < 13; ++i)
+                r2_graph_add_edge(graph, (r2_uc *)&edges[i][0], sizeof(r2_uint64), (r2_uc *)&edges[i][1], sizeof(r2_uint64));   
+
+        forest = r2_graph_kcc(graph);
+        for(r2_uint16 i = 0; i < forest->ncount; ++i){
+                printf("\nKorsaju  Strongly Connected Component %d: ", i);
+                print_graph(forest->tree[i]);
+        }
+
+        assert(forest->ncount == 4);
+        tree  = forest->tree[0];
+        head  = r2_listnode_first(tree->vlist);
+        source = head->data;
+        assert(*source->vkey == 'a'); 
+        
+        head = head->next;
+        source = head->data;
+        assert(*source->vkey == 'e');
+     
+
+        head = head->next;
+        source = head->data;
+        assert(*source->vkey == 'b');
+        head = head->next;
+        assert(head == NULL);
+
+      
+
+        tree  = forest->tree[2];
+        head = r2_listnode_first(tree->vlist);
+        source = head->data;
+        assert(*source->vkey  == 'g'); 
+   
+        
+
+        head = head->next;
+        source = head->data;
+        assert(*source->vkey  == 'f');
+        head = head->next;
+        assert(head == NULL);
+
+
+        tree  = forest->tree[1];
+        head  = r2_listnode_first(tree->vlist);
+        source = head->data;
+        assert(*source->vkey == 'c'); 
+        head = head->next;
+        source = head->data;
+
+        assert(*source->vkey == 'd');
+        head = head->next;
+        assert(head == NULL);
+
+        tree  = forest->tree[3];
+        head = r2_listnode_first(tree->vlist);
+        source = head->data;
+        assert(*source->vkey == 'h');
+        head = head->next;
+        assert(head == NULL);
+
+        r2_graph_destroy_cc(forest);
+        r2_destroy_graph(graph);  
+      
 }
 
 /**
@@ -2162,11 +2231,48 @@ static void test_r2_graph_is_connected()
         r2_destroy_graph(graph); 
 }
 
+/**
+ * @brief Test path tree functionality.
+ * 
+ */
+static void test_r2_graph_path_tree()
+{
+        r2_uint64 vertices[] = {'s', 'y'};
+        r2_uint64 edges [][2] = {
+                {'s', 't'},
+                {'s', 'y'},
+                {'t', 'y'},
+                {'y', 't'},
+                {'t', 'x'}, 
+                {'t', 'k'},
+                {'k', 'x'},
+                {'x', 'z'},
+                {'x', 'y'},
+                {'z', 'x'}, 
+                {'y', 'z'},
+                {'z', 'y'},
+                {'z', 's'}
+        };
+
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        for(r2_uint64 i = 0; i < 12; ++i)
+                r2_graph_add_edge(graph, (r2_uc *)&edges[i][0], sizeof(r2_uint64), (r2_uc *)&edges[i][1], sizeof(r2_uint64));
+
+        struct r2_vertex *src  = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64)); 
+        struct r2_vertex *dest = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64)); 
+
+        struct r2_graph *ptree = r2_graph_path_tree(graph, src, dest);
+        printf("\nPath Tree:");
+        print_graph(ptree);
+        r2_destroy_graph(ptree); 
+        r2_destroy_graph(graph);
+}
+
 static void test_r2_graph_stats()
 {
         struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
         struct r2_vertex *vertex[2];  
-        FILE *fp = fopen("Email-EuAll.txt", "r");
+        FILE *fp = fopen("roadNet-CA.txt", "r");
         r2_uint64 vertices[2];
         r2_uint64 *src  = NULL;
         r2_uint64 *dest = NULL;
@@ -2192,45 +2298,44 @@ static void test_r2_graph_stats()
                 assert(r2_graph_add_edge(graph, src, sizeof(r2_uint64), dest, sizeof(r2_uint64)) == TRUE);
         } 
 
-        FILE *vertexdump = fopen("vertex.txt", "w+");
-        struct r2_listnode *head = r2_listnode_first(graph->vlist);
-        struct r2_vertex *source = NULL; 
-        while(head != NULL){
-                source = head->data; 
-                fprintf(vertexdump, "%lld\n", *(r2_uint64 *)source->vkey);
-                head = head->next;
-        }
-
-        fclose(vertexdump);
-
-        FILE *dump = fopen("dfs.txt", "w+");
-        vertices[0] = 2960; 
-        vertices[1] = 77;
-        struct r2_edge *edge = r2_graph_get_edge(graph,  (r2_uc *)&vertices[0], sizeof(r2_uint64), (r2_uc *)&vertices[1], sizeof(r2_uint64));
-        r2_graph_dfs(graph, NULL, dumpcc, dump);
-        fclose(dump);
-        //struct r2_graph *dfs = r2_graph_dfs_tree(graph, NULL);
-        //struct r2_graph *bfs = r2_graph_bfs_tree(graph, NULL);
+        
+        struct r2_graph *transpose = r2_graph_transpose(graph);
+        clock_t before = clock(); 
+        r2_destroy_graph(transpose);
+        double elapsed = ( clock() - before )/CLOCKS_PER_SEC;
+        
+        before = clock(); 
         struct r2_forest *forest = r2_graph_tscc(graph);
-
+        elapsed = ( clock() - before )/CLOCKS_PER_SEC;
         r2_uint64 largest = 0;
         r2_uint64 pos = 0 ; 
        
         for(r2_uint64 i = 0; i < forest->ncount; ++i){
-                if(forest->tree[i]->nvertices == 1){
-                        ///largest = forest->tree[i]->nvertices;
-                        r2_graph_bfs(forest->tree[pos], NULL, dumpcc, dump);
+                if(forest->tree[i]->nvertices > largest){
+                        largest = forest->tree[i]->nvertices;
                         pos = i;
                 }
         } 
 
-        /*Dump largest component*/
-        //r2_graph_bfs(forest->tree[pos], NULL, dumpcc, dump);
-        fclose(dump);
-       // printf("\nNumber of nodes in largest component: %ld", largest);
+        printf("\nNumber of nodes in largest component and edges: %ld, %ld", largest, forest->tree[pos]->nedges);
         fclose(fp);
-       // r2_destroy_graph(bfs); 
-        //r2_destroy_graph(dfs);
+       
+        
+        before = clock(); 
+        struct r2_forest *kcc = r2_graph_kcc(graph);
+        elapsed = ( clock() - before )/CLOCKS_PER_SEC;
+        largest = 0;
+        pos = 0 ; 
+       
+        for(r2_uint64 i = 0; i < kcc->ncount; ++i){
+                if(kcc->tree[i]->nvertices > largest){
+                        largest = kcc->tree[i]->nvertices;
+                        pos = i;
+                }
+        } 
+
+        printf("\nNumber of nodes in largest component and edges: %ld, %ld", largest, kcc->tree[pos]->nedges);
+        r2_graph_destroy_cc(kcc);
         r2_graph_destroy_cc(forest);
         r2_destroy_graph(graph);            
 }
@@ -2270,16 +2375,13 @@ void test_r2_graph_run()
         test_r2_graph_is_bipartite();
         test_r2_graph_bipartite_set();
         test_r2_graph_connected_components();
-        test_r2_graph_tscc();
+        test_r2_graph_scc();
         test_r2_graph_is_connected();
+        test_r2_graph_path_tree();
         test_r2_graph_stats();
 
        
-  //      test_r2_graph_tarjan_strongly_connected_components();
-        //
-        //test_r2_graph_traversals();
-        //test_r2_graph_strongly_connected_components();
-        //test_r2_graph_strongly_connected();
+
         //test_r2_graph_dijkstra();
         //test_r2_graph_large_network();
 }
@@ -2341,5 +2443,18 @@ static void dumpcc(void *a, void *arg)
         struct r2_vertex *source = a;
         
         fprintf(fp,"%lld\n", *(r2_uint64 *)source->vkey);
+}
 
+static void dump_edges(struct r2_graph *graph)
+{
+        struct r2_listnode *head = r2_listnode_first(graph->elist); 
+        struct r2_edge *edge = NULL; 
+        FILE *fp = fopen("edges_in_cc.txt", "w");
+        while(head != NULL){
+                edge = head->data;
+                fprintf(fp, "%lld\t%lld\n", *(r2_uint64 *)edge->src->vkey, *(r2_uint64 *)edge->dest->vkey);
+                head = head->next; 
+        }
+
+        fclose(fp);
 }
