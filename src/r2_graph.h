@@ -59,7 +59,7 @@ struct r2_graph{
      r2_fk  fv;/*callback function that releases the memory used by vkey*/
      r2_fk  fk;/*callback function that releases the memory used by a key in gat*/
      r2_fk  fd;/*callback function that releases the memory used by a value in data*/
-     r2_uint16 nat; /*do not create atrribute for edge or vertex in subgraph*/
+     r2_uint16 nat; /*do not delete attribute for edge or vertex in subgraph whenever TRUE*/
 };
 
 struct r2_graph* r2_create_graph(r2_cmp, r2_cmp, r2_fk, r2_fk, r2_fk);
@@ -86,7 +86,6 @@ struct r2_forest{
         struct r2_graph **tree;/*different components*/
 };
 
-
 void r2_graph_bfs(struct r2_graph *, struct r2_vertex *, r2_act, void *);
 void r2_graph_dfs(struct r2_graph *, struct r2_vertex *, r2_act, void *);
 struct r2_graph* r2_graph_transpose(struct r2_graph *);
@@ -103,6 +102,7 @@ r2_uint16 r2_graph_has_cycle(struct r2_graph *);
 r2_uint16 r2_graph_strongly_connected(struct r2_graph *);
 r2_uint16 r2_graph_is_bipartite(struct r2_graph *);
 r2_uint16 r2_graph_is_connected(struct r2_graph *);
+r2_uint16 r2_graph_is_biconnected(struct r2_graph *);
 struct r2_graph* r2_graph_bfs_tree(struct r2_graph *, struct r2_vertex *); 
 struct r2_graph* r2_graph_dfs_tree(struct r2_graph *, struct r2_vertex *);
 struct r2_list*  r2_graph_children(struct r2_graph *, struct r2_vertex *); 
@@ -112,6 +112,8 @@ struct r2_forest* r2_graph_destroy_cc(struct r2_forest *);
 struct r2_forest* r2_graph_tscc(struct r2_graph *);
 struct r2_forest* r2_graph_kcc(struct r2_graph *);
 struct r2_forest* r2_graph_bcc(struct r2_graph *);
+struct r2_list* r2_graph_articulation_points(struct r2_graph *);
+struct r2_list* r2_graph_bridges(struct r2_graph *);
 struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
 struct r2_dfstree* r2_graph_bellman_ford(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
 /*************************************************Graph Algorithms*******************************************/

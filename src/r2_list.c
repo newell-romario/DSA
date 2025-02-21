@@ -95,14 +95,10 @@ struct r2_list* r2_create_list(r2_cmp cmp, r2_cpy cpy, r2_fd fd)
 struct r2_list* r2_destroy_list(struct r2_list *list)
 {
         struct r2_listnode *front = r2_listnode_first(list);
-        struct r2_listnode *prev  = NULL; 
         while(front != NULL){
-                prev  = front;
+                r2_freenode(front->prev, list->fd); 
                 front = front->next;
-                r2_freenode(prev, list->fd);
-               
         }
-
         free(list);
         return NULL;  
 }
@@ -392,6 +388,7 @@ r2_uint16 r2_list_empty(const struct r2_list *list)
 static void r2_freenode(struct r2_listnode *node, r2_fd freedata)
 {
         if(freedata != NULL)
-                freedata(node->data); 
+                if(node != NULL)
+                        freedata(node->data); 
         free(node);
 }

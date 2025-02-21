@@ -14,7 +14,7 @@ static void print_vertex(void *, void *);
 static r2_ldbl relax(r2_ldbl , r2_ldbl );
 static void print_dfstree_distances(struct r2_dfstree *);
 static void dumpcc(void *a, void *arg);
-static void dump_edges(struct r2_graph *);
+static void dump_edges(struct r2_graph *, char *);
 
 /**
  * Test create graph functionality.
@@ -675,6 +675,9 @@ static void test_r2_graph_transpose()
                 assert(edge != NULL);
                 head  = head->next;
         }
+
+        assert(graph->nvertices == transpose->nvertices); 
+        assert(graph->nedges == transpose->nedges);        
         r2_destroy_graph(transpose); 
         r2_destroy_graph(graph);
 }
@@ -1032,7 +1035,7 @@ static void test_r2_graph_traversals()
 
         assert(head == NULL);
 
-        r2_destroy_list(postorder);
+        r2_destroy_list(topological);
         r2_destroy_graph(graph);
 }
 
@@ -2268,15 +2271,71 @@ static void test_r2_graph_path_tree()
         r2_destroy_graph(graph);
 }
 
-static void test_r2_graph_stats()
+/**
+ * @brief Testing biconnectivity functionality.
+ * 
+ */
+static void test_r2_graph_bcc()
 {
-        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
-        struct r2_vertex *vertex[2];  
-        FILE *fp = fopen("roadNet-CA.txt", "r");
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
+        r2_uint64 edges[][2] = {
+                {'G', 'H'},
+                {'H', 'G'},
+                {'H', 'J'},
+                {'J', 'H'},
+                {'G', 'J'},
+                {'J', 'G'},
+                {'J', 'F'},
+                {'F', 'J'},
+                {'G', 'F'},
+                {'F', 'G'}, 
+                {'H', 'I'},
+                {'I', 'H'},
+                {'F', 'I'},
+                {'I', 'F'},
+                {'F', 'C'},
+                {'C', 'F'},
+                {'C', 'E'},
+                {'E', 'C'},
+                {'F', 'E'}, 
+                {'E', 'F'}
+        };
+
+        for(r2_uint64 i = 0; i < 20; ++i)
+                r2_graph_add_edge(graph, (r2_uc *)&edges[i][0], sizeof(r2_uint64), (r2_uc *)&edges[i][1], sizeof(r2_uint64));
+
+        struct r2_forest *forest = r2_graph_bcc(graph);
+        struct r2_graph *bcc     =  NULL; 
+        for(r2_uint64 i = 0; i < forest->ncount; ++i){
+                printf("\nBi-connected Component %d: ", i);
+                print_graph(forest->tree[i]);
+        }
+        
+        FILE *fp = NULL;
+        char *fname[] = {"bcc_1.txt", "bcc_2.txt"};
         r2_uint64 vertices[2];
         r2_uint64 *src  = NULL;
         r2_uint64 *dest = NULL;
+        struct r2_vertex *vertex[2]; 
+        for(r2_uint64 i = 0; i < forest->ncount; ++i){
+                fp  = fopen(fname[i], "r");
+                bcc = forest->tree[i];
+                fscanf(fp, "%lld", &vertices[0]);
+                assert(vertices[0] == forest->tree[i]->nvertices);
+                fscanf(fp, "%lld", &vertices[0]);
+                assert(vertices[0] == forest->tree[i]->nedges);
+                while(fscanf(fp, "%lld\t%lld", &vertices[0], &vertices[1]) == 2){
+                        assert(r2_graph_get_edge(bcc, (r2_uc *)&vertices[0], sizeof(r2_uint64), (r2_uc *)&vertices[1], sizeof(r2_uint64)) != NULL);
+                } 
+                fclose(fp); 
+        }
 
+
+
+        r2_destroy_graph(graph);
+        r2_graph_destroy_cc(forest);
+        fp  = fopen("Email-Enron.txt", "r");
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
         while(fscanf(fp, "%lld\t%lld", &vertices[0], &vertices[1]) == 2){
                 vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
                 vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
@@ -2295,14 +2354,125 @@ static void test_r2_graph_stats()
                         dest = (r2_uint64 *)vertex[1]->vkey;
 
                 printf("\n%lld => %lld", vertices[0], vertices[1]);
-                assert(r2_graph_add_edge(graph, src, sizeof(r2_uint64), dest, sizeof(r2_uint64)) == TRUE);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+        } 
+        fclose(fp);
+        forest = r2_graph_bcc(graph);
+        r2_uint64 largest = 0;
+        r2_uint64 pos = 0 ; 
+       
+        for(r2_uint64 i = 0; i < forest->ncount; ++i){
+                if(forest->tree[i]->nvertices > largest){
+                        largest = forest->tree[i]->nvertices;
+                        pos = i;
+                }
+        } 
+       
+        bcc = forest->tree[pos];
+        fp = fopen("bcc_edges.txt", "r");
+        pos = 0;
+        while(fscanf(fp, "%lld\t%lld", &vertices[0], &vertices[1]) == 2){
+                assert(r2_graph_get_edge(bcc, (r2_uc *)&vertices[0], sizeof(r2_uint64), (r2_uc *)&vertices[1], sizeof(r2_uint64)) != NULL);
+                pos++;
         } 
 
+        assert(pos == 163257);
+        fclose(fp);  
+        r2_destroy_graph(graph);
+        r2_graph_destroy_cc(forest);
+}
+
+/**
+ * @brief Testing if a graph is biconnected.
+ * 
+ */
+static void test_r2_graph_is_bcc()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
+        r2_uint64 edges[][2] = {
+                {'G', 'H'},
+                {'H', 'G'},
+                {'H', 'J'},
+                {'J', 'H'},
+                {'G', 'J'},
+                {'J', 'G'},
+                {'J', 'F'},
+                {'F', 'J'},
+                {'G', 'F'},
+                {'F', 'G'}, 
+                {'H', 'I'},
+                {'I', 'H'},
+                {'F', 'I'},
+                {'I', 'F'},
+                {'F', 'C'},
+                {'C', 'F'},
+                {'C', 'E'},
+                {'E', 'C'},
+                {'F', 'E'}, 
+                {'E', 'F'}
+        };
+
+        for(r2_uint64 i = 0; i < 20; ++i)
+                r2_graph_add_edge(graph, (r2_uc *)&edges[i][0], sizeof(r2_uint64), (r2_uc *)&edges[i][1], sizeof(r2_uint64));
         
-        struct r2_graph *transpose = r2_graph_transpose(graph);
+        assert(r2_graph_is_biconnected(graph) == FALSE);
+        r2_destroy_graph(graph);
+
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
+        for(r2_uint64 i = 0; i < 6; ++i)
+                r2_graph_add_edge(graph, (r2_uc *)&edges[i][0], sizeof(r2_uint64), (r2_uc *)&edges[i][1], sizeof(r2_uint64));
+        
+        assert(r2_graph_is_biconnected(graph) == TRUE);
+        r2_destroy_graph(graph);
+
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
+        assert(r2_graph_is_biconnected(graph) == TRUE);
+
+        r2_uint64 v = 'J'; 
+        r2_graph_add_vertex(graph, (r2_uc *)&v, sizeof(r2_uint64));
+        assert(r2_graph_is_biconnected(graph) == TRUE);
+        r2_destroy_graph(graph);
+}
+
+static void test_r2_graph_stats()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        struct r2_vertex *vertex[2];  
+        FILE *fp = fopen("roadNet-CA.txt", "r");
+        r2_uint64 vertices[2];
+        r2_uint64 *src  = NULL;
+        r2_uint64 *dest = NULL;
+
         clock_t before = clock(); 
-        r2_destroy_graph(transpose);
+        while(fscanf(fp, "%lld\t%lld", &vertices[0], &vertices[1]) == 2){
+                vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = (r2_uint64 *)vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = (r2_uint64 *)vertex[1]->vkey;
+
+                printf("\n%lld => %lld", vertices[0], vertices[1]);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+        } 
         double elapsed = ( clock() - before )/CLOCKS_PER_SEC;
+        
+        before = clock(); 
+        struct r2_graph *transpose = r2_graph_transpose(graph);
+        elapsed = ( clock() - before )/CLOCKS_PER_SEC;
+        
+        before = clock(); 
+        r2_destroy_graph(transpose);
+        elapsed = ( clock() - before )/CLOCKS_PER_SEC;
         
         before = clock(); 
         struct r2_forest *forest = r2_graph_tscc(graph);
@@ -2338,6 +2508,184 @@ static void test_r2_graph_stats()
         r2_graph_destroy_cc(kcc);
         r2_graph_destroy_cc(forest);
         r2_destroy_graph(graph);            
+}
+
+/**
+ * @brief Testing articulation points.
+ * 
+ */
+static void test_r2_graph_articulation_points()
+{
+        struct r2_listnode *head = NULL; 
+        struct r2_vertex *v = NULL;
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
+        r2_uint64 edges[][2] = {
+                {'G', 'H'},
+                {'H', 'G'},
+                {'H', 'J'},
+                {'J', 'H'},
+                {'G', 'J'},
+                {'J', 'G'},
+                {'J', 'F'},
+                {'F', 'J'},
+                {'G', 'F'},
+                {'F', 'G'}, 
+                {'H', 'I'},
+                {'I', 'H'},
+                {'F', 'I'},
+                {'I', 'F'},
+                {'F', 'C'},
+                {'C', 'F'},
+                {'C', 'E'},
+                {'E', 'C'},
+                {'E', 'D'}, 
+                {'D', 'E'},
+                {'D', 'C'},
+                {'C', 'D'},
+                {'C', 'M'}, 
+                {'M', 'C'},
+                {'C', 'K'}, 
+                {'K', 'C'},
+                {'C', 'B'},
+                {'B', 'C'},
+                {'B', 'M'},
+                {'M', 'B'},
+                {'B', 'A'},
+                {'A', 'B'},
+                {'A', 'K'},
+                {'K', 'A'},
+                {'K', 'L'},
+                {'L', 'K'}
+        };
+
+        for(r2_uint64 i = 0; i < 36; ++i)
+                r2_graph_add_edge(graph, (r2_uc *)&edges[i][0], sizeof(r2_uint64), (r2_uc *)&edges[i][1], sizeof(r2_uint64));
+
+        struct r2_list *artpoints = r2_graph_articulation_points(graph);
+        head = r2_listnode_first(artpoints);
+        assert(artpoints->lsize == 3); 
+        
+        char cuts[3] = {'K', 'C', 'F'};
+        r2_uint16 i = 0;
+        printf("\nArticulation points: ");
+        while(head != NULL){
+                v = head->data; 
+                printf(" %c", *v->vkey);
+                assert(*v->vkey == cuts[i++]);
+                head = head->next; 
+        }
+        r2_destroy_graph(graph);
+        r2_destroy_list(artpoints);
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
+        FILE *fp = fopen("Email-Enron.txt", "r");
+        struct r2_vertex *vertex[2];  
+        r2_uint64 vertices[2];
+        r2_uint64 *src  = NULL;
+        r2_uint64 *dest = NULL;
+
+        while(fscanf(fp, "%lld\t%lld", &vertices[0], &vertices[1]) == 2){
+                vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = (r2_uint64 *)vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = (r2_uint64 *)vertex[1]->vkey;
+
+                printf("\n%lld => %lld", vertices[0], vertices[1]);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+        } 
+        fclose(fp);
+
+        artpoints = r2_graph_articulation_points(graph);
+        struct r2_robintable *cut = r2_create_robintable(1, 1, 0, 0, .90, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
+        head = r2_listnode_first(artpoints);
+        while(head != NULL){
+                v = head->data; 
+                r2_robintable_put(cut, v->vkey, v->vkey, v->len);
+                head = head->next;
+        }
+
+        struct r2_entry entry;
+        fp = fopen("cuts.txt", "r");
+        while(fscanf(fp, "%lld", &vertices[0]) == 1){
+                r2_robintable_get(cut, (r2_uc *)&vertices[0], sizeof(r2_uint64), &entry);
+                assert(entry.key != NULL);
+        } 
+        fclose(fp);
+        r2_destroy_robintable(cut);
+        r2_destroy_list(artpoints);
+        r2_destroy_graph(graph);
+}
+
+/**
+ * @brief Tests the graph bridges.
+ * 
+ */
+static void test_r2_graph_bridges()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
+        r2_uint64 edges[][2] = {
+                {'G', 'H'},
+                {'H', 'G'},
+                {'H', 'J'},
+                {'J', 'H'},
+                {'G', 'J'},
+                {'J', 'G'},
+                {'J', 'F'},
+                {'F', 'J'},
+                {'G', 'F'},
+                {'F', 'G'}, 
+                {'H', 'I'},
+                {'I', 'H'},
+                {'F', 'I'},
+                {'I', 'F'},
+                {'F', 'C'},
+                {'C', 'F'},
+                {'C', 'E'},
+                {'E', 'C'},
+                {'E', 'D'}, 
+                {'D', 'E'},
+                {'D', 'C'},
+                {'C', 'D'},
+                {'C', 'M'}, 
+                {'M', 'C'},
+                {'C', 'K'}, 
+                {'K', 'C'},
+                {'C', 'B'},
+                {'B', 'C'},
+                {'B', 'M'},
+                {'M', 'B'},
+                {'B', 'A'},
+                {'A', 'B'},
+                {'A', 'K'},
+                {'K', 'A'},
+                {'K', 'L'},
+                {'L', 'K'}
+        };
+        for(r2_uint64 i = 0; i < 36; ++i)
+                r2_graph_add_edge(graph, (r2_uc *)&edges[i][0], sizeof(r2_uint64), (r2_uc *)&edges[i][1], sizeof(r2_uint64));
+        
+        struct r2_list *bridges = r2_graph_bridges(graph);
+
+        struct r2_listnode *head = r2_listnode_first(bridges); 
+        struct r2_edge *edge = NULL;
+        printf("\nBridges: ");
+        while(head != NULL){
+                edge = head->data; 
+                printf("[%c, %c] ", *edge->src->vkey,*edge->dest->vkey);
+                head = head->next;
+        }
+        r2_destroy_list(bridges);
+        r2_destroy_graph(graph); 
 }
 
 void test_r2_graph_run()
@@ -2379,9 +2727,10 @@ void test_r2_graph_run()
         test_r2_graph_is_connected();
         test_r2_graph_path_tree();
         test_r2_graph_stats();
-
-       
-
+        //test_r2_graph_bcc();
+        test_r2_graph_is_bcc();
+        test_r2_graph_articulation_points();
+        test_r2_graph_bridges();
         //test_r2_graph_dijkstra();
         //test_r2_graph_large_network();
 }
@@ -2389,8 +2738,8 @@ void test_r2_graph_run()
 
 static r2_int16 vcmp(const void *a, const void *b)
 {
-        r2_uint64 *c = ((struct r2_key *)a)->key; 
-        r2_uint64 *d = ((struct r2_key *)b)->key; 
+        r2_uint64 *c = (r2_uint64 *)((struct r2_key *)a)->key; 
+        r2_uint64 *d = (r2_uint64 *)((struct r2_key *)b)->key; 
 
         if(*c > *d)
                 return 1; 
@@ -2445,11 +2794,11 @@ static void dumpcc(void *a, void *arg)
         fprintf(fp,"%lld\n", *(r2_uint64 *)source->vkey);
 }
 
-static void dump_edges(struct r2_graph *graph)
+static void dump_edges(struct r2_graph *graph, char *fname)
 {
         struct r2_listnode *head = r2_listnode_first(graph->elist); 
         struct r2_edge *edge = NULL; 
-        FILE *fp = fopen("edges_in_cc.txt", "w");
+        FILE *fp = fopen(fname, "w");
         while(head != NULL){
                 edge = head->data;
                 fprintf(fp, "%lld\t%lld\n", *(r2_uint64 *)edge->src->vkey, *(r2_uint64 *)edge->dest->vkey);
