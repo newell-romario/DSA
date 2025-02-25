@@ -75,7 +75,7 @@ static void test_r2_pq_remove_root()
        
         r2_int64 j = 9;
         for(r2_uint64 i = 0; i < 11; ++i,--j){
-                pq = r2_pq_remove(pq, r2_pq_first(pq));
+                r2_pq_remove(pq, r2_pq_first(pq));
                 if(j >= 1)
                         assert(r2_pq_first(pq)->data == &values[j]);
         }

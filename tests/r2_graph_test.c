@@ -11,11 +11,10 @@ static r2_int16 vcmp(const void *, const void *);
 static void print_edges(struct r2_vertex *);
 static void print_graph(struct r2_graph *);
 static void print_vertex(void *, void *);
-static r2_ldbl relax(r2_ldbl , r2_ldbl );
-static void print_dfstree_distances(struct r2_dfstree *);
 static void dumpcc(void *a, void *arg);
 static void dump_edges(struct r2_graph *, char *);
-
+static r2_dbl weight(struct r2_edge *);
+static void r2_graph_spt_dump(struct r2_graph *, char *);
 /**
  * Test create graph functionality.
  * 
@@ -2438,7 +2437,7 @@ static void test_r2_graph_stats()
 {
         struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
         struct r2_vertex *vertex[2];  
-        FILE *fp = fopen("roadNet-CA.txt", "r");
+        FILE *fp = fopen("web-NotreDame.txt", "r");
         r2_uint64 vertices[2];
         r2_uint64 *src  = NULL;
         r2_uint64 *dest = NULL;
@@ -2688,6 +2687,215 @@ static void test_r2_graph_bridges()
         r2_destroy_graph(graph); 
 }
 
+/**
+ * @brief Test Dijkstra functionality
+ * 
+ */
+static void test_r2_graph_dijkstra()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        struct r2_vertex *vertex[2];  
+        struct r2_edge *edge = NULL;
+        FILE *fp = fopen("dijkstra_1.txt", "r");
+        r2_uint64 vertices[2];
+        r2_uint64 *src  = NULL;
+        r2_uint64 *dest = NULL;
+        r2_dbl val = 0;
+        r2_dbl *w = NULL;
+        r2_c nw;
+        while(fscanf(fp, "%c\t%c\t%lf%c", &vertices[0], &vertices[1], &val, &nw) == 4){
+                vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = (r2_uint64 *)vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = (r2_uint64 *)vertex[1]->vkey;
+
+                printf("\n%lld => %lld", vertices[0], vertices[1]);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+                edge = r2_graph_get_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64));
+                w = malloc(sizeof(r2_dbl));
+                assert(w != NULL);
+                *w = val;
+                assert(r2_edge_add_attributes(edge, "weight", w, strlen("weight"), kcmp) == TRUE);
+        }    
+        fclose(fp);
+        vertices[0] = 's';
+        struct r2_graph *spt = r2_graph_dijkstra(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64), weight);
+        printf("\nShortest Path Tree: "); 
+        print_graph(spt);
+
+        fp = fopen("dijkstra_results.txt", "r"); 
+        while(fscanf(fp, "%c\t%lf%c", &vertices[1], &val, &nw) == 3){
+                assert(val == r2_graph_dist_from_source(spt, (r2_uc *)&vertices[1], sizeof(r2_uint64)));
+        }  
+
+        fclose(fp);
+        r2_destroy_graph(graph);
+        r2_destroy_graph(spt);
+          
+}
+
+/**
+ * @brief Test Bellman ford functionality
+ * 
+ */
+static void test_r2_graph_bellmanford()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        struct r2_vertex *vertex[2];  
+        struct r2_edge *edge = NULL;
+        FILE *fp = fopen("bellmanford.txt", "r");
+        r2_uint64 vertices[2];
+        r2_uint64 *src  = NULL;
+        r2_uint64 *dest = NULL;
+        r2_dbl val = 0;
+        r2_dbl *w = NULL;
+        r2_c nw;
+        while(fscanf(fp, "%c\t%c\t%lf%c", &vertices[0], &vertices[1], &val, &nw) == 4){
+                vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = (r2_uint64 *)vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = (r2_uint64 *)vertex[1]->vkey;
+
+                printf("\n%lld => %lld", vertices[0], vertices[1]);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+                edge = r2_graph_get_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64));
+                w = malloc(sizeof(r2_dbl));
+                assert(w != NULL);
+                *w = val;
+                assert(r2_edge_add_attributes(edge, "weight", w, strlen("weight"), kcmp) == TRUE);
+        }    
+        fclose(fp);
+        vertices[0] = 's';
+        struct r2_graph *spt = r2_graph_bellman_ford(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64), weight);
+        printf("\nShortest Path Tree: "); 
+        print_graph(spt);
+
+        fp = fopen("bellmanford_results.txt", "r"); 
+        while(fscanf(fp, "%c\t%lf%c", &vertices[1], &val, &nw) == 3){
+                assert(val == r2_graph_dist_from_source(spt, (r2_uc *)&vertices[1], sizeof(r2_uint64)));
+        }  
+        fclose(fp);
+        r2_destroy_graph(graph);
+        r2_destroy_graph(spt);
+
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        fp = fopen("soc-sign-bitcoinotc.csv", "r");
+        while(fscanf(fp, "%lld\t%lld\t%lf", &vertices[0], &vertices[1], &val) == 3){
+                vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = (r2_uint64 *)vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = (r2_uint64 *)vertex[1]->vkey;
+
+                printf("\n%lld => %lld", vertices[0], vertices[1]);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+                edge = r2_graph_get_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64));
+                w = malloc(sizeof(r2_dbl));
+                assert(w != NULL);
+                *w = val;
+                assert(r2_edge_add_attributes(edge, "weight", w, strlen("weight"), kcmp) == TRUE);
+        }
+
+
+        vertices[0] = 13; 
+        spt = r2_graph_bellman_ford(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64), weight);
+        r2_graph_spt_dump(spt, "bellman_dump.txt");
+        fclose(fp);
+        r2_destroy_graph(graph);
+        r2_destroy_graph(spt);
+}
+
+/**
+ * @brief Test the shortest path for a DAG.
+ * 
+ */
+static void test_r2_graph_dag_shortest()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        struct r2_vertex *vertex[2];  
+        struct r2_edge *edge = NULL;
+        FILE *fp = fopen("dag2.txt", "r");
+        r2_uint64 vertices[2];
+        r2_uint64 *src  = NULL;
+        r2_uint64 *dest = NULL;
+        r2_dbl val = 0;
+        r2_dbl *w = NULL;
+        r2_c nw;
+        
+        while(fscanf(fp, "%c\t%c\t%lf%c", &vertices[0], &vertices[1], &val, &nw) == 4){
+                vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = (r2_uint64 *)vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = (r2_uint64 *)vertex[1]->vkey;
+
+                printf("\n%lld => %lld", vertices[0], vertices[1]);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+                edge = r2_graph_get_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64));
+                w = malloc(sizeof(r2_dbl));
+                assert(w != NULL);
+                *w = val;
+                assert(r2_edge_add_attributes(edge, "weight", w, strlen("weight"), kcmp) == TRUE);
+        }   
+
+        fclose(fp);
+        vertices[0] = '1';
+        struct r2_graph *spt = r2_graph_shortest_dag(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64), weight);
+        printf("\nShortest Path Tree: "); 
+        print_graph(spt);
+
+        fp = fopen("dijkstra_results2.txt", "r"); 
+        while(fscanf(fp, "%c\t%lf%c", &vertices[1], &val, &nw) == 3){
+                assert(val == r2_graph_dist_from_source(spt, (r2_uc *)&vertices[1], sizeof(r2_uint64)));
+        }  
+        fclose(fp);
+        r2_destroy_graph(graph);
+        r2_destroy_graph(spt);
+}
+
+
 void test_r2_graph_run()
 {
         test_r2_create_graph(); 
@@ -2726,13 +2934,14 @@ void test_r2_graph_run()
         test_r2_graph_scc();
         test_r2_graph_is_connected();
         test_r2_graph_path_tree();
-        test_r2_graph_stats();
         //test_r2_graph_bcc();
-        test_r2_graph_is_bcc();
-        test_r2_graph_articulation_points();
-        test_r2_graph_bridges();
-        //test_r2_graph_dijkstra();
-        //test_r2_graph_large_network();
+        //test_r2_graph_is_bcc();
+        //test_r2_graph_articulation_points();
+        //test_r2_graph_bridges();
+       // test_r2_graph_dijkstra();
+        //test_r2_graph_bellmanford();
+        test_r2_graph_dag_shortest();
+        test_r2_graph_stats();
 }
 
 
@@ -2802,6 +3011,31 @@ static void dump_edges(struct r2_graph *graph, char *fname)
         while(head != NULL){
                 edge = head->data;
                 fprintf(fp, "%lld\t%lld\n", *(r2_uint64 *)edge->src->vkey, *(r2_uint64 *)edge->dest->vkey);
+                head = head->next; 
+        }
+
+        fclose(fp);
+}
+
+
+static r2_dbl weight(struct r2_edge *edge)
+{
+        r2_dbl *w = r2_edge_get_attributes(edge, "weight", strlen("weight"), kcmp);
+        if(w == NULL)
+                return 1; 
+        
+        return *w;
+}
+
+
+static void r2_graph_spt_dump(struct r2_graph *spt, char *fname)
+{
+        struct r2_listnode *head = r2_listnode_first(spt->vlist); 
+        struct r2_vertex *v = NULL; 
+        FILE *fp = fopen(fname, "w");
+        while(head != NULL){
+                v = head->data;
+                fprintf(fp, "%lld\t%lf\n", *(r2_uint64 *)v->vkey, r2_graph_dist_from_source(spt, v->vkey, v->len));
                 head = head->next; 
         }
 

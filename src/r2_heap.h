@@ -71,8 +71,7 @@ struct r2_pq* r2_create_priority_queue(r2_uint64, r2_uint16, r2_cmp, r2_fd, r2_c
 struct r2_pq* r2_destroy_priority_queue(struct r2_pq *);
 struct r2_locator* r2_pq_insert(struct r2_pq*, void *);
 struct r2_locator* r2_pq_first(struct r2_pq *);
-struct r2_pq* r2_pq_remove(struct r2_pq *, struct r2_locator *);
+r2_uint16 r2_pq_remove(struct r2_pq *, struct r2_locator *);
 r2_uint16 r2_pq_empty(const struct r2_pq *);
 struct r2_pq* r2_pq_adjust(struct r2_pq *, struct r2_locator *, r2_uint16);
 #endif
-/*0x75d5a0*/

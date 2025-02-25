@@ -3,6 +3,8 @@
 #include "r2_types.h"
 #include "r2_hash.h"
 #include "r2_list.h"
+#include "r2_heap.h"
+typedef r2_ldbl(*r2_relax)(r2_ldbl, r2_ldbl);
 
 struct r2_vertex;
 /**
@@ -23,7 +25,7 @@ struct r2_edge{
         struct r2_robintable *eat;/*edge attributes*/
         r2_uint16 nat;/*mirrors nat attribute in graph*/ 
 }; 
-
+typedef r2_dbl(*r2_weight)(struct r2_edge *);
 
 /**
  * @brief Represents a vertex in a graph.
@@ -114,7 +116,9 @@ struct r2_forest* r2_graph_kcc(struct r2_graph *);
 struct r2_forest* r2_graph_bcc(struct r2_graph *);
 struct r2_list* r2_graph_articulation_points(struct r2_graph *);
 struct r2_list* r2_graph_bridges(struct r2_graph *);
-struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
-struct r2_dfstree* r2_graph_bellman_ford(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
+struct r2_graph* r2_graph_dijkstra(struct r2_graph *, r2_uc *, r2_uint64,  r2_weight);
+struct r2_graph* r2_graph_bellman_ford(struct r2_graph *, r2_uc *, r2_uint64, r2_weight);
+struct r2_graph* r2_graph_shortest_dag(struct r2_graph *, r2_uc *,  r2_uint64, r2_weight);
+r2_dbl r2_graph_dist_from_source(struct r2_graph *, r2_uc *, r2_uint64);
 /*************************************************Graph Algorithms*******************************************/
 #endif 

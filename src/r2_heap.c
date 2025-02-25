@@ -13,8 +13,8 @@ static r2_uint16  r2_pq_resize(struct r2_pq *, r2_uint64);
  * @brief                       Creates an empty priority queue. N.B This is an extendable priority queue.
  * 
  * @param pqsize                Priority queue size. If the size is 0 we default to a size of 32.
- * @param type                  Type represents whether the heap is a min or max heap. 0 == min heap or 1 => max heap.
- * @param kcmp                  A comparison callback function.
+ * @param type                  Type represents whether the heap is a min or max heap. 0 => min heap or 1 => max heap.
+ * @param kcmp                  A comparison callback function. 
  * @param fd                    A callback function that frees memory used by data.
  * @param kcpy                  A callback function to copy key.
  * @return struct r2_pq*        Returns priority queue, else NULL. 
@@ -221,10 +221,11 @@ static r2_uint16  r2_pq_resize(struct r2_pq *pq, r2_uint64 size)
  * 
  * @param pq                    Priority Queue.
  * @param loc                   Root location.
- * @return struct r2_pq*        Returns priority queue.
+ * @return r2_uint16            Returns TRUE whenever the element was deleted properly, else FALSE.
  */
-struct r2_pq* r2_pq_remove(struct r2_pq *pq, struct r2_locator *loc)
+r2_uint16 r2_pq_remove(struct r2_pq *pq, struct r2_locator *loc)
 {
+        r2_uint16 SUCCESS = FALSE;
         if(r2_pq_empty(pq) != TRUE){
                 r2_uint64 root = loc->pos;
                 pq->data[root] = pq->data[pq->ncount];
@@ -236,8 +237,9 @@ struct r2_pq* r2_pq_remove(struct r2_pq *pq, struct r2_locator *loc)
                 pq = r2_bubble_down(pq, root);
                 if(pq->ncount > PQSIZE && pq->ncount <= (pq->pqsize / 4))
                         r2_pq_resize(pq, pq->pqsize / 2);
+                SUCCESS = TRUE;
         }
-        return pq;
+        return SUCCESS;
 }
 
 

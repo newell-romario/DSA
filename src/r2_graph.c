@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
 /********************File scope functions************************/
 static void r2_free_edge_data(void *);
 static void r2_free_vertex_data(void *);
@@ -21,6 +22,10 @@ static struct r2_graph*  r2_graph_components(struct r2_graph *, struct r2_vertex
 static void action(void *, void*);
 static struct r2_graph* r2_graph_build_tscc(struct r2_graph *, struct r2_vertex *, struct r2_robintable *, r2_uint64 *);
 static struct r2_graph* r2_graph_build_bcc(struct r2_graph *, struct r2_arrstack *, struct r2_edge *);
+static r2_int16 vat_cmp(const void *, const void *);
+static r2_int16 wcmp(const void *, const void *);
+static struct r2_graph* r2_graph_build_spt(struct r2_graph *, struct r2_graph *, struct r2_vertex *, r2_weight);
+static r2_uint16 r2_graph_detect_negative_cycle(struct r2_graph *, struct r2_robintable *, r2_weight);
 /**
  * WHITE - We have not started to process the adjacency list of this vertex.
  * GREY  - We have started to process this vertex but haven't completed processing. 
@@ -31,7 +36,12 @@ const r2_uint16 WHITE = 0;
 const r2_uint16 GREY  = 1;
 const r2_uint16 BLACK = 2; 
 const r2_uint16 YELLOW = 3;
-static r2_int16 cmp(const void *, const void *);
+
+
+struct r2_dist{
+        struct r2_vertex *vertex; 
+        r2_dbl dist;        
+};
 /********************File scope functions************************/
 
 /**
@@ -93,7 +103,6 @@ struct r2_graph* r2_create_graph(r2_cmp vmcp, r2_cmp gcmp, r2_fk fv, r2_fk fk, r
  */
 struct r2_graph* r2_destroy_graph(struct r2_graph *graph)
 {
-        clock_t before = clock(); 
         if(graph->nat == FALSE)
                 r2_destroy_robintable(graph->gat); 
         struct r2_listnode *head = r2_listnode_first(graph->elist);
@@ -106,14 +115,19 @@ struct r2_graph* r2_destroy_graph(struct r2_graph *graph)
                 free(edge);
                 head = head->next;
         }
-        double elapsed = ( clock() - before )/CLOCKS_PER_SEC;
-        before = clock(); 
+
         head = r2_listnode_first(graph->vlist); 
         while(head != NULL){
                 vertex = head->data; 
+                
                 vertex->edges->fd = NULL;
-                if(vertex->vat != NULL && vertex->nat == FALSE)
+                if(vertex->vat != NULL && vertex->nat == FALSE){
+                        r2_fd fd = vertex->vat->fd;
+                        vertex->vat->fd = free;
+                        r2_vertex_del_attributes(vertex, "0xdfs", 5, vat_cmp);
+                        vertex->vat->fd = fd;
                         r2_destroy_robintable(vertex->vat); 
+                }
                 r2_destroy_robintable(vertex->edges); 
                 r2_destroy_list(vertex->elist); 
                 r2_destroy_list(vertex->out);
@@ -121,7 +135,7 @@ struct r2_graph* r2_destroy_graph(struct r2_graph *graph)
                 free(vertex);
                 head = head->next;
         }
-        elapsed = ( clock() - before )/CLOCKS_PER_SEC;
+
         r2_destroy_list(graph->elist); 
         r2_destroy_list(graph->vlist);
         graph->vertices->fd = NULL;
@@ -3584,7 +3598,6 @@ struct r2_list* r2_graph_bridges(struct r2_graph *graph)
                                         }
                                         cur  = cur->next;
                                 }
-                                
                                 cur = r2_arrstack_top(stack); 
                                 if(cur != NULL){
                                         edge = cur->data; 
@@ -3603,7 +3616,14 @@ struct r2_list* r2_graph_bridges(struct r2_graph *graph)
                                         
                                         
                                         low[pos[1]] = low[pos[0]] < low[pos[1]]? low[pos[0]] :  low[pos[1]];
-
+                                        /**
+                                         * @brief Detecting if edge is a bridge. If dest can't 
+                                         * traverse tree edges then a back edge to an ancestor of 
+                                         * source then it's a bridge. We basically check the lowest
+                                         * dest can reach and if it's lowest is not above source it's
+                                         * a bridge.
+                                         * 
+                                         */
                                         if(low[pos[0]] > pre[pos[1]]){
                                                 if(r2_list_insert_at_back(bridges, edge) != TRUE){
                                                         FAILED = TRUE;
@@ -3638,6 +3658,525 @@ struct r2_list* r2_graph_bridges(struct r2_graph *graph)
 }
 
 /**
+ * @brief                       Finds the shortest path from source using Dijkstra shortest path algorithm.
+ * 
+ * @param graph                 Graph.
+ * @param source                Source.
+ * @param len                   Length. 
+ * @param weight                A callback function that get's the weight for an edge. A simple and the recommended approach
+ *                              is to store the edge weight as an attribute of the edge in edge->eat. Then the user provides a 
+ *                              callback function to find that weight in edge->eat. 
+ * @return struct r2_graph*     Returns shortest path tree, else NULL.
+ */
+struct r2_graph* r2_graph_dijkstra(struct r2_graph *graph, r2_uc *source, r2_uint64 len, r2_weight weight)
+{
+        r2_uint16 FAILED = FALSE;
+        struct r2_vertex *src  = r2_graph_get_vertex(graph, source, len);
+        struct r2_vertex *dest = src;
+        struct r2_graph *spt   = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
+        struct r2_pq *pq  = r2_create_priority_queue(0, 0, wcmp, NULL, NULL);
+        struct r2_dist *weights = malloc(sizeof(struct r2_dist) * graph->nvertices);
+        
+        if(spt == NULL || processed == NULL || pq == NULL || weights == NULL || graph->nvertices == 0 || src == NULL){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        /**
+         * @brief Initializes all vertices.
+         * 
+         */
+        r2_uint64 count = 0;       
+        struct r2_listnode *head = r2_listnode_first(graph->vlist);
+        struct r2_locator *loc = NULL;
+        while(head != NULL){
+                src = head->data;
+                weights[count].vertex = src;
+                weights[count].dist   = INFINITY;
+                if(dest == src)
+                        weights[count].dist = 0;
+
+                loc = r2_pq_insert(pq, &weights[count]);
+                if(loc != NULL){
+                        if(r2_robintable_put(processed, src->vkey, loc, src->len) != TRUE){
+                                FAILED = TRUE; 
+                                goto CLEANUP;   
+                        }
+                }
+                else{
+                        FAILED = TRUE; 
+                        goto CLEANUP;  
+                }
+                ++count;
+                head = head->next;
+        }
+
+        struct r2_dist* dist[2] = {NULL, NULL};
+        struct r2_edge *edge = NULL;
+        struct r2_entry entry = {.key = NULL, .data = NULL, .length = 0};
+        r2_dbl *w;
+        do{
+                loc = r2_pq_first(pq);
+                dist[0] = loc->data;
+                src = dist[0]->vertex;
+                head = r2_listnode_first(src->elist);
+                r2_pq_remove(pq, r2_pq_first(pq));
+                r2_robintable_del(processed, src->vkey, src->len);
+                while(head != NULL){
+                        edge = head->data;
+                        src  = edge->src;
+                        dest = edge->dest;
+                        r2_robintable_get(processed, dest->vkey, dest->len, &entry);
+                        if(entry.key != NULL){
+                                loc     = entry.data;
+                                dist[1] = loc->data;
+                                /**
+                                 * @brief Perform relaxation
+                                 * 
+                                 */
+                                if((dist[0]->dist + weight(edge)) < dist[1]->dist){
+                                        dist[1]->dist = dist[0]->dist + weight(edge);
+                                        r2_pq_adjust(pq, loc, 0);
+                                }
+                        }
+                        head = head->next;
+                }
+
+
+                /*Adding distance attribute.*/
+                if(dist[0]->dist != INFINITY){
+                        /*Adding vertex to shortest path tree*/
+                        if(r2_graph_add_vertex(spt, src->vkey, src->len)  != TRUE){
+                                FAILED = TRUE; 
+                                goto CLEANUP; 
+                        }
+
+                        w = malloc(sizeof(r2_dbl));
+                        if(w != NULL){
+                                *w  = dist[0]->dist;
+                                src = r2_graph_get_vertex(spt, src->vkey, src->len);
+                                if(r2_vertex_add_attributes(src, "0xdfs", w, 5, vat_cmp) != TRUE){
+                                        free(w);
+                                        FAILED = TRUE; 
+                                        goto CLEANUP;  
+                                }
+                        }else{
+                                FAILED = TRUE; 
+                                goto CLEANUP;   
+                        }
+                }
+        }while(r2_pq_empty(pq) != TRUE);
+        spt = r2_graph_build_spt(graph, spt, r2_graph_get_vertex(graph, source, len), weight);
+        CLEANUP:
+                if(processed != NULL)
+                        r2_destroy_robintable(processed); 
+                
+                if(pq != NULL)
+                        r2_destroy_priority_queue(pq); 
+                
+                if(weights != NULL)
+                        free(weights);
+
+                if(FAILED == TRUE && spt != NULL)
+                        spt = r2_destroy_graph(graph);
+
+        return spt;
+}
+
+/**
+ * @brief                         Builds the shortest path tree.
+ * 
+ * @param graph                   Graph.
+ * @param spt                     Shortest path tree.
+ * @param source                  Source.
+ * @param weight                  A callback function that get's the weight for an edge.
+ * @return struct r2_graph*       Returns shortest path tree, else NULL.
+ */
+static struct r2_graph* r2_graph_build_spt(struct r2_graph *graph, struct r2_graph *spt, struct r2_vertex *source, r2_weight weight)
+{
+        r2_int16 FAILED = FALSE;
+        /*Holds vertices that are currently being processed*/
+        struct r2_queue *queue = r2_create_queue(NULL, NULL, NULL);
+        
+        /**
+        * Every vertex has a state. We keep track of this state by using an array and a hash table. 
+        * The initial state of a vertex is always WHITE. As we perform the breadth first search 
+        * the states change from WHITE => GREY => BLACK.
+        */
+        r2_uint16 *state = malloc(sizeof(r2_uint16) * graph->nvertices);
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        if(state == NULL || processed == NULL || queue == NULL || graph->nvertices == 0){
+                FAILED = TRUE; 
+                goto CLEANUP; 
+        }
+
+
+        struct r2_listnode *head   = NULL;
+        struct r2_vertex   *src    = NULL;
+        struct r2_vertex   *dest   = NULL;
+        struct r2_edge     *edge   = NULL; 
+        struct r2_entry  entry = {.key = NULL, .data = NULL, .length  = 0};
+        r2_uint64 count = 0;   
+        
+        /*Initializing queue with source vertex*/
+        if(r2_queue_enqueue(queue, source) != TRUE){
+                FAILED = TRUE;
+                goto CLEANUP;
+        }
+
+        /*Updating source state in hash table*/
+        state[count] = GREY; 
+        if(r2_robintable_put(processed, source->vkey, &state[count], source->len) != TRUE){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        r2_uint16 *vstate = NULL;
+        r2_dbl *dist[2] = {NULL};
+        do{
+                source  = r2_queue_front(queue)->data;
+                src     = r2_graph_get_vertex(spt, source->vkey, source->len);
+                dist[0] = r2_vertex_get_attributes(src,"0xdfs", 5, vat_cmp);          
+                head    = r2_listnode_first(source->elist);
+                while(head != NULL){
+                        edge = head->data;
+                        dest = edge->dest; 
+
+                        dest    = r2_graph_get_vertex(spt, dest->vkey, dest->len);
+                        dist[1] = r2_vertex_get_attributes(dest,"0xdfs", 5, vat_cmp);
+                        
+                        /*Add edge to SPT.*/
+                        if(*dist[0] + weight(edge) == *dist[1]){
+                                if(r2_graph_add_edge(spt, source->vkey, source->len, dest->vkey, dest->len) != TRUE){
+                                        FAILED = TRUE; 
+                                        goto CLEANUP;
+                                }
+                        }
+
+                        dest = edge->dest; 
+                        /**
+                         * Checking to see if the vertex is being processed. 
+                         * If the vertex doesn't exist in the hash table then processing hasn't 
+                         * started. We assume a vertex that hasn't start processing is WHITE.
+                         */
+                        r2_robintable_get(processed, dest->vkey, dest->len, &entry);
+                        vstate = entry.data;
+                        if(vstate == NULL){
+                                vstate    = &state[++count];
+                                *vstate   = GREY; 
+                                if(r2_robintable_put(processed, dest->vkey, vstate, dest->len) != TRUE || 
+                                r2_queue_enqueue(queue, dest) != TRUE){
+                                        FAILED = TRUE; 
+                                        goto CLEANUP;
+                                }
+                        }        
+                        head = head->next; 
+                }
+
+                r2_robintable_get(processed, source->vkey, source->len, &entry);
+                vstate  = entry.data;
+                *vstate = BLACK;
+                r2_queue_dequeue(queue);
+        }while(r2_queue_empty(queue) != TRUE);
+        CLEANUP:
+                if(queue != NULL)
+                        r2_destroy_queue(queue); 
+                if(state != NULL)
+                        free(state);
+                if(processed != NULL) 
+                        r2_destroy_robintable(processed);
+                if(spt != NULL && FAILED == TRUE)
+                        spt = r2_destroy_graph(spt);
+        return spt;       
+}
+
+/**
+ * @brief                               Performs Bellman Ford shortest path algorithm on the graph.
+ * 
+ * @param graph                         Graph.
+ * @param source                        Source.
+ * @param len                           Length.
+ * @param weight                        A callback function that get's the weight for an edge. A simple and the recommended approach
+ *                                      is to store the edge weight as an attribute of the edge in edge->eat. Then the user provides a 
+ *                                      callback function to find that weight in edge->eat.                        
+ * @return struct r2_graph*             Returns the shortest path tree, else NULL if a negative cycle exists.
+ */
+struct r2_graph* r2_graph_bellman_ford(struct r2_graph *graph, r2_uc *source, r2_uint64 len, r2_weight weight)
+{
+        r2_uint16 FAILED = FALSE;
+        r2_uint16 RELAX  = FALSE;
+        struct r2_vertex *src  = r2_graph_get_vertex(graph, source, len);
+        struct r2_vertex *dest = src;
+        struct r2_graph *spt   = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_dist *weights = malloc(sizeof(struct r2_dist) * graph->nvertices);
+
+        if(spt == NULL || processed == NULL  || weights == NULL || graph->nvertices == 0 || src == NULL){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        /**
+         * @brief Initializes all vertices.
+         * 
+         */
+        r2_uint64 count = 0;       
+        struct r2_listnode *head = r2_listnode_first(graph->vlist);
+        while(head != NULL){
+                src = head->data;
+                weights[count].vertex = src;
+                weights[count].dist   = INFINITY;
+                if(dest == src)
+                        weights[count].dist = 0;
+
+                if(r2_robintable_put(processed, src->vkey, &weights[count], src->len) != TRUE){
+                        FAILED = TRUE; 
+                        goto CLEANUP;   
+                }
+                
+                ++count;
+                head = head->next;
+        }
+
+        struct r2_dist *dist[2] = {NULL};
+        struct r2_edge *edge    = NULL; 
+        struct r2_entry entry = {.key = NULL, .data = NULL, .length = 0};
+        r2_dbl *w; 
+        head = r2_listnode_first(graph->vlist); 
+        struct r2_listnode *cur = NULL;
+        while(head != NULL){
+                cur = r2_listnode_first(graph->elist); 
+                RELAX = FALSE;
+                while(cur != NULL){
+                        edge = cur->data;
+                        src  = edge->src; 
+                        dest = edge->dest;
+
+                        r2_robintable_get(processed, src->vkey, src->len, &entry);
+                        dist[0] = entry.data;
+
+                        r2_robintable_get(processed, dest->vkey, dest->len, &entry);
+                        dist[1] = entry.data;
+                        /**
+                         * @brief Perform relaxation
+                         * 
+                         */
+                        if((dist[0]->dist + weight(edge)) < dist[1]->dist){
+                                dist[1]->dist = (dist[0]->dist + weight(edge));
+                                RELAX = TRUE;
+                        }
+                        cur  = cur->next;
+                }
+                if(RELAX == FALSE)
+                        break;
+                head = head->next;
+        }
+
+        /**
+         * Adding reachable vertices to graph
+         */
+        for(r2_uint64 i = 0; i < graph->nvertices; ++i){
+                if(weights[i].dist != INFINITY){
+                        src = weights[i].vertex;
+                        if(r2_graph_add_vertex(spt, src->vkey, src->len) != TRUE){
+                                FAILED = TRUE; 
+                                goto CLEANUP;        
+                        }
+                        w = malloc(sizeof(r2_dbl));
+                        if(w != NULL){
+                                *w  = weights[i].dist;
+                                src = r2_graph_get_vertex(spt, src->vkey, src->len);
+                                if(r2_vertex_add_attributes(src, "0xdfs", w, 5, vat_cmp) != TRUE){
+                                        free(w);
+                                        FAILED = TRUE; 
+                                        goto CLEANUP;  
+                                }
+                        }else{
+                                FAILED = TRUE; 
+                                goto CLEANUP;   
+                        }
+                }
+        }
+        if(r2_graph_detect_negative_cycle(graph, processed, weight) == TRUE){
+                FAILED = TRUE; 
+                goto CLEANUP;  
+        }
+        spt = r2_graph_build_spt(graph, spt, r2_graph_get_vertex(graph, source, len), weight);
+        CLEANUP:
+                if(processed != NULL)
+                        r2_destroy_robintable(processed); 
+                
+                if(weights != NULL)
+                        free(weights);
+
+                if(FAILED == TRUE && spt != NULL)
+                        spt = r2_destroy_graph(graph);
+
+        return spt;     
+}
+/**
+ * @brief                       Finds negative cycle after Bellman Ford algorithm.
+ * 
+ * @param graph                 Graph.
+ * @param processed             Contains the distances of all vertices.
+ * @param weight                A callback function that get's the weight for an edge. A simple and the recommended approach
+ *                              is to store the edge weight as an attribute of the edge in edge->eat. Then the user provides a 
+ *                              callback function to find that weight in edge->eat.              
+ * @return r2_uint16            Returns TRUE upon negative cycle, else FALSE.
+ */
+static r2_uint16 r2_graph_detect_negative_cycle(struct r2_graph *graph, struct r2_robintable *processed, r2_weight weight)
+{
+        struct r2_edge *edge     = NULL;
+        struct r2_listnode *head = r2_listnode_first(graph->elist);
+        struct r2_vertex *src    = NULL; 
+        struct r2_vertex *dest   = NULL; 
+        struct r2_entry entry    = {.key = NULL, .data = NULL, .length = 0}; 
+        struct r2_dist *dist[2]  = {NULL};
+
+        while(head != NULL){
+                edge = head->data; 
+                src  = edge->src; 
+                dest = edge->dest;
+                r2_robintable_get(processed, src->vkey, src->len, &entry); 
+                dist[0]  = entry.data;
+
+                r2_robintable_get(processed, dest->vkey, dest->len, &entry); 
+                dist[1]  = entry.data;
+                if((dist[0]->dist + weight(edge)) < dist[1]->dist){
+                        dist[1]->dist = (dist[0]->dist + weight(edge));
+                        return TRUE;
+                }
+
+                head = head->next;
+        }
+
+        return FALSE;
+}
+
+/**
+ * @brief                               Finds the shortest path in DAG (Directed Acyclic Graph).
+ *                                      It's the user responsibility to ensure the graph does not contain a negative cycle.                                     
+ * 
+ * @param graph                         Graph.
+ * @param source                        Source. 
+ * @param len                           Length.
+ * @param weight                        A callback function that get's the weight for an edge. A simple and the recommended approach
+ *                                      is to store the edge weight as an attribute of the edge in edge->eat. Then the user provides a 
+ *                                      callback function to find that weight in edge->eat.  
+ * @return struct r2_graph*             Returns shortest path tree, else NULL.
+ */
+struct r2_graph* r2_graph_shortest_dag(struct r2_graph *graph, r2_uc *source,  r2_uint64 len, r2_weight weight)
+{
+        r2_uint16 FAILED = FALSE;
+        struct r2_vertex *src  = r2_graph_get_vertex(graph, source, len);
+        struct r2_vertex *dest = src;
+        struct r2_graph *spt   = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
+        struct r2_dist *weights = malloc(sizeof(struct r2_dist) * graph->nvertices);
+        struct r2_list *topsort = r2_graph_dfs_traversals(graph, NULL,  2);
+        if(spt == NULL || processed == NULL  || weights == NULL || graph->nvertices == 0 || src == NULL || topsort == NULL){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        /**
+         * @brief Initializes all vertices.
+         * 
+         */
+        r2_uint64 count = 0;       
+        struct r2_listnode *head = r2_listnode_first(graph->vlist);
+        while(head != NULL){
+                src = head->data;
+                weights[count].vertex = src;
+                weights[count].dist   = INFINITY;
+                if(dest == src)
+                        weights[count].dist = 0;
+
+                if(r2_robintable_put(processed, src->vkey, &weights[count], src->len) != TRUE){
+                        FAILED = TRUE; 
+                        goto CLEANUP;   
+                }
+                
+                ++count;
+                head = head->next;
+        }
+
+        struct r2_dist *dist[2] = {NULL};
+        struct r2_edge *edge    = NULL; 
+        struct r2_entry entry   = {.key = NULL, .data = NULL, .length = 0};
+        r2_dbl *w; 
+        head = r2_listnode_first(topsort); 
+        struct r2_listnode *cur = NULL;
+        while(head != NULL){
+                src = head->data;
+                cur = r2_listnode_first(src->elist); 
+                while(cur != NULL){
+                        edge = cur->data;
+                        src  = edge->src; 
+                        dest = edge->dest;
+
+                        r2_robintable_get(processed, src->vkey, src->len, &entry);
+                        dist[0] = entry.data;
+
+                        r2_robintable_get(processed, dest->vkey, dest->len, &entry);
+                        dist[1] = entry.data;
+                        /**
+                         * @brief Perform relaxation
+                         * 
+                         */
+                        if((dist[0]->dist + weight(edge)) < dist[1]->dist){
+                                dist[1]->dist = (dist[0]->dist + weight(edge));
+                        }
+                        cur  = cur->next;
+                }
+                head = head->next;
+        }
+
+        /**
+         * Adding reachable vertices to graph
+         */
+        for(r2_uint64 i = 0; i < graph->nvertices; ++i){
+                if(weights[i].dist != INFINITY){
+                        src = weights[i].vertex;
+                        if(r2_graph_add_vertex(spt, src->vkey, src->len) != TRUE){
+                                FAILED = TRUE; 
+                                goto CLEANUP;        
+                        }
+                        w = malloc(sizeof(r2_dbl));
+                        if(w != NULL){
+                                *w  = weights[i].dist;
+                                src = r2_graph_get_vertex(spt, src->vkey, src->len);
+                                if(r2_vertex_add_attributes(src, "0xdfs", w, 5, vat_cmp) != TRUE){
+                                        free(w);
+                                        FAILED = TRUE; 
+                                        goto CLEANUP;  
+                                }
+                        }else{
+                                FAILED = TRUE; 
+                                goto CLEANUP;   
+                        }
+                }
+        }
+        
+        spt = r2_graph_build_spt(graph, spt, r2_graph_get_vertex(graph, source, len), weight);
+        CLEANUP:
+                if(processed != NULL)
+                        r2_destroy_robintable(processed); 
+                
+                if(weights != NULL)
+                        free(weights);
+
+                if(FAILED == TRUE && spt != NULL)
+                        spt = r2_destroy_graph(graph);
+
+                if(topsort != NULL)
+                        r2_destroy_list(topsort);
+        return spt;
+}
+
+
+/**
  * @brief          Free list of lists.
  * 
  * @param list     List.
@@ -3668,6 +4207,23 @@ static void action(void *a, void*b)
 }
 
 /**
+ * @brief               Callback function comparison function for priority queue.
+ * 
+ * @param a
+ * @param b 
+ * @return r2_uint16 
+ */
+static r2_int16 wcmp(const void *a, const void *b)
+{
+        const struct r2_dist *c = (const struct r2_dist *)a; 
+        const struct r2_dist *d = (const struct r2_dist *)b;
+
+        if(c->dist <= d->dist)
+                return 0;
+        return 1;
+}
+
+/**
  * @brief       Frees edge along with edge attribute table
  * 
  * @param edge  Edge
@@ -3689,12 +4245,42 @@ static void r2_free_edge_data(void *edge)
 static void r2_free_vertex_data(void *vertex)
 {
         struct r2_vertex *v = vertex; 
-        if(v->vat != NULL && v->nat == FALSE)
+        if(v->vat != NULL && v->nat == FALSE){
+                r2_fd fd = v->vat->fd;
+                v->vat->fd = free;
+                r2_vertex_del_attributes(v, "0xdfs", 5, vat_cmp);
+                v->vat->fd = fd;
                 r2_destroy_robintable(v->vat); 
-                
+        }
+
         r2_destroy_robintable(v->edges); 
         r2_destroy_list(v->elist); 
         r2_destroy_list(v->out);
         r2_destroy_list(v->in);
         free(v);
+}
+
+static r2_int16 vat_cmp(const void *a, const void *b){
+        char *c = ((struct r2_key *)a)->key; 
+        char *d = ((struct r2_key *)b)->key;
+        return strcmp(c, d);
+}
+
+/**
+ * @brief                       Returns the distance of a vertex in shortest path tree.
+ * 
+ * @param graph                 Graph.
+ * @param source                Source.
+ * @param len                   Length.
+ * @return r2_ldbl              Returns the distance if it exists, else INFINITY.
+ */
+r2_dbl r2_graph_dist_from_source(struct r2_graph *graph, r2_uc *source, r2_uint64 len)
+{
+        struct r2_vertex *src = r2_graph_get_vertex(graph, source, len);
+        
+        if(src == NULL)
+                return INFINITY; 
+
+        r2_dbl *dist = r2_vertex_get_attributes(src,"0xdfs", 5, vat_cmp); 
+        return  *dist;
 }
