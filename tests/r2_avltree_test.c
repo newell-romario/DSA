@@ -923,13 +923,13 @@ static void test_r2_avltree_generate()
 
         for(int i = 0; i < 100000;++i){  
              fscanf(dataset, "%lld", &data[i]);
-             avl = r2_avltree_insert(avl, &data[i], &data[i]); 
+             r2_avltree_insert(avl, &data[i], &data[i]); 
         }
 
        test_r2_avltree_certify(avl->root, avl->kcmp); ; 
 
         for(int i = 0; i < 100000;++i){
-                avl = r2_avltree_delete(avl, &data[i]); 
+               r2_avltree_delete(avl, &data[i]); 
                test_r2_avltree_certify(avl->root, avl->kcmp); ; 
         }
             

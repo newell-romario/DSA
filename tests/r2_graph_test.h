@@ -45,6 +45,8 @@ static void test_r2_graph_bridges();
 static void test_r2_graph_dijkstra();
 static void test_r2_graph_bellmanford();
 static void test_r2_graph_dag_shortest();
+static void test_r2_graph_prim_mst();
+static void test_r2_graph_kruskal_mst();
 static void test_r2_graph_stats();
 void test_r2_graph_run();
 #endif

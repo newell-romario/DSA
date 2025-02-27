@@ -15,6 +15,7 @@ static void dumpcc(void *a, void *arg);
 static void dump_edges(struct r2_graph *, char *);
 static r2_dbl weight(struct r2_edge *);
 static void r2_graph_spt_dump(struct r2_graph *, char *);
+static void r2_graph_mst_dump(struct r2_graph *, struct r2_graph  * ,char *, r2_weight);
 /**
  * Test create graph functionality.
  * 
@@ -2895,6 +2896,174 @@ static void test_r2_graph_dag_shortest()
         r2_destroy_graph(spt);
 }
 
+/**
+ * @brief Testing Prim MST functionality
+ * 
+ */
+static void test_r2_graph_prim_mst()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        struct r2_vertex *vertex[2];  
+        struct r2_edge *edge = NULL;
+        FILE *fp = fopen("mst.txt", "r");
+        r2_uint64 vertices[2];
+        r2_uint64 *src  = NULL;
+        r2_uint64 *dest = NULL;
+        r2_dbl val = 0;
+        r2_dbl *w = NULL;
+        r2_c nw;
+        
+        while(fscanf(fp, "%c\t%c\t%lf%c", &vertices[0], &vertices[1], &val, &nw) == 4){
+                vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = (r2_uint64 *)vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = (r2_uint64 *)vertex[1]->vkey;
+
+                printf("\n%lld => %lld", vertices[0], vertices[1]);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+                edge = r2_graph_get_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64));
+                w = malloc(sizeof(r2_dbl));
+                assert(w != NULL);
+                *w = val;
+                assert(r2_edge_add_attributes(edge, "weight", w, strlen("weight"), kcmp) == TRUE);
+        }   
+        fclose(fp);
+        struct r2_graph *mst = r2_graph_mst_prim(graph, weight); 
+        printf("\nPrim MST: ");
+        print_graph(mst);
+        r2_destroy_graph(mst); 
+        r2_destroy_graph(graph);
+
+        fp = fopen("CA.txt", "r");
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        while(fscanf(fp, "%c\t%lld\t%lld\t%lf\t%c", &nw, &vertices[0], &vertices[1], &val, &nw) == 5){
+                vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = (r2_uint64 *)vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = (r2_uint64 *)vertex[1]->vkey;
+
+                printf("\n%lld => %lld", vertices[0], vertices[1]);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+                edge = r2_graph_get_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64));
+                w = malloc(sizeof(r2_dbl));
+                assert(w != NULL);
+                *w = val;
+                assert(r2_edge_add_attributes(edge, "weight", w, strlen("weight"), kcmp) == TRUE);
+        } 
+
+        mst = r2_graph_mst_prim(graph, weight); 
+        r2_graph_mst_dump(mst, graph,"mstresults.txt", weight);
+        r2_destroy_graph(mst); 
+        r2_destroy_graph(graph);
+
+}
+
+/**
+ * @brief Test Kruskal MST.
+ * 
+ */
+static void test_r2_graph_kruskal_mst()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        struct r2_vertex *vertex[2];  
+        struct r2_edge *edge = NULL;
+        FILE *fp = fopen("mst.txt", "r");
+        r2_uint64 vertices[2];
+        r2_uint64 *src  = NULL;
+        r2_uint64 *dest = NULL;
+        r2_dbl val = 0;
+        r2_dbl *w = NULL;
+        r2_c nw;
+        
+        while(fscanf(fp, "%c\t%c\t%lf\t%c", &vertices[0], &vertices[1], &val, &nw) == 4){
+                vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = (r2_uint64 *)vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = (r2_uint64 *)vertex[1]->vkey;
+
+                printf("\n%lld => %lld", vertices[0], vertices[1]);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+                edge = r2_graph_get_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64));
+                w = malloc(sizeof(r2_dbl));
+                assert(w != NULL);
+                *w = val;
+                assert(r2_edge_add_attributes(edge, "weight", w, strlen("weight"), kcmp) == TRUE);
+        }   
+
+        fclose(fp);
+        struct r2_graph *mst = r2_graph_mst_kruskal(graph, weight); 
+        printf("\nKruskal MST: ");
+        print_graph(mst);
+        r2_destroy_graph(mst); 
+        r2_destroy_graph(graph);
+
+
+        fp = fopen("CA.txt", "r");
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL);
+        while(fscanf(fp, "%c\t%lld\t%lld\t%lf\t%c", &nw, &vertices[0], &vertices[1], &val, &nw) == 5){
+                vertex[0] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[0], sizeof(r2_uint64));
+                vertex[1] = r2_graph_get_vertex(graph, (r2_uc *)&vertices[1], sizeof(r2_uint64));
+                if(vertex[0] == NULL){
+                        src  = malloc(sizeof(r2_uint64));
+                        assert(src != NULL);
+                        *src = vertices[0];
+                }else
+                        src = (r2_uint64 *)vertex[0]->vkey;
+
+                if(vertex[1] == NULL){
+                        dest = malloc(sizeof(r2_uint64));
+                        assert(dest != NULL);
+                        *dest = vertices[1];
+                }else 
+                        dest = (r2_uint64 *)vertex[1]->vkey;
+
+                printf("\n%lld => %lld", vertices[0], vertices[1]);
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+                edge = r2_graph_get_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64));
+                w = malloc(sizeof(r2_dbl));
+                assert(w != NULL);
+                *w = val;
+                assert(r2_edge_add_attributes(edge, "weight", w, strlen("weight"), kcmp) == TRUE);
+        } 
+        mst = r2_graph_mst_kruskal(graph, weight); 
+        r2_graph_mst_dump(mst, graph,"mstresults.txt", weight);
+        r2_destroy_graph(mst); 
+        r2_destroy_graph(graph);
+}
+
 
 void test_r2_graph_run()
 {
@@ -2941,6 +3110,8 @@ void test_r2_graph_run()
        // test_r2_graph_dijkstra();
         //test_r2_graph_bellmanford();
         test_r2_graph_dag_shortest();
+        //test_r2_graph_prim_mst();
+        test_r2_graph_kruskal_mst();
         test_r2_graph_stats();
 }
 
@@ -3036,6 +3207,25 @@ static void r2_graph_spt_dump(struct r2_graph *spt, char *fname)
         while(head != NULL){
                 v = head->data;
                 fprintf(fp, "%lld\t%lf\n", *(r2_uint64 *)v->vkey, r2_graph_dist_from_source(spt, v->vkey, v->len));
+                head = head->next; 
+        }
+
+        fclose(fp);
+}
+
+static void r2_graph_mst_dump(struct r2_graph *mst, struct r2_graph  *graph,char *fname, r2_weight weight)
+{
+        struct r2_listnode *head = r2_listnode_first(mst->elist); 
+        struct r2_vertex *src = NULL;
+        struct r2_vertex *dest = NULL;
+        struct r2_edge *edge = NULL;  
+        FILE *fp = fopen(fname, "w");
+        while(head != NULL){
+                edge = head->data;
+                src  = edge->src; 
+                dest = edge->dest;
+                edge = r2_graph_get_edge(graph, src->vkey, src->len, dest->vkey, dest->len);
+                fprintf(fp, "%lld\t%lld\t%lf\n", *(r2_uint64 *)src->vkey, *(r2_uint64 *)dest->vkey, weight(edge));
                 head = head->next; 
         }
 

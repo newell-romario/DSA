@@ -120,5 +120,7 @@ struct r2_graph* r2_graph_dijkstra(struct r2_graph *, r2_uc *, r2_uint64,  r2_we
 struct r2_graph* r2_graph_bellman_ford(struct r2_graph *, r2_uc *, r2_uint64, r2_weight);
 struct r2_graph* r2_graph_shortest_dag(struct r2_graph *, r2_uc *,  r2_uint64, r2_weight);
 r2_dbl r2_graph_dist_from_source(struct r2_graph *, r2_uc *, r2_uint64);
+struct r2_graph* r2_graph_mst_kruskal(struct r2_graph *, r2_weight);
+struct r2_graph* r2_graph_mst_prim(struct r2_graph *, r2_weight);
 /*************************************************Graph Algorithms*******************************************/
 #endif 

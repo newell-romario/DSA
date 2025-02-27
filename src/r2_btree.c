@@ -86,18 +86,18 @@ struct r2_btree* r2_destroy_btree(struct r2_btree *btree)
         struct r2_stack *stack = r2_create_stack(btree->kcmp, NULL, NULL);
 
         if(btree->root != NULL)
-                stack = r2_stack_push(stack, btree->root); 
+                r2_stack_push(stack, btree->root); 
 
         struct r2_page * root = NULL;
         struct r2_stacknode *top = NULL; 
         while(r2_stack_empty(stack) != TRUE){
                 top   = r2_stack_peek(stack); 
                 root  = top->data;
-                stack = r2_stack_pop(stack); 
+                r2_stack_pop(stack); 
 
                 for(int i = 0; i < root->nkeys + 1; ++i)
                         if(root->children[i] != NULL)
-                                stack = r2_stack_push(stack, root->children[i]);
+                                r2_stack_push(stack, root->children[i]);
                 
                 r2_freepage(root, btree->fk);
         }

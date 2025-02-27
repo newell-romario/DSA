@@ -341,7 +341,7 @@ static void print_tree(const struct r2_btree *btree)
         struct r2_page  *page  = btree->root;
         r2_int64 depth = 0;
         if(page != NULL)
-                queue = r2_queue_enqueue(queue, page);
+                r2_queue_enqueue(queue, page);
         struct r2_queuenode *front = NULL;
         while(r2_queue_empty(queue) != TRUE){
                 front  = r2_queue_front(queue);
@@ -350,11 +350,11 @@ static void print_tree(const struct r2_btree *btree)
                 print_page(page);
                 printf("\n--------------Page %d--------------\n", depth);
                 for(int i = 0; page->children[i] != NULL; ++i){
-                        queue = r2_queue_enqueue(queue, page->children[i]);
+                        r2_queue_enqueue(queue, page->children[i]);
                 }
 
                 ++depth;
-                queue = r2_queue_dequeue(queue);    
+                r2_queue_dequeue(queue);    
         }
 
         queue = r2_destroy_queue(queue);

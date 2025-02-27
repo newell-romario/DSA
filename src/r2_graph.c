@@ -3,6 +3,7 @@
 #include "r2_queue.h"
 #include "r2_list.h"
 #include "r2_heap.h"
+#include "r2_unionfind.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
@@ -42,6 +43,8 @@ struct r2_dist{
         struct r2_vertex *vertex; 
         r2_dbl dist;        
 };
+
+
 /********************File scope functions************************/
 
 /**
@@ -3779,7 +3782,7 @@ struct r2_graph* r2_graph_dijkstra(struct r2_graph *graph, r2_uc *source, r2_uin
                         free(weights);
 
                 if(FAILED == TRUE && spt != NULL)
-                        spt = r2_destroy_graph(graph);
+                        spt = r2_destroy_graph(spt);
 
         return spt;
 }
@@ -3911,7 +3914,6 @@ struct r2_graph* r2_graph_bellman_ford(struct r2_graph *graph, r2_uc *source, r2
         struct r2_graph *spt   = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
         struct r2_dist *weights = malloc(sizeof(struct r2_dist) * graph->nvertices);
-
         if(spt == NULL || processed == NULL  || weights == NULL || graph->nvertices == 0 || src == NULL){
                 FAILED = TRUE; 
                 goto CLEANUP;
@@ -4011,7 +4013,7 @@ struct r2_graph* r2_graph_bellman_ford(struct r2_graph *graph, r2_uc *source, r2
                         free(weights);
 
                 if(FAILED == TRUE && spt != NULL)
-                        spt = r2_destroy_graph(graph);
+                        spt = r2_destroy_graph(spt);
 
         return spt;     
 }
@@ -4175,6 +4177,216 @@ struct r2_graph* r2_graph_shortest_dag(struct r2_graph *graph, r2_uc *source,  r
         return spt;
 }
 
+/**
+ * @brief                       Finds the minimum spanning tree using Prim-Jarnik algorithm.
+ * 
+ *@param graph                  Graph.
+* @param weight                 A callback function that get's the weight for an edge. A simple and the recommended approach
+*                               is to store the edge weight as an attribute of the edge in edge->eat. Then the user provides a 
+*                               callback function to find that weight in edge->eat.               
+ * @return struct r2_graph*     Returns the minimum spanning tree, else NULL.
+ */
+struct r2_graph* r2_graph_mst_prim(struct r2_graph *graph, r2_weight weight)
+{
+        struct r2_mst{
+                struct r2_vertex *vertex; 
+                r2_dbl dist;
+                struct r2_edge *edge;        
+        };
+
+        r2_uint16 FAILED = FALSE;
+        struct r2_graph *mst = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
+        struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
+        struct r2_pq *pq  = r2_create_priority_queue(0, 0, wcmp, NULL, NULL);
+        struct r2_mst *weights = malloc(sizeof(struct r2_mst) * graph->nvertices);
+        if(mst == NULL || processed == NULL || pq == NULL || weights == NULL || graph->nvertices == 0){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        /**
+         * @brief Initializes all vertices.
+         * 
+         */
+        r2_uint64 count = 0;       
+        struct r2_listnode *head = r2_listnode_first(graph->vlist);
+        struct r2_locator *loc = NULL;
+        struct r2_vertex *src  = NULL; 
+        struct r2_vertex *dest = NULL;
+        while(head != NULL){
+                src = head->data;
+                weights[count].vertex = src;
+                weights[count].dist   = INFINITY;
+                weights[count].edge   = NULL;
+                if(count == 1)
+                        weights[0].dist = 0;
+                loc = r2_pq_insert(pq, &weights[count]);
+                if(loc != NULL){
+                        if(r2_robintable_put(processed, src->vkey, loc, src->len) != TRUE){
+                                FAILED = TRUE; 
+                                goto CLEANUP;   
+                        }
+                }
+                else{
+                        FAILED = TRUE; 
+                        goto CLEANUP;  
+                }
+                ++count;
+                head = head->next;
+        }
+        
+
+        struct r2_mst* dist[2] = {NULL, NULL};
+        struct r2_edge *edge = NULL;
+        struct r2_entry entry = {.key = NULL, .data = NULL, .length = 0};
+        do{
+                loc = r2_pq_first(pq);
+                dist[0] = loc->data;
+                src = dist[0]->vertex;
+                head = r2_listnode_first(src->elist);
+                r2_pq_remove(pq, r2_pq_first(pq));
+                r2_robintable_del(processed, src->vkey, src->len);
+                while(head != NULL){
+                        edge = head->data;
+                        src  = edge->src;
+                        dest = edge->dest;
+                        r2_robintable_get(processed, dest->vkey, dest->len, &entry);
+                        if(entry.key != NULL){
+                                loc     = entry.data;
+                                dist[1] = loc->data;
+                                /**
+                                 * @brief Perform relaxation
+                                 * 
+                                 */
+                                if((weight(edge)) < dist[1]->dist){
+                                        dist[1]->dist =  weight(edge);
+                                        dist[1]->edge = edge;
+                                        r2_pq_adjust(pq, loc, 0);
+                                }
+                        }
+                        head = head->next;
+                }
+
+                /*Adding vertex to minimum spanning tree*/
+                if(r2_graph_add_vertex(mst, src->vkey, src->len)  != TRUE){
+                        FAILED = TRUE; 
+                        goto CLEANUP; 
+                }
+
+                /*Adding edge*/
+                if(dist[0]->edge != NULL){
+                        edge = dist[0]->edge; 
+                        src  = edge->src;
+                        dest = edge->dest;
+                        if(r2_graph_add_edge(mst, src->vkey, src->len, dest->vkey, dest->len) != TRUE){
+                                FAILED = TRUE; 
+                                goto CLEANUP;     
+                        }
+                }
+        }while(r2_pq_empty(pq) != TRUE); 
+        CLEANUP:
+                if(processed != NULL)
+                        r2_destroy_robintable(processed); 
+                
+                if(pq != NULL)
+                        r2_destroy_priority_queue(pq); 
+                
+                if(weights != NULL)
+                        free(weights);
+
+                if(FAILED == TRUE && mst != NULL)
+                        mst = r2_destroy_graph(graph);
+
+        return mst;
+}
+
+/**
+ * @brief                       Finds the minimum spanning tree using Kruskal algorithm.
+ * 
+ *@param graph                  Graph.
+* @param weight                 A callback function that get's the weight for an edge. A simple and the recommended approach
+*                               is to store the edge weight as an attribute of the edge in edge->eat. Then the user provides a 
+*                               callback function to find that weight in edge->eat.               
+ * @return struct r2_graph*     Returns the minimum spanning tree, else NULL.
+ */
+struct r2_graph* r2_graph_mst_kruskal(struct r2_graph *graph, r2_weight weight)
+{
+        r2_uint16 FAILED = FALSE;
+        struct r2_vertex *src   = NULL; 
+        struct r2_vertex *dest  = NULL; 
+        struct r2_edge *edge    = NULL;
+        struct r2_graph *mst    = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
+        struct r2_universe *set = r2_create_universe(graph->vcmp, NULL);
+        struct r2_dist *weights = malloc(sizeof(struct r2_dist) * graph->nedges);
+        struct r2_pq* pq = r2_create_priority_queue(0, 0, wcmp, NULL, NULL);
+        if(mst == NULL || set == NULL ||  weights == NULL || pq == NULL || graph->nvertices == 0){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        /*Make set*/
+        struct r2_listnode *head = r2_listnode_first(graph->vlist); 
+        while(head != NULL){
+                src = head->data;
+                if(r2_makeset(set, src->vkey, src->len) != TRUE || 
+                r2_graph_add_vertex(mst, src->vkey, src->len) != TRUE){
+                        FAILED = TRUE; 
+                        goto CLEANUP;
+                }
+
+                head = head->next;
+        }
+
+        /*Make heap*/
+        head = r2_listnode_first(graph->elist);
+        r2_uint64 i = 0;
+        while(head != NULL){
+                edge = head->data; 
+                weights[i].vertex = (struct r2_vertex *)edge;/*we're using it store an edge.*/
+                weights[i].dist   = weight(edge);
+                if(r2_pq_insert(pq, &weights[i]) == NULL){
+                        FAILED = TRUE; 
+                        goto CLEANUP;  
+                }
+                ++i;
+                head = head->next;
+        }
+
+        struct r2_locator  *loc = NULL;
+        struct r2_dist *dist = NULL;
+        for(;mst->nedges < graph->nvertices -1 && graph->nedges > 0 && r2_pq_empty(pq) != TRUE;){
+                loc  = r2_pq_first(pq); 
+                if(loc != NULL){
+                        dist = loc->data; 
+                        edge = (struct r2_edge *)dist->vertex;
+                        r2_pq_remove(pq, loc);
+                        src  = edge->src; 
+                        dest = edge->dest; 
+                        if(r2_sameset(set, src->vkey, src->len, dest->vkey, dest->len) != TRUE){
+                                /*add edge to mst*/
+                                if(r2_unionset(set, src->vkey, src->len, dest->vkey, dest->len) != TRUE || 
+                                r2_graph_add_edge(mst, src->vkey, src->len, dest->vkey, dest->len) != TRUE){
+                                        FAILED = TRUE; 
+                                        goto CLEANUP;
+                                }
+                        }
+                }
+        }
+        CLEANUP:
+                if(weights != NULL)
+                        free(weights);
+                
+                if(pq != NULL)
+                        r2_destroy_priority_queue(pq); 
+
+                if(set != NULL)
+                        r2_destroy_universe(set);
+                
+                if(FAILED == TRUE && mst != NULL)
+                        mst = r2_destroy_graph(mst);
+                
+        return mst;
+}
 
 /**
  * @brief          Free list of lists.
