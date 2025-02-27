@@ -8,5 +8,6 @@ static void test_r2_pq_first();
 static void test_r2_pq_remove_root();
 static void test_r2_pq_empty();
 static void test_r2_pq_adjust();
+static void test_r2_pq_stats();
 void test_r2_pq_run();
 #endif

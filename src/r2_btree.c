@@ -37,7 +37,6 @@ struct r2_btree* r2_create_btree(r2_int64 order, r2_cmp kcmp, r2_fk fk)
                         btree->ncount   = 0; 
                 }       
         }  
-
         return btree;     
 }
 
@@ -87,18 +86,18 @@ struct r2_btree* r2_destroy_btree(struct r2_btree *btree)
         struct r2_stack *stack = r2_create_stack(btree->kcmp, NULL, NULL);
 
         if(btree->root != NULL)
-                stack = r2_stack_push(stack, btree->root); 
+                r2_stack_push(stack, btree->root); 
 
         struct r2_page * root = NULL;
         struct r2_stacknode *top = NULL; 
         while(r2_stack_empty(stack) != TRUE){
                 top   = r2_stack_peek(stack); 
                 root  = top->data;
-                stack = r2_stack_pop(stack); 
+                r2_stack_pop(stack); 
 
                 for(int i = 0; i < root->nkeys + 1; ++i)
                         if(root->children[i] != NULL)
-                                stack = r2_stack_push(stack, root->children[i]);
+                                r2_stack_push(stack, root->children[i]);
                 
                 r2_freepage(root, btree->fk);
         }
@@ -491,7 +490,6 @@ r2_int16 r2_btree_empty(const struct r2_btree *btree)
 {
         return btree->root == NULL && btree->ncount == 0;
 }
-
 
 
 

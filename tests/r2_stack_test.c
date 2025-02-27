@@ -63,7 +63,7 @@ static void test_r2_stack_push()
 
         for(int i = 0; i < SIZE; ++i){
                 
-                stack = r2_stack_push(stack, &arr[i]);
+                 r2_stack_push(stack, &arr[i]);
                 top   = r2_stack_peek(stack);  
                 assert(top->data == &arr[i]);
         }
@@ -83,7 +83,7 @@ static void test_r2_stack_pop()
         struct r2_stack *stack = r2_create_stack(NULL, NULL, NULL);
 
         for(int i = 0; i < SIZE; ++i)
-                stack = r2_stack_push(stack, &arr[i]);
+                r2_stack_push(stack, &arr[i]);
         
         struct r2_stacknode *top = NULL;
         for(int i = SIZE; i >= 2; i-= 2){
@@ -91,10 +91,10 @@ static void test_r2_stack_pop()
                 
                 top = r2_stack_peek(stack);
                 assert(top->data == &arr[i - 1]);
-                stack = r2_stack_pop(stack);
+                r2_stack_pop(stack);
                 top = r2_stack_peek(stack);
                 assert(top->data == &arr[i - 2]);
-                stack = r2_stack_pop(stack);
+                r2_stack_pop(stack);
 
         }
 
@@ -112,7 +112,7 @@ static void test_r2_stack_peek()
         struct r2_stacknode *top   = NULL; 
 
         for(int i = 0; i < SIZE; ++i){
-                stack = r2_stack_push(stack, &arr[i]);
+                r2_stack_push(stack, &arr[i]);
                 top   = r2_stack_peek(stack);
                 assert(top->data == &arr[i]);
         }
@@ -131,7 +131,12 @@ static void* cpy(const void *data)
 
 static r2_int16 cmp(const void *s1, const void *s2)
 {
-        return *(int *)s1 == *(int *)s2;
+        if((*(int *)s1) == (*(int *)s2))
+                return 0; 
+        else if((*(int *)s1) < (*(int *)s2)) 
+                return -1;
+        else 
+                return 1;
 }
 
 /**
@@ -169,7 +174,7 @@ static void test_r2_stack_copy(){
 
 
         for(int i = 0; i < SIZE;++i)
-                stack = r2_stack_push(stack, &arr[i]);
+                r2_stack_push(stack, &arr[i]);
         
 
         /**
@@ -215,7 +220,7 @@ static void test_r2_stack_empty()
         struct r2_stack *stack = r2_create_stack(NULL, NULL, NULL);
         assert(r2_stack_empty(stack) == TRUE);
         for(int i = 0; i < SIZE;++i)
-                stack = r2_stack_push(stack, &arr[i]);
+                r2_stack_push(stack, &arr[i]);
         
 
         assert(r2_stack_empty(stack) != TRUE);
@@ -240,7 +245,7 @@ void static test_r2_stack_compare(){
         assert(r2_stack_compare(stack, stack) == TRUE);
 
         for(int i = 0; i < SIZE;++i)
-                stack = r2_stack_push(stack, &arr[i]);
+                r2_stack_push(stack, &arr[i]);
         
 
         /**

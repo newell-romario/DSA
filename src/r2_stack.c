@@ -55,13 +55,13 @@ struct r2_stacknode* r2_create_stacknode()
 struct r2_stack* r2_destroy_stack(struct r2_stack *stack)
 {
         
-        struct r2_stacknode *prev = NULL;
+        struct r2_stacknode *cur = NULL;
         struct r2_stacknode *top  = r2_stack_peek(stack);
 
         while(top != NULL){
-                prev = top; 
+                cur = top; 
                 top  = top->next;
-                r2_freenode(prev, stack->fd);
+                r2_freenode(cur, stack->fd);
         }
 
         free(stack);
@@ -73,37 +73,40 @@ struct r2_stack* r2_destroy_stack(struct r2_stack *stack)
  * 
  * @param stack                 Stack.
  * @param data                  Data.
- * @return struct r2_stack*     Returns stack. 
+ * @return r2_uint16            Returns TRUE upon succesful insertion, else FALSE. 
  */
-struct r2_stack* r2_stack_push(struct r2_stack *stack, void *data)
+r2_uint16 r2_stack_push(struct r2_stack *stack, void *data)
 {
         struct r2_stacknode *node = r2_create_stacknode(); 
+        r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
                 node->data = data;
                 node->next = stack->top;
                 ++stack->ssize;
                 stack->top = node; 
+                SUCCESS = TRUE;
         }
-
-        return stack;
+        return SUCCESS;
 }
 
 /**
  * @brief                       Pops an element from stack.
  * 
  * @param stack                 Stack.
- * @return struct r2_stack*     Returns stack. 
+ * @return struct r2_stack*     Returns TRUE upon succesful deletion, else FALSE.  
  */
-struct r2_stack* r2_stack_pop(struct r2_stack *stack)
+r2_uint16 r2_stack_pop(struct r2_stack *stack)
 {
+        r2_uint16 SUCCESS = FALSE;
         if(r2_stack_empty(stack) != TRUE){
                 struct r2_stacknode *top = r2_stack_peek(stack); 
                 stack->top = top->next;
                 --stack->ssize;
                 r2_freenode(top, stack->fd);
+                SUCCESS = TRUE;
         }
 
-        return stack; 
+        return SUCCESS; 
 }
 
 
@@ -148,8 +151,13 @@ struct r2_stack* r2_stack_copy(const struct r2_stack *source)
                 while(top != NULL){
                         temp = r2_create_stacknode();
                         if(temp != NULL){
-
-                                temp->data =  source->cpy != NULL? source->cpy(top->data) : top->data;
+                                if(top->data != NULL && source->cpy != NULL){
+                                        temp->data  =  source->cpy(top->data);
+                                        if(temp->data == NULL){
+                                                new_stack = r2_destroy_stack(new_stack);
+                                                break;
+                                        }
+                                }else temp->data =  top->data;
                                 *next      = temp; 
                                 next       = &(temp->next);
                                 ++new_stack->ssize;
@@ -184,10 +192,10 @@ r2_uint16  r2_stack_compare(const struct r2_stack *s1, const struct r2_stack *s2
                 while(s1_top != NULL && s2_top != NULL){
                                
                         if(s1->cmp != NULL)
-                                result = s1->cmp(s1_top->data, s2_top->data);
+                                result = s1->cmp(s1_top->data, s2_top->data) == 0? TRUE: FALSE;
                         else
                                 result = s1_top->data == s2_top->data? TRUE : FALSE;
-                        if(result == FALSE)
+                        if(!result)
                                 break;
                         s1_top = s1_top->next; 
                         s2_top = s2_top->next;

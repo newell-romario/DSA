@@ -18,6 +18,24 @@ static r2_uint16 r2_rbnode_is_red(const struct r2_rbnode *);
 
 
 
+/**
+ * @brief               Calculates the height of the tree recursively.          
+ *                     
+ *                      Please call seldomly since it's expensive to calculate the height of the tree recursively.
+ *                      The height of tree can be read from root->height without processing the tree.
+ * 
+ * @param root          Root.
+ * @return r2_uint64    Returns the height of the tree, else -1 for empty trees.
+ */
+r2_int64 r2_rbtree_height(const struct r2_rbnode *root)
+{
+        if(root == NULL)
+                return -1; 
+
+        r2_int64 left_height  = r2_rbtree_height(root->left) + 1;  
+        r2_int64 right_height = r2_rbtree_height(root->right) + 1;
+        return MAX(left_height, right_height);    
+}
 
 /**
  * @brief                       Creates an empty node.
@@ -288,7 +306,6 @@ static void r2_rbtree_insert_rebalance(struct r2_rbtree *tree, struct r2_rbnode 
                         parent->ncount = r2_rbnode_recalc_size(parent);
                         parent = parent->parent; 
                 }
-
                 tree->root->color = BLACK; 
                 tree->ncount= tree->root->ncount;
 }
@@ -297,18 +314,19 @@ static void r2_rbtree_insert_rebalance(struct r2_rbtree *tree, struct r2_rbnode 
 
 
 /**
- * @brief                       Performs an insertion into the rb tree.
+ * @brief                       Performs an insertion into the RB Tree.
  * 
  * @param tree                  RB Tree.
  * @param key                   Key that will be inserted.
  * @param data                  Data that will be inserted along with key. 
- * @return struct r2_rbtree*    Returns RB Tree with new element inserted.
+ * @return r2_uint16            Returns TRUE upon successful insertion, else FALSE.
  */
-struct r2_rbtree* r2_rbtree_insert(struct r2_rbtree *tree, void *key, void *data)
+r2_uint16 r2_rbtree_insert(struct r2_rbtree *tree, void *key, void *data)
 {
         struct r2_rbnode **root  = &tree->root; 
         struct r2_rbnode *parent = NULL;
-        r2_int64 result = 0;
+        r2_int64 result   = 0;
+        r2_uint64 SUCCESS = FALSE;
         while(*root != NULL){
                 parent = *root; 
                 result = tree->kcmp(key, parent->key);
@@ -318,7 +336,8 @@ struct r2_rbtree* r2_rbtree_insert(struct r2_rbtree *tree, void *key, void *data
                         root = &((*root)->left);
                 else {
                         (*root)->data = data;
-                        return tree; 
+                        SUCCESS = TRUE;
+                        return SUCCESS; 
                 }
         }
 
@@ -328,10 +347,10 @@ struct r2_rbtree* r2_rbtree_insert(struct r2_rbtree *tree, void *key, void *data
                 temp->data = data; 
                 temp->parent = parent; 
                 *root = temp;
-                r2_rbtree_insert_rebalance(tree, *root); 
-        }
-
-        return tree;
+                r2_rbtree_insert_rebalance(tree, *root);
+                SUCCESS = TRUE;
+        }  
+        return SUCCESS;
 }
 
 
@@ -347,10 +366,13 @@ struct r2_rbnode* r2_rbtree_search(struct r2_rbtree *tree, void *key)
 {
         struct r2_rbnode *root  = tree->root; 
         r2_int64 result = 0;
+        #ifdef PROFILE_TREE
+                tree->num_comparisons = 0;
+        #endif 
         while(root != NULL){
                 #ifdef PROFILE_TREE
                         ++tree->num_comparisons;
-                #endif 
+                #endif
                 result = tree->kcmp(key, root->key); 
                 if(result > 0)
                         root = root->right;
@@ -422,7 +444,6 @@ static void r2_rbtree_delete_rebalance(struct r2_rbtree *tree, struct r2_rbnode 
                                         r2_rbnode_right_rotation(tree, child);
                                         sibling = child;
                                 }
-                               
                                 sibling->color = parent->color; 
                                 parent->color = BLACK; 
                                 sibling->right->color = BLACK;
@@ -441,11 +462,12 @@ static void r2_rbtree_delete_rebalance(struct r2_rbtree *tree, struct r2_rbnode 
  * 
  * @param tree                  Red and black tree.
  * @param key                   Key that will be removed.
- * @return struct r2_rbtree*    Returns a red and black tree.
+ * @return r2_uint16            Returns TRUE upon successful deletion, else FALSE.
  */
-struct r2_rbtree* r2_rbtree_delete(struct r2_rbtree *tree, void *key)
+r2_uint16 r2_rbtree_delete(struct r2_rbtree *tree, void *key)
 {
         struct r2_rbnode *root = r2_rbtree_search(tree, key);
+        r2_uint16 SUCCESS = FALSE;
         if(root != NULL){
 
                 /*Represents where the rebalancing will start from. */
@@ -494,10 +516,11 @@ struct r2_rbtree* r2_rbtree_delete(struct r2_rbtree *tree, void *key)
                 }
                         tree->ncount = r2_rbnode_recalc_size(tree->root);
 
-                r2_freenode(root, tree->fk, tree->fd);   
+                r2_freenode(root, tree->fk, tree->fd);  
+                SUCCESS = TRUE; 
         }
 
-        return tree;
+        return SUCCESS;
 }
 
 /**
@@ -738,8 +761,7 @@ void** r2_rbtree_get_values(const struct r2_rbtree *tree)
  * @return struct r2_rbnode*    Returns the root node at index, else NULL.
  */
 struct r2_rbnode* r2_rbtree_at(struct r2_rbnode *root, r2_uint64 pos)
-{
-         
+{ 
         if(pos >= root->ncount)
                 return NULL; 
 
@@ -802,7 +824,14 @@ struct r2_list*  r2_rbtree_range_query(const struct r2_rbtree *tree, void *lower
                         
                         
                         key  = tree->kcpy != NULL? tree->kcpy(k1->key): k1->key;
-                        keys =  r2_list_insert_at_back(keys, key);
+                        if(key == NULL){
+                                keys = r2_destroy_list(keys);
+                                break;    
+                        }
+                        if(r2_list_insert_at_back(keys, key) == FALSE){
+                                keys = r2_destroy_list(keys);
+                                break;
+                        }
                         k1   =  r2_rbnode_successor(k1);
                 }
         }
@@ -907,33 +936,41 @@ struct r2_rbtree *r2_rbtree_copy(const struct r2_rbtree *source)
                 if(list != NULL){
                         struct r2_rbnode *root = NULL;
                         struct r2_listnode *front = NULL;
-                        list = r2_list_insert_at_back(list, source->root);
+                        r2_list_insert_at_back(list, source->root);
                         void *key  = NULL; 
                         void *data = NULL;
                         while(r2_list_empty(list) != TRUE){
                                 front = r2_listnode_first(list);
                                 root  = front->data;
-                                list  = r2_list_delete_at_front(list);
+                                r2_list_delete_at_front(list);
                                 if(root != NULL){
                                         if(root->left != NULL)
-                                                list  = r2_list_insert_at_back(list, root->left); 
+                                                r2_list_insert_at_back(list, root->left); 
                                         if(root->right != NULL)
-                                                list  = r2_list_insert_at_back(list, root->right); 
+                                                r2_list_insert_at_back(list, root->right); 
 
                                         key  = root->key; 
                                         data = root->data;
                                         if(source->kcpy != NULL && source->dcpy != NULL){
-                                                key  = source->kcpy(key); 
-                                                data = source->dcpy(data);
+                                                key  = source->kcpy(key);
+                                                if(key == NULL){
+                                                        dest = r2_destroy_rbtree(dest);
+                                                        break;
+                                                } 
+                                                if(data != NULL){
+                                                        data = source->dcpy(data);
+                                                        if(data == NULL){
+                                                                dest = r2_destroy_rbtree(dest);
+                                                                break;
+                                                        }
+                                                }                                                
                                         }
-                                        dest  = r2_rbtree_insert(dest, key, data);
+                                        r2_rbtree_insert(dest, key, data);
                                 }    
                         } 
-                } 
-
-                r2_destroy_list(list);    
+                        r2_destroy_list(list); 
+                }          
         }
-        
         return dest;
 }
 
@@ -968,7 +1005,6 @@ r2_uint16 r2_rbtree_compare(const struct r2_rbtree *tree1, const struct r2_rbtre
                 } 
         } 
         return result;
-
 }
 
 
@@ -996,4 +1032,9 @@ static void r2_freenode(struct r2_rbnode *root, r2_fk freekey, r2_fd freedata)
         if(freekey != NULL)
                 freekey(root->data);
         free(root);
+}
+
+static r2_int64 MAX(r2_int64 a, r2_int64 b) 
+{ 
+        return a > b? a : b; 
 }

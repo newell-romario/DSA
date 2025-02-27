@@ -1,7 +1,6 @@
 #ifndef WAVLTREE_TEST_H_
 #define WAVLTREE_TEST_H_
 #include "../src/r2_wavltree.h"
-
 static void test_r2_create_wavlnode(); 
 static void test_r2_create_wavltree();
 static void test_r2_wavltree_empty();
@@ -24,5 +23,6 @@ static void test_r2_wavltree_postorder();
 static void test_r2_wavltree_preorder();
 static void test_r2_wavltree_range_query(); 
 static void test_r2_wavltree_generate();
+static void test_r2_wavltree_stats();
 void test_r2_wavltree_run();
 #endif 

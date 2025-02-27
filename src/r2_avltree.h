@@ -2,6 +2,7 @@
 #define R2_AVL_TREE_H_
 #include "r2_types.h"
 #include "r2_list.h"
+#define PROFILE_TREE
 
 /**
  *An Adel’son-Vel’skii and Landis (AVL) tree is a balanced binary search tree
@@ -67,7 +68,7 @@ struct r2_avltree{
         r2_fk  fk; /*A callback function that release memory used by key*/
         /*Used for bench marking number of comparisons*/
         #ifdef PROFILE_TREE
-                r2_int64 num_comparisons;
+                r2_uint64 num_comparisons;
         #endif 
 }; 
 
@@ -79,8 +80,8 @@ struct r2_avlnode* r2_avlnode_min(struct r2_avlnode *);
 struct r2_avlnode* r2_avlnode_max(struct r2_avlnode *);
 struct r2_avltree* r2_create_avltree(r2_cmp, r2_cmp, r2_cpy, r2_cpy, r2_fk, r2_fd);
 struct r2_avltree* r2_destroy_avltree(struct r2_avltree *);
-struct r2_avltree* r2_avltree_insert(struct r2_avltree *, void *, void *);
-struct r2_avltree* r2_avltree_delete(struct r2_avltree *, void *); 
+r2_uint16 r2_avltree_insert(struct r2_avltree *, void *, void *);
+r2_uint16 r2_avltree_delete(struct r2_avltree *, void *); 
 struct r2_avlnode* r2_avltree_search(struct r2_avltree *, const void *);
 struct r2_avlnode* r2_avltree_at(struct r2_avlnode *, r2_uint64);
 struct r2_list* r2_avltree_range_query(const struct r2_avltree *, void *, void *, r2_act, void *);

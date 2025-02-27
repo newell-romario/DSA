@@ -6,6 +6,7 @@
 static void r2_freenode(struct r2_wavlnode *, r2_fd, r2_fk);
 static r2_int64 r2_wavlnode_recalc_size(const struct r2_wavlnode *root);
 static r2_int64 r2_wavlnode_is_leaf(const struct r2_wavlnode *);
+static r2_int64 MAX(r2_int64 a, r2_int64 b);
 static r2_int64 r2_wavlnode_rank_diff(const struct r2_wavlnode *, const struct r2_wavlnode *root);
 static r2_int16 r2_wavlnode_has_child(const struct r2_wavlnode *, enum CHILD_TYPE);
 static struct r2_wavlnode* r2_wavlnode_get_sibling(const struct r2_wavlnode *);
@@ -17,6 +18,16 @@ static void r2_wavltree_delete_rebalance(struct r2_wavltree *, struct r2_wavlnod
 /********************File scope functions************************/
 
 
+
+r2_int64  r2_wavltree_height(const struct r2_wavlnode *root)
+{
+        if(root == NULL)
+                return -1; 
+
+        r2_int64 left_height  = r2_wavltree_height(root->left) + 1;  
+        r2_int64 right_height = r2_wavltree_height(root->right) + 1;
+        return MAX(left_height, right_height);    
+}
 
 /**
  * @brief                               Creates a wavl node.
@@ -60,7 +71,7 @@ r2_uint16 r2_wavltree_empty(const struct r2_wavltree *tree)
  * @param dcpy                  A callback function to copy values.
  * @param fk                    A callback function that release memory used by key.
  * @param fd                    A callback function that release memory used by data.
- * @return struct r2_wavltree*  Returns an empty wavl tree, else NULL.
+ * @return struct r2_wavltree*  Returns an empty WAVL tree, else NULL.
  */
 struct r2_wavltree* r2_create_wavltree(r2_cmp kcmp, r2_cmp dcmp, r2_cpy kcpy, r2_cpy dcpy, r2_fk fk, r2_fd fd)
 {
@@ -207,6 +218,9 @@ struct r2_wavlnode* r2_wavltree_search(struct r2_wavltree *tree, const void *key
 {
         struct r2_wavlnode *root = tree->root; 
         r2_int64 result = 0; 
+        #ifdef PROFILE_TREE
+                tree->num_comparisons = 0;
+        #endif 
         while(root != NULL){
                 #ifdef PROFILE_TREE
                         ++tree->num_comparisons;
@@ -231,13 +245,14 @@ struct r2_wavlnode* r2_wavltree_search(struct r2_wavltree *tree, const void *key
  * @param tree                  WAVL tree.
  * @param key                   Key.
  * @param data                  Data.
- * @return struct r2_wavltree*  Returns an WAVL tree. 
+ * @return r2_uint16            Returns TRUE upon successful insertion, else FALSE. 
  */
-struct r2_wavltree* r2_wavltree_insert(struct r2_wavltree *tree, void *key, void *data)
+r2_uint16 r2_wavltree_insert(struct r2_wavltree *tree, void *key, void *data)
 {
         r2_int64 result = 0;
         struct r2_wavlnode **root = &tree->root;
         struct r2_wavlnode *parent = NULL; 
+        r2_uint16 SUCCESS = FALSE;
         while(*root != NULL){
                 parent = *root; 
                 result = tree->kcmp(key, parent->key); 
@@ -247,12 +262,13 @@ struct r2_wavltree* r2_wavltree_insert(struct r2_wavltree *tree, void *key, void
                         root = &(*root)->left;
                 else{
                         (*root)->data = data; 
-                        return tree;
+                        SUCCESS = TRUE;
+                        return SUCCESS;
                 } 
         }
 
         struct r2_wavlnode *temp = r2_create_wavlnode();
-        if(temp){
+        if(temp != NULL){
                 temp->key    = key;
                 temp->data   = data;
                 temp->parent = parent;
@@ -261,7 +277,7 @@ struct r2_wavltree* r2_wavltree_insert(struct r2_wavltree *tree, void *key, void
                 tree->ncount = r2_wavlnode_recalc_size(tree->root);
         }
         
-        return tree;
+        return SUCCESS;
 }
 
 /**
@@ -360,12 +376,13 @@ static void r2_wavltree_insert_rebalance(struct r2_wavltree *tree, struct r2_wav
  * 
  * @param tree                  WAVL Tree. 
  * @param key                   Key.
- * @return struct r2_wavltree*  Returns an WAVL tree. 
+ * @return r2_uint16            Returns TRUE upon successful deletion, else FALSE. 
  */
-struct r2_wavltree *r2_wavltree_delete(struct r2_wavltree *tree, void *key)
+r2_uint16  r2_wavltree_delete(struct r2_wavltree *tree, void *key)
 {
         struct r2_wavlnode *root  = r2_wavltree_search(tree, key);
         struct r2_wavlnode *child = NULL; 
+        r2_uint16 SUCCESS = FALSE;
         if(root != NULL){
                 if(r2_wavlnode_is_leaf(root) == TRUE){
                         child = root; 
@@ -422,9 +439,10 @@ struct r2_wavltree *r2_wavltree_delete(struct r2_wavltree *tree, void *key)
                 tree->ncount = r2_wavlnode_recalc_size(tree->root);
                 /*Releases root memory*/
                 r2_freenode(root, tree->fd, tree->fk);
+                SUCCESS = TRUE;
         }
 
-        return tree;
+        return SUCCESS;
 }
 
 /**
@@ -461,7 +479,6 @@ static void r2_wavltree_delete_rebalance(struct r2_wavltree *tree, struct r2_wav
        
         
         struct r2_wavlnode *sibling = NULL; 
-
         /**
          * We need to determine if root is a 3 child.
          * The rest of the rebalncing depends on root being a 3 child.
@@ -822,7 +839,7 @@ void r2_wavltree_postorder(struct r2_wavlnode *root, r2_act action, void *arg)
 
 /**
  * @brief               Compares two WAVL TREES. 
- *                      
+ *                      Compares trees using preorder traversal. If trees have different structure then it will fail.
  * 
  * @param tree1         Tree 1
  * @param tree2         Tree 2
@@ -875,9 +892,16 @@ struct r2_wavltree* r2_wavltree_copy(const struct r2_wavltree *source)
                         data = root->data;
                         if(source->kcpy != NULL && source->dcpy != NULL){
                                 key  = source->kcpy(key); 
-                                data = source->dcpy(data);
+                                if(data != NULL){
+                                        data = source->dcpy(data);
+                                        if(data == NULL){
+                                                r2_destroy_wavltree(dest);
+                                                break;
+                                        }
+                                }
+                                
                         }
-                        dest  = r2_wavltree_insert(dest, key, data);
+                        r2_wavltree_insert(dest, key, data);
                         root  = r2_wavlnode_inorder_next(root);
                 } 
         }
@@ -926,9 +950,15 @@ struct r2_list* r2_wavltree_range_query(const struct r2_wavltree *tree, void *lo
                         if(action != NULL)
                                 action(k1, arg);
                         
-                        
                         key = tree->kcpy != NULL? tree->kcpy(k1->key): k1->key;
-                        keys = r2_list_insert_at_back(keys, key);
+                        if(key == NULL){
+                                keys = r2_destroy_list(keys);
+                                break;
+                        }
+                        if(r2_list_insert_at_back(keys, key) == FALSE){
+                                keys = r2_destroy_list(keys);
+                                break;
+                        }
                         k1 =  r2_wavlnode_successor(k1);
                 }
 
@@ -1138,4 +1168,9 @@ static void r2_freenode(struct r2_wavlnode *root, r2_fd freedata , r2_fk freekey
                 freekey(root->data);
         
         free(root);
+}
+
+static r2_int64 MAX(r2_int64 a, r2_int64 b) 
+{ 
+        return a > b? a : b; 
 }

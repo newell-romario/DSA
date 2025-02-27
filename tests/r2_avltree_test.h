@@ -30,6 +30,7 @@ static void test_r2_avltree_certify(const struct r2_avlnode *root, r2_cmp cmp);
 static void test_r2_avltree_is_avltree(const struct r2_avlnode *root);
 static void test_r2_avltree_is_binary_tree(const struct r2_avlnode *root, r2_cmp);
 static void test_r2_avltree_generate();
+static void test_r2_avltree_stats();
 void test_r2_avltree_run();
 
 /*TO DO a certification function*/

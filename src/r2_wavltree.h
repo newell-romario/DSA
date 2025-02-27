@@ -74,8 +74,7 @@
  *              
  * 
  *            
- *                   
- * 
+ *                 
  *           
  */
 struct r2_wavlnode{
@@ -109,7 +108,6 @@ enum CHILD_TYPE{
         TRHEE_CHILD 
 };
 
- 
 
 r2_uint16 r2_wavltree_empty(const struct r2_wavltree *);
 struct r2_wavlnode* r2_create_wavlnode(); 
@@ -120,8 +118,8 @@ struct r2_wavlnode* r2_wavlnode_predecessor(struct r2_wavlnode *);
 struct r2_wavlnode* r2_wavlnode_min(struct r2_wavlnode *); 
 struct r2_wavlnode* r2_wavlnode_max(struct r2_wavlnode *);
 struct r2_wavlnode* r2_wavltree_search(struct r2_wavltree *, const void *);
-struct r2_wavltree* r2_wavltree_insert(struct r2_wavltree *, void *, void *);
-struct r2_wavltree* r2_wavltree_delete(struct r2_wavltree *, void *);
+r2_uint16 r2_wavltree_insert(struct r2_wavltree *, void *, void *);
+r2_uint16 r2_wavltree_delete(struct r2_wavltree *, void *);
 struct r2_wavlnode* r2_wavltree_at(struct r2_wavlnode*,  r2_uint64);
 void** r2_wavltree_get_keys(const struct r2_wavltree *); 
 void** r2_wavltree_get_values(const struct r2_wavltree *); 
@@ -138,4 +136,5 @@ struct r2_wavlnode *r2_wavlnode_postorder_first(struct r2_wavlnode*);
 size_t r2_wavlnode_level(const struct r2_wavlnode *); 
 struct r2_wavltree* r2_wavltree_copy(const struct r2_wavltree *);
 r2_uint16 r2_wavltree_compare(const struct r2_wavltree *, const struct r2_wavltree   *);
+r2_int64  r2_wavltree_height(const struct r2_wavlnode *);
 #endif

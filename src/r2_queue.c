@@ -68,11 +68,12 @@ struct r2_queue* r2_destroy_queue(struct r2_queue *queue)
  *                              
  * @param queue                 Queue.
  * @param data                  Data stored. 
- * @return struct r2_queue*     Returns queue. 
+ * @return r2_uint16            Returns TRUE upon succesful insertion, else FALSE.
  */
-struct r2_queue* r2_queue_enqueue(struct r2_queue*queue, void *data)
+r2_uint16 r2_queue_enqueue(struct r2_queue*queue, void *data)
 {
         struct r2_queuenode *node = r2_create_queuenode(); 
+        r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
                 node->data = data; 
                 if(r2_queue_empty(queue) == TRUE)
@@ -82,19 +83,21 @@ struct r2_queue* r2_queue_enqueue(struct r2_queue*queue, void *data)
 
                 queue->rear = node;
                 ++queue->qsize;
+                SUCCESS = TRUE;
         }
 
-        return queue;
+        return SUCCESS;
 }
 
 /**
  * @brief                       Dequeues an element.
  *                              
  * @param queue                 Queue.
- * @return struct r2_queue*     Returns the queue the element was removed from. 
+ * @return r2_uint16            Returns TRUE upon succesful insertion, else FALSE.
  */
-struct r2_queue*  r2_queue_dequeue(struct r2_queue *queue)
+r2_uint16  r2_queue_dequeue(struct r2_queue *queue)
 {
+        r2_uint16 SUCCESS = FALSE;
         if(r2_queue_empty(queue) != TRUE){
                 struct r2_queuenode *front = r2_queue_front(queue); 
                 if(queue->front == queue->rear)
@@ -103,8 +106,9 @@ struct r2_queue*  r2_queue_dequeue(struct r2_queue *queue)
                 queue->front = front->next;
                 --queue->qsize;
                 r2_freenode(front, queue->fd);
+                SUCCESS = TRUE;
         }
-        return queue; 
+        return SUCCESS; 
 }
 
 /**
@@ -157,13 +161,21 @@ struct r2_queue* r2_queue_copy(const struct r2_queue *source)
                         struct r2_queuenode *temp  = NULL;
                         while(front != NULL){
                                 temp = r2_create_queuenode();
-                                if(temp != NULL)
-                                {
-                                        temp->data = source->cpy != NULL?  source->cpy(front->data) : front->data;
+                                if(temp != NULL){
+                                        if(front->data != NULL && source->cpy != NULL){
+                                                temp->data = source->cpy(front->data);
+                                                if(temp->data == NULL){
+                                                        dest = r2_destroy_queue(dest); 
+                                                        break;
+                                                }
+                                        }else   temp->data = front->data;
                                         *cur = temp;
                                         cur  = &temp->next;
                                         ++dest->qsize;
                                         dest->rear = temp;
+                                }else{
+                                        dest = r2_destroy_queue(dest); 
+                                        break;
                                 }
                                 front = front->next;
                         }  
@@ -188,7 +200,7 @@ r2_uint16  r2_queue_compare(const struct r2_queue *q1, const struct r2_queue *q2
                 while(q1_front != NULL && q2_front != NULL){
                         
                         if(q1->cmp != NULL)
-                                result = q1->cmp(q1_front->data, q2_front->data);
+                                result = q1->cmp(q1_front->data, q2_front->data) == 0? TRUE : FALSE;
                         else
                                 result = q1_front->data == q2_front->data? TRUE : FALSE;
                         

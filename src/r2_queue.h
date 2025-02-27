@@ -23,17 +23,14 @@ struct r2_queue{
     r2_fd  fd;/*A callback function that release memory*/
 };
 
-
 struct r2_queue*        r2_create_queue(r2_cmp, r2_cpy, r2_fd);
 struct r2_queuenode*    r2_create_queuenode();
 struct r2_queue*        r2_destroy_queue(struct r2_queue *);
-struct r2_queue*        r2_queue_enqueue(struct r2_queue *, void *);
-struct r2_queue*        r2_queue_dequeue(struct r2_queue*);
+r2_uint16               r2_queue_enqueue(struct r2_queue *, void *);
+r2_uint16               r2_queue_dequeue(struct r2_queue*);
 struct r2_queuenode*    r2_queue_front(const struct r2_queue*);
 struct r2_queuenode*    r2_queue_rear(const struct r2_queue*);
 r2_uint16               r2_queue_empty(const struct r2_queue*);
 struct r2_queue*        r2_queue_copy(const struct r2_queue *);
 r2_uint16               r2_queue_compare(const struct r2_queue*, const struct r2_queue *);        
-
-
 #endif // QUEUE_H_INCLUDED

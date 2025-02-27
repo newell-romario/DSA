@@ -21,8 +21,8 @@ struct r2_ring{
 
 struct r2_ring* r2_create_ring(r2_uint64,r2_cmp, r2_cpy, r2_fd);
 struct r2_ring* r2_destroy_ring(struct r2_ring *);
-struct r2_ring* r2_ring_insert(struct r2_ring *, void *); 
-struct r2_ring* r2_ring_delete(struct r2_ring *);
+void r2_ring_insert(struct r2_ring *, void *); 
+void r2_ring_delete(struct r2_ring *);
 struct r2_ring* r2_ring_copy(const struct r2_ring *);
 r2_uint16 r2_ring_compare(const struct r2_ring*, const struct r2_ring*);
 void*  r2_ring_front(const struct r2_ring *); 

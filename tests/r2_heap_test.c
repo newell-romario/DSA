@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-
+#include <time.h>
 static r2_int16 mincmp(const void *, const void *);
 static r2_int16 maxcmp(const void *, const void *);
 
@@ -15,7 +15,7 @@ static void test_r2_create_priority_queue()
         struct r2_pq *pq = r2_create_priority_queue(64, 1, NULL, NULL,NULL);
         assert(pq != NULL); 
         assert(pq->ncount == 0); 
-        assert(pq->pqsize == (64 + 1)); 
+        assert(pq->pqsize == 64); 
         assert(pq->type == 1);
         assert(pq->kcmp == NULL);
         assert(pq->fd == NULL);
@@ -54,6 +54,7 @@ static void test_r2_pq_first()
 {
         struct r2_pq *pq = r2_create_priority_queue(64, 0, mincmp, NULL, NULL);
         r2_uint64 values[] = {10,9,8,7,6,5,4,3,2,1,0};
+
         for(r2_uint64 i = 0; i < 11; ++i){
                 r2_pq_insert(pq, &values[i]);
                 assert(r2_pq_first(pq)->data == &values[i]);
@@ -74,7 +75,7 @@ static void test_r2_pq_remove_root()
        
         r2_int64 j = 9;
         for(r2_uint64 i = 0; i < 11; ++i,--j){
-                pq = r2_pq_remove(pq, r2_pq_first(pq));
+                r2_pq_remove(pq, r2_pq_first(pq));
                 if(j >= 1)
                         assert(r2_pq_first(pq)->data == &values[j]);
         }
@@ -118,7 +119,47 @@ static void test_r2_pq_empty()
         
         assert(r2_pq_empty(pq) != TRUE);
         r2_destroy_priority_queue(pq);
+}
 
+static void test_r2_pq_stats()
+{
+        FILE *fp = fopen("pq.txt","r"); 
+        r2_uint64 *key = NULL;
+        r2_uint64 k; 
+        struct r2_pq* pq = r2_create_priority_queue(0, 1, maxcmp, free, NULL);
+        clock_t before = 0;
+        double elapse = 0;
+        r2_uint64 peek = 0;
+        r2_uint64 count = 0;
+        r2_uint64 ncomparison = 0;
+        while(fscanf(fp, "%lld", &k) ==1){
+                key  = malloc(sizeof(r2_uint64)); 
+                *key = k;
+                if(k > peek)
+                        peek = k;
+                before = clock();
+                r2_pq_insert(pq, key);
+                ncomparison += pq->ncomp;
+                elapse += (r2_ldbl)(clock() - before)/CLOCKS_PER_SEC;
+                assert(peek == *(r2_uint64 *)r2_pq_first(pq)->data);
+                ++count;
+                
+        }
+     
+        fclose(fp);
+        fp = fopen("pq2.txt","r"); 
+        elapse = 0;
+        ncomparison = 0;
+        while(fscanf(fp, "%lld", &k) ==1){
+                key  = malloc(sizeof(r2_uint64)); 
+                *key = k;
+                before = clock();
+                r2_pq_insert(pq, key);
+                ncomparison += pq->ncomp;
+                elapse += (r2_ldbl)(clock() - before)/CLOCKS_PER_SEC;
+        }
+
+        r2_destroy_priority_queue(pq);
 }
 
 
@@ -155,4 +196,5 @@ void test_r2_pq_run()
         test_r2_pq_remove_root();
         test_r2_pq_empty();
         test_r2_pq_adjust();
+        test_r2_pq_stats();
 }

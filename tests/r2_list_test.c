@@ -66,7 +66,7 @@ static void test_r2_listnode_at()
         struct r2_list *list = r2_create_list(NULL, NULL, NULL); 
 
         for(r2_uint64 i = 0; i < SIZE; ++i)
-                list = r2_list_insert_at_back(list, &arr[i]); 
+              r2_list_insert_at_back(list, &arr[i]); 
         
 
         struct r2_listnode *pos = NULL;
@@ -91,7 +91,7 @@ static void test_r2_listnode_first()
         struct r2_listnode *pos = NULL; 
 
         for(int i = 0; i < SIZE; ++i){
-                list = r2_list_insert_at_front(list, &arr[i]);
+                r2_list_insert_at_front(list, &arr[i]);
                 pos  = r2_listnode_first(list); 
                 assert(pos->data == &arr[i]);  
         }
@@ -110,7 +110,7 @@ static void test_r2_listnode_last()
         struct r2_listnode *pos = NULL; 
 
         for(int i = 0; i < SIZE; ++i){
-                list = r2_list_insert_at_back(list, &arr[i]);
+                r2_list_insert_at_back(list, &arr[i]);
                 pos  = r2_listnode_last(list); 
                 assert(pos->data == &arr[i]);  
         }
@@ -129,7 +129,7 @@ static void test_r2_list_insert_at_front()
         struct r2_listnode     *pos  = NULL; 
 
         for(int i = 0; i < SIZE; ++i){
-                list = r2_list_insert_at_front(list, &arr[i]);
+                r2_list_insert_at_front(list, &arr[i]);
                 pos  = r2_listnode_first(list);
                 assert(pos->data == &arr[i]);
         }
@@ -147,7 +147,7 @@ static void test_r2_list_insert_at_back()
         struct r2_listnode *pos    = NULL;
 
         for(int i = 0; i < SIZE; ++i){
-                list = r2_list_insert_at_back(list, &arr[i]);
+                r2_list_insert_at_back(list, &arr[i]);
                 pos  = r2_listnode_last(list); 
                 assert(pos->data == &arr[i]);
         } 
@@ -169,7 +169,7 @@ static void test_r2_list_insert_after()
          * 
          */
         struct r2_listnode *first    = r2_listnode_at(list, 0); /* first node in the list.*/
-        list  = r2_list_insert_after(list, first, &arr[0]);
+        r2_list_insert_after(list, first, &arr[0]);
         first = r2_listnode_at(list, 0); 
         assert(first->next == NULL);
         assert(first->prev == NULL);
@@ -184,7 +184,7 @@ static void test_r2_list_insert_after()
         * 
         */
         first    = r2_listnode_at(list,0); /* first node in the list.*/
-        list     = r2_list_insert_after(list, first, &a[0]);  
+        r2_list_insert_after(list, first, &a[0]);  
         struct r2_listnode      *second = r2_listnode_at(list, 1); /*this is the new node containing the address of a[0].*/
         struct r2_listnode      *third  = r2_listnode_at(list, 2); /*third node in the list.*/
         assert(first->data == &arr[0]);
@@ -205,7 +205,7 @@ static void test_r2_list_insert_after()
 
         r2_int64 pos = list->lsize - 1;
         struct r2_listnode      *last    = r2_listnode_at(list, pos); /* last node in the list.*/
-        list    = r2_list_insert_after(list, last, &a[1]);  
+        r2_list_insert_after(list, last, &a[1]);  
         struct r2_listnode      *last_next = r2_listnode_at(list, pos + 1); /*this is the new last node in the list.*/
         struct r2_listnode      *last_next_next   = r2_listnode_at(list, pos + 2); /*this is the node after the last node in the list.*/
         assert(last->data == &a[0]);
@@ -223,7 +223,7 @@ static void test_r2_list_insert_after()
         
         pos = 1;
         struct r2_listnode      *cur    = r2_listnode_at(list,pos); /*  node at pos in the list.*/
-        list    = r2_list_insert_after(list, cur, &a[2]);  
+        r2_list_insert_after(list, cur, &a[2]);  
         struct r2_listnode      *cur_next = r2_listnode_at(list, pos + 1); /*this node is now at pos in the list.*/
         struct r2_listnode      *cur_next_next   = r2_listnode_at(list, pos + 2); /*this is the node after pos in the list.*/
         assert(cur->data == &a[0]);
@@ -251,7 +251,7 @@ static void test_r2_list_insert_before()
          * 
          */
         struct r2_listnode      *first    = r2_listnode_at(list, 0); /* first node in the list.*/
-        list  = r2_list_insert_before(list, first, &arr[0]);
+        r2_list_insert_before(list, first, &arr[0]);
         first = r2_listnode_at(list, 0); 
         assert(first->next == NULL);
         assert(first->prev == NULL);
@@ -266,7 +266,7 @@ static void test_r2_list_insert_before()
         * 
         */
         first    = r2_listnode_at(list,0); /* first node in the list.*/
-        list     = r2_list_insert_before(list, first, &a[0]);  
+        r2_list_insert_before(list, first, &a[0]);  
         first    = r2_listnode_at(list,0); /* first node in the list containing address of a[0]*/
         struct r2_listnode      *second = r2_listnode_at(list, 1); /*this is the old node containing the address of arr[0].*/
         struct r2_listnode      *third  = r2_listnode_at(list, 2); /*third node in the list.*/
@@ -287,7 +287,7 @@ static void test_r2_list_insert_before()
 
         size_t pos = list->lsize - 1;
         struct r2_listnode      *last    = r2_listnode_at(list, pos); /* last node in the list.*/
-        list    = r2_list_insert_before(list, last, &a[1]);  
+        r2_list_insert_before(list, last, &a[1]);  
         struct r2_listnode      *last_prev = r2_listnode_at(list, pos); /*the new node in the list with address a[1].*/
         struct r2_listnode      *last_prev_prev   = r2_listnode_at(list, pos - 1); /*this is the node before the new node in the list.*/
         assert(last->data == &arr[0]);
@@ -304,7 +304,7 @@ static void test_r2_list_insert_before()
         
         pos = 1;
         struct r2_listnode      *cur    = r2_listnode_at(list,pos); /*  node at pos in the list.*/
-        list    = r2_list_insert_before(list, cur, &a[2]);  
+        r2_list_insert_before(list, cur, &a[2]);  
         cur    = r2_listnode_at(list,pos); /*  node at pos in the list.*/
 
         struct r2_listnode      *prev = r2_listnode_at(list, pos - 1); /*this node is now at pos in the list.*/
@@ -333,15 +333,15 @@ static void test_r2_list_delete_at_front()
         struct r2_listnode *pos    = NULL;
 
         for(int i = 0; i < SIZE; ++i)
-                list = r2_list_insert_at_back(list, &arr[i]);
+                r2_list_insert_at_back(list, &arr[i]);
         
         for(int i = 0; i <= SIZE - 2; i += 2){
                 pos  = r2_listnode_first(list);
                 assert(pos->data == &arr[i]);
-                list = r2_list_delete_at_front(list);
+                r2_list_delete_at_front(list);
                 pos  = r2_listnode_first(list);
                 assert(pos->data == &arr[i + 1]);
-                list = r2_list_delete_at_front(list);
+                r2_list_delete_at_front(list);
         }
 
         assert(r2_list_empty(list) == TRUE); 
@@ -359,15 +359,15 @@ static void test_r2_list_delete_at_back()
         struct r2_listnode *pos    = NULL;
 
         for(int i = 0; i < SIZE; ++i)
-                list = r2_list_insert_at_back(list, &arr[i]);
+                r2_list_insert_at_back(list, &arr[i]);
         
         for(int i = SIZE; i >= 2; i -= 2){   
                 pos  = r2_listnode_last(list);
                 assert(pos->data == &arr[i - 1]);
-                list = r2_list_delete_at_back(list);
+                r2_list_delete_at_back(list);
                 pos  = r2_listnode_last(list);
                 assert(pos->data == &arr[i - 2]);
-                list = r2_list_delete_at_back(list);
+                r2_list_delete_at_back(list);
         }
 
         assert(r2_list_empty(list) == TRUE); 
@@ -385,7 +385,7 @@ static void test_r2_list_delete()
         
         /*Tries delete a position in an empty list. Shouldn't work.*/
         struct r2_listnode *cur = r2_listnode_at(list, pos); 
-        list = r2_list_delete(list, cur);
+        r2_list_delete(list, cur);
         
         /**
          * If successfully the size would decrease by 1. 
@@ -397,13 +397,13 @@ static void test_r2_list_delete()
 
         int a[5] = {1997,20,11,2024,2023};
         for(int i = 0; i < 5; ++i)
-                list = r2_list_insert_at_back(list, &a[i]);
+                r2_list_insert_at_back(list, &a[i]);
         
         
         /*Test deleting the first node of the list.*/
         pos  = 0;
         cur  = r2_listnode_at(list, pos); 
-        list = r2_list_delete(list, cur);
+        r2_list_delete(list, cur);
         cur  = r2_listnode_at(list, pos); 
         assert(cur->data == &a[1]);
         assert(list->lsize == 4);
@@ -411,7 +411,7 @@ static void test_r2_list_delete()
         /*Test deleting the last node of the list.*/
         pos  = list->lsize - 1;
         cur  = r2_listnode_at(list, pos); 
-        list = r2_list_delete(list, cur);
+        r2_list_delete(list, cur);
         pos  = list->lsize - 1;
         cur  = r2_listnode_at(list, pos); 
         assert(cur->data == &a[3]);
@@ -420,7 +420,7 @@ static void test_r2_list_delete()
         /*Test deleting the middle node*/
         pos  = 1;
         cur  = r2_listnode_at(list, pos); 
-        list = r2_list_delete(list, cur);
+        r2_list_delete(list, cur);
         pos  = list->lsize - 1;
         cur  = r2_listnode_at(list, pos); 
         assert(cur->data == &a[3]);
@@ -441,7 +441,11 @@ static void* cpy(const void *data)
 
 static r2_int16 cmp(const void *d1, const void *d2)
 {
-        return (*((int *)d1)) == (*((int *)d2));
+        if(*((int *)d1) == *((int *)d2))
+                return 0; 
+        else if(*((int *)d1) < *((int *)d2))
+                return -1; 
+        else    return 1;
 }
 
 /**
@@ -477,7 +481,7 @@ static void test_r2_list_copy()
 
 
         for(int i = 0; i < SIZE; ++i)
-                list = r2_list_insert_at_back(list, &arr[i]); 
+                r2_list_insert_at_back(list, &arr[i]); 
         
         
         /*Shallow copy on list.*/
@@ -525,7 +529,7 @@ static void test_r2_list_compare()
 
 
         for(int i = 0; i < SIZE; ++i)
-                list = r2_list_insert_at_back(list, &arr[i]); 
+                r2_list_insert_at_back(list, &arr[i]); 
         
         
         
@@ -563,7 +567,7 @@ static void test_r2_list_empty()
         assert(r2_list_empty(list) == TRUE); 
 
         for(int i = 0; i < SIZE; ++i)
-                list = r2_list_insert_at_back(list, &arr[i]); 
+                r2_list_insert_at_back(list, &arr[i]); 
 
         assert(r2_list_empty(list) != TRUE); 
         r2_destroy_list(list);

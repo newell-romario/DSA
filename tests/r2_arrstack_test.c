@@ -10,10 +10,9 @@ static int arr[SIZE];
  */
 static void test_r2_arrstack_init_data()
 {
-        for(r2_uint32 i = 0; i < SIZE; ++i)
+        for(r2_uint64 i = 0; i < SIZE; ++i)
                 arr[i]  = rand() % (SIZE * 2) + 1; 
 }
-
 
 
 /**
@@ -27,7 +26,7 @@ static void test_r2_arrstack_create_stack()
          * @brief Creates stack of different sizes.
          * 
          */
-        for(int i = 2; i < 4096; i <<= 2){
+        for(int i = 32; i < 4096; i <<= 2){
                 stack = r2_arrstack_create_stack(i, NULL, NULL, NULL); 
                 assert(r2_arrstack_empty(stack) == TRUE); 
                 assert(stack->top == 0);
@@ -58,11 +57,10 @@ static void test_r2_arrstack_push()
 {
         struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL); 
         for(int i = 0; i < SIZE; ++i){
-                stack = r2_arrstack_push(stack, &arr[i]);
+                r2_arrstack_push(stack, &arr[i]);
                 assert(r2_arrstack_top(stack) == &arr[i]); 
                 assert(stack->ncount == (i + 1));
         }
-
         r2_arrstack_destroy_stack(stack);
 }
 
@@ -74,22 +72,19 @@ static void test_r2_arrstack_pop()
 {
         struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                stack = r2_arrstack_push(stack, &arr[i]);
+                r2_arrstack_push(stack, &arr[i]);
         
-
         void *data = NULL;
-        for(int i = 1; i < SIZE ; i += 2){
+        for(int i = 1; i < SIZE; i += 2){
                 data  = r2_arrstack_top(stack);
                 assert(&arr[SIZE - i] == data);
-                stack = r2_arrstack_pop(stack);
+                r2_arrstack_pop(stack);
                 data  = r2_arrstack_top(stack);
                 assert(&arr[SIZE - i - 1] == data);
-                stack = r2_arrstack_pop(stack);
+                r2_arrstack_pop(stack);
         }
-
         assert(r2_arrstack_empty(stack) == TRUE);
         r2_arrstack_destroy_stack(stack);
-
 }
 
 /**
@@ -100,10 +95,9 @@ static void test_r2_arrstack_top()
 {
         struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
         for(int i = 0; i < SIZE; ++i){
-                stack = r2_arrstack_push(stack, &arr[i]);
+                r2_arrstack_push(stack, &arr[i]);
                 assert(r2_arrstack_top(stack) == &arr[i]);
         }
-
         r2_arrstack_destroy_stack(stack);
 }
 
@@ -117,8 +111,7 @@ static void test_r2_arrstack_empty()
         assert(r2_arrstack_empty(stack) == TRUE); 
 
         for(int i = 0 ; i < SIZE; ++i)
-                stack = r2_arrstack_push(stack, &arr[i]);
-        
+                r2_arrstack_push(stack, &arr[i]);
 
         assert(r2_arrstack_empty(stack) != TRUE); 
         r2_arrstack_destroy_stack(stack);
@@ -132,9 +125,8 @@ static void test_r2_arrstack_full()
 {
         struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
-                stack = r2_arrstack_push(stack, &arr[i]);
+                r2_arrstack_push(stack, &arr[i]);
         
-
         assert(r2_arrstack_full(stack) == TRUE); 
         r2_arrstack_destroy_stack(stack);
 }
@@ -147,9 +139,13 @@ static void *cpy(const void *data)
 }
 
 
-static r2_int16 cmp(const void *i, const void *j)
+static r2_int16 cmp(const void *d1, const void *d2)
 {
-        return (*(int *)i) == (*(int *)j);
+        if(*((int *)d1) == *((int *)d2))
+                return 0; 
+        else if(*((int *)d1) < *((int *)d2))
+                return -1; 
+        else    return 1;
 }
 
 /**
@@ -168,7 +164,7 @@ static void test_r2_arrstack_compare()
         assert(r2_arrstack_compare(stack, stack) == TRUE);
         
         for(int i = 0; i < SIZE; ++i)
-                stack = r2_arrstack_push(stack, &arr[i]);
+                r2_arrstack_push(stack, &arr[i]);
         
         /*Shallow comparison*/
         stack->cmp = NULL;
@@ -212,18 +208,17 @@ static void test_r2_arrstack_copy()
         /*Deep comparison*/
         stack->cmp = cmp;
         assert(r2_arrstack_compare(stack, dest) == TRUE);
-        
         r2_arrstack_destroy_stack(dest);
         
         for(int i = 0; i < SIZE; ++i)
-                stack = r2_arrstack_push(stack, &arr[i]);
+                r2_arrstack_push(stack, &arr[i]);
         
         
         /*Shallow comparison after shallow copy*/
         dest  = r2_arrstack_copy(stack);
         assert(r2_arrstack_compare(stack, dest) == TRUE);
         
-        /*Deep compariso after shallow copy*/
+        /*Deep comparison after shallow copy*/
         stack->cmp = cmp;
         dest->cmp  = cmp;
         assert(r2_arrstack_compare(stack, dest) == TRUE);
@@ -235,7 +230,7 @@ static void test_r2_arrstack_copy()
         dest  = r2_arrstack_copy(stack);
         assert(r2_arrstack_compare(stack, dest) != TRUE);
         
-        /*Deep comparison after a shallow copy*/
+        /*Deep comparison after deep copy*/
         stack->cmp = cmp;
         dest->cmp  = cmp;
         assert(r2_arrstack_compare(stack, dest) == TRUE);

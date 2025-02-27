@@ -1,7 +1,6 @@
 #ifndef R2_BTREE_H_
 #define R2_BTREE_H_
 #include "r2_types.h"
-
 /*
  * B Trees are a part of the balanced search tree data structure family which means
  * insertion, search and deletion happen in O(log n) time. This makes it an efficient data

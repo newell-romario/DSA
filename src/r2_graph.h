@@ -3,6 +3,8 @@
 #include "r2_types.h"
 #include "r2_hash.h"
 #include "r2_list.h"
+#include "r2_heap.h"
+typedef r2_ldbl(*r2_relax)(r2_ldbl, r2_ldbl);
 
 struct r2_vertex;
 /**
@@ -20,10 +22,10 @@ struct r2_edge{
          * [3] - vertex in pos
          */
         struct r2_listnode *pos[4];
-        r2_ldbl  weight;/*weight*/
         struct r2_robintable *eat;/*edge attributes*/
+        r2_uint16 nat;/*mirrors nat attribute in graph*/ 
 }; 
-
+typedef r2_dbl(*r2_weight)(struct r2_edge *);
 
 /**
  * @brief Represents a vertex in a graph.
@@ -37,11 +39,10 @@ struct r2_vertex{
         struct r2_list *out;/*out degree*/    
         struct r2_list *elist;/*contains all the edges for this vertex*/
         struct r2_robintable *edges;/*edges*/
-        struct r2_robintable *vat;/*vertex attributes*/  
+        struct r2_robintable *vat;/*vertex attributes*/ 
+        r2_uint16 nat;/*mirors nat attribute in graph*/ 
         r2_uint64 nedges;/*number of edges*/     
 };
-
-
 
 
 /**
@@ -60,112 +61,66 @@ struct r2_graph{
      r2_fk  fv;/*callback function that releases the memory used by vkey*/
      r2_fk  fk;/*callback function that releases the memory used by a key in gat*/
      r2_fk  fd;/*callback function that releases the memory used by a value in data*/
+     r2_uint16 nat; /*do not delete attribute for edge or vertex in subgraph whenever TRUE*/
 };
 
 struct r2_graph* r2_create_graph(r2_cmp, r2_cmp, r2_fk, r2_fk, r2_fk);
 struct r2_graph* r2_destroy_graph(struct r2_graph *); 
-void r2_graph_add_attributes(struct r2_graph *, r2_uc *, void *, r2_uint64); 
-void* r2_graph_get_attributes(struct r2_graph *, r2_uc *, r2_uint64);
-void r2_graph_del_attributes(struct r2_graph *, r2_uc *, r2_uint64);
-struct r2_graph* r2_graph_add_vertex(struct r2_graph *, r2_uc *, r2_uint64);
+r2_uint16 r2_graph_add_vertex(struct r2_graph *, r2_uc *, r2_uint64);
+r2_uint16 r2_graph_del_vertex(struct r2_graph *, r2_uc*, r2_uint64);
 struct r2_vertex* r2_graph_get_vertex(struct r2_graph*, r2_uc*, r2_uint64);
-struct r2_graph* r2_graph_del_vertex(struct r2_graph *, r2_uc*, r2_uint64);
-void   r2_vertex_add_attributes(struct r2_vertex *, r2_uc *, void *, r2_uint64, r2_cmp); 
-void*  r2_vertex_get_attributes(struct r2_vertex *, r2_uc *, r2_uint64, r2_cmp);
-void   r2_vertex_del_attributes(struct r2_vertex *, r2_uc *, r2_uint64, r2_cmp);
-struct r2_graph* r2_graph_add_edge(struct r2_graph *, r2_uc*, r2_uint64,  r2_uc*, r2_uint64, r2_ldbl);
+r2_uint16 r2_graph_add_edge(struct r2_graph *, r2_uc*, r2_uint64,  r2_uc*, r2_uint64);
+r2_uint16 r2_graph_del_edge(struct r2_graph *, r2_uc*, r2_uint64,  r2_uc*, r2_uint64);
 struct r2_edge*  r2_graph_get_edge(struct r2_graph *, r2_uc*, r2_uint64,  r2_uc*, r2_uint64);
-struct r2_graph* r2_graph_del_edge(struct r2_graph *, r2_uc*, r2_uint64,  r2_uc*, r2_uint64);
-void   r2_edge_add_attributes(struct r2_edge*, r2_uc *, void *, r2_uint64, r2_cmp); 
+r2_uint16 r2_graph_add_attributes(struct r2_graph *, r2_uc *, void *, r2_uint64); 
+r2_uint16 r2_graph_del_attributes(struct r2_graph *, r2_uc *, r2_uint64);
+void* r2_graph_get_attributes(struct r2_graph *, r2_uc *, r2_uint64);
+r2_uint16 r2_vertex_add_attributes(struct r2_vertex *, r2_uc *, void *, r2_uint64, r2_cmp); 
+r2_uint16 r2_vertex_del_attributes(struct r2_vertex *, r2_uc *, r2_uint64, r2_cmp);
+void*  r2_vertex_get_attributes(struct r2_vertex *, r2_uc *, r2_uint64, r2_cmp);
+r2_uint16   r2_edge_add_attributes(struct r2_edge*, r2_uc *, void *, r2_uint64, r2_cmp);
+r2_uint16   r2_edge_del_attributes(struct r2_edge*, r2_uc *, r2_uint64, r2_cmp);
 void*  r2_edge_get_attributes(struct r2_edge*, r2_uc *, r2_uint64, r2_cmp);
-void   r2_edge_del_attributes(struct r2_edge*, r2_uc *, r2_uint64, r2_cmp);
-/**************************************************Graph Algorithms******************************************************/
-/**
- * In our graph implementation we would like to keep the tree resulting from a bfs
- * traversal. Our tree is really an array where parents and children live in the same array similar to
- * how a binary heap is built.
- * 
- * 
- */
-struct r2_bfsnode{
-        struct r2_vertex *vertex;
-        r2_uint64 pos;/*position in the array*/
-        r2_uint64 state;/*current state of vertex while processing*/
-        r2_int64  parent;/*parent*/
-        r2_ldbl   dist;/*distance from the source vertex*/
-        /**
-         * Marks the beginning and ending of the subarray that represents
-         * our children. A node with both start and end set equal
-         * means the node has no children. 
-         */
-        struct{ 
-                r2_int64 start; 
-                r2_int64 end;
-        }children;
-};
 
-struct r2_bfstree{
-        struct r2_bfsnode *tree;/*stores the tree*/
-        struct r2_robintable *positions;/*notes the position of each vertex in the array*/
-        r2_uint64 ncount;/*number of elements in the tree*/
-};
-
-struct r2_dfsnode{
-        struct r2_vertex *vertex;
-        r2_uint64 pos;/*position in the array*/
-        r2_uint64 state;/*current state of vertex while processing*/
-        r2_int64  parent;/*parent*/
-        r2_ldbl   dist;/*distance from the source vertex*/
-        r2_uint64 start;/*start time*/
-        r2_uint64 end;/*finish time*/
-};
-
-struct r2_dfstree{
-        struct r2_robintable *positions;/*notes the position of each vertex in the array*/
-        struct r2_dfsnode    *tree;/*stores the tree*/
-        r2_uint64 ncount;/*number of elemnts*/
-};
-
-struct r2_components{
-        r2_uint64 ncount; /*number of components*/
-        struct r2_dfstree **cc; /*connected components*/
-        struct r2_graph *transpose;/*used for strongly connected components*/
-};
-
-struct r2_bipartite{
-        struct r2_list *sets[2];
+/**************************************************Graph Algorithms*********************************************/
+struct r2_forest{
+        r2_uint64 ncount;/*number of components*/
+        struct r2_graph **tree;/*different components*/
 };
 
 void r2_graph_bfs(struct r2_graph *, struct r2_vertex *, r2_act, void *);
 void r2_graph_dfs(struct r2_graph *, struct r2_vertex *, r2_act, void *);
-struct r2_bfstree* r2_graph_bfs_tree(struct r2_graph *, struct r2_vertex *); 
-struct r2_dfstree* r2_graph_dfs_tree(struct r2_graph *, struct r2_vertex *);
-struct r2_bfstree* r2_destroy_bfs_tree(struct r2_bfstree *); 
-struct r2_dfstree* r2_destroy_dfs_tree(struct r2_dfstree *);
-struct r2_list* r2_graph_has_path(struct r2_graph *, struct r2_vertex *, struct r2_vertex *); 
-struct r2_list* r2_graph_bfs_has_path_tree(struct r2_bfstree *, struct r2_vertex *, struct r2_vertex *);
-struct r2_list* r2_graph_dfs_has_path_tree(struct r2_dfstree *, struct r2_vertex *, struct r2_vertex *);
-struct r2_list* r2_graph_dfs_tree_children(struct r2_dfstree *, struct r2_vertex *); 
-struct r2_list* r2_graph_bfs_tree_children(struct r2_bfstree *, struct r2_vertex *);
-struct r2_bfsnode* r2_graph_bfsnode_next(struct r2_bfstree *, struct r2_bfsnode *); 
-struct r2_dfsnode* r2_graph_dfsnode_next(struct r2_dfstree *, struct r2_dfsnode *);
-struct r2_bfsnode* r2_graph_bfsnode_prev(struct r2_bfstree *, struct r2_bfsnode *); 
-struct r2_dfsnode* r2_graph_dfsnode_prev(struct r2_dfstree *, struct r2_dfsnode *);
-struct r2_bfsnode* r2_graph_bfsnode_first(struct r2_bfstree *); 
-struct r2_dfsnode* r2_graph_dfsnode_first(struct r2_dfstree *);
-struct r2_components* r2_graph_connected_components(struct r2_graph *);
-struct r2_components* r2_graph_destroy_components(struct r2_components *); 
-struct r2_dfstree* r2_graph_is_connected(struct r2_components *, struct r2_vertex *, struct r2_vertex *);
-struct r2_bipartite* r2_graph_is_bipartite(struct r2_graph *);
-struct r2_bipartite* r2_graph_destroy_bipartite(struct r2_bipartite *);
-r2_int16 r2_graph_has_cycle(struct r2_graph *);
-struct r2_list *r2_graph_topological_sort(struct r2_graph *);
-struct r2_components* r2_graph_tarjan_strongly_connected_components(struct r2_graph *);
 struct r2_graph* r2_graph_transpose(struct r2_graph *);
-struct r2_list* r2_graph_dfs_traversals(struct r2_graph *, r2_uint16);
-struct r2_components* r2_graph_strongly_connected_components(struct r2_graph *);
-r2_uint16 r2_graph_is_strong_connected(struct r2_graph *);
-struct r2_dfstree* r2_graph_dijkstra(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
-struct r2_dfstree* r2_graph_bellman_ford(struct r2_graph *, r2_uc *, r2_uint64, r2_ldbl(*)(r2_ldbl, r2_ldbl));
-/************************************Graph Algorithms*******************************************/
+struct r2_graph* r2_graph_path_tree(struct r2_graph *,  struct r2_vertex *, struct r2_vertex *);
+struct r2_list* r2_graph_bipartite_set(struct r2_graph *, r2_uint16);
+struct r2_list* r2_graph_dfs_traversals(struct r2_graph *, struct r2_vertex *, r2_uint16);
+struct r2_list* r2_graph_topological_sort(struct r2_graph *);
+struct r2_list* r2_graph_topological_sort_edges(struct r2_graph *);
+struct r2_list* r2_graph_get_paths(struct r2_graph *, struct r2_vertex *, struct r2_vertex *); 
+struct r2_list* r2_graph_get_paths_edges(struct r2_graph *, struct r2_vertex *, struct r2_vertex *);
+struct r2_list* r2_graph_path_get_edges(struct r2_graph *, struct r2_list *);
+r2_uint16 r2_graph_has_path(struct r2_graph *, struct r2_vertex *, struct r2_vertex *); 
+r2_uint16 r2_graph_has_cycle(struct r2_graph *);
+r2_uint16 r2_graph_strongly_connected(struct r2_graph *);
+r2_uint16 r2_graph_is_bipartite(struct r2_graph *);
+r2_uint16 r2_graph_is_connected(struct r2_graph *);
+r2_uint16 r2_graph_is_biconnected(struct r2_graph *);
+struct r2_graph* r2_graph_bfs_tree(struct r2_graph *, struct r2_vertex *); 
+struct r2_graph* r2_graph_dfs_tree(struct r2_graph *, struct r2_vertex *);
+struct r2_list*  r2_graph_children(struct r2_graph *, struct r2_vertex *); 
+struct r2_vertex* r2_graph_parent(struct r2_graph *, struct r2_vertex *);
+struct r2_forest* r2_graph_cc(struct r2_graph *);
+struct r2_forest* r2_graph_destroy_cc(struct r2_forest *);
+struct r2_forest* r2_graph_tscc(struct r2_graph *);
+struct r2_forest* r2_graph_kcc(struct r2_graph *);
+struct r2_forest* r2_graph_bcc(struct r2_graph *);
+struct r2_list* r2_graph_articulation_points(struct r2_graph *);
+struct r2_list* r2_graph_bridges(struct r2_graph *);
+struct r2_graph* r2_graph_dijkstra(struct r2_graph *, r2_uc *, r2_uint64,  r2_weight);
+struct r2_graph* r2_graph_bellman_ford(struct r2_graph *, r2_uc *, r2_uint64, r2_weight);
+struct r2_graph* r2_graph_shortest_dag(struct r2_graph *, r2_uc *,  r2_uint64, r2_weight);
+r2_dbl r2_graph_dist_from_source(struct r2_graph *, r2_uc *, r2_uint64);
+struct r2_graph* r2_graph_mst_kruskal(struct r2_graph *, r2_weight);
+struct r2_graph* r2_graph_mst_prim(struct r2_graph *, r2_weight);
+/*************************************************Graph Algorithms*******************************************/
 #endif 
