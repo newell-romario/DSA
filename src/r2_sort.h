@@ -18,6 +18,12 @@
  * 
  * 
  */
-void r2_insertion_sort(void *, r2_uint64, r2_uint64, r2_cmp);
-void r2_selection_sort(void *, r2_uint64, r2_uint64, r2_cmp);
+void r2_insertion_sort(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+void r2_selection_sort(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+void r2_bubble_sort(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+void r2_shell_sort(void *, r2_uint64, r2_uint64, r2_cmp);
+void r2_merge_sort(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+void r2_merge_sort_mod(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+void r2_bmerge_sort(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+void r2_bmerge_sort_mod(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
 #endif

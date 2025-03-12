@@ -1,20 +1,29 @@
 #include "r2_sort.h"
+#include "r2_arrstack.h"
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 static void swap(char *, char *, r2_uint64);
 static void cpy(r2_uc *, r2_uc *, r2_uint64);
+static void merge(char *, char *, r2_uint64, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+static void merge_sort(void *, void *, r2_uint64, r2_uint64 , r2_uint64 , r2_cmp );
+static void merge_sort_mod(void *, void*, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+static void bmerge_sort(void *, void*, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+static void bmerge_sort_mod(void *, void*, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+static void is_sorted(void *arr, r2_uint64 start, r2_uint64 size, r2_uint64 ez,r2_cmp cmp);
+
 /**
  * @brief               Sorts a sequence in non-decreasing order using insertion sort. 
- *             
- *          
- * @param arr           Array. 
+ *                
+ * @param arr           Array.
+ * @param start         Start. 
  * @param as            Array size. Example if we are sorting 10 numbers then array size should be 10.
  * @param es            Element size. Example if we're sorting an array of 4 byte integers
  *                      then es should be equal to 4.
  * @param cmp           A callback comparison function that compares two elements a and b.
  */
-void r2_insertion_sort(void *arr, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+void r2_insertion_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
 {
         /**
          * @brief We reserve 1024 bytes for a single element of the array.  
@@ -29,28 +38,32 @@ void r2_insertion_sort(void *arr, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
         char *seq  = arr;
         r2_int64 l = 0;
         if(buf != NULL){
-                for(r2_uint64 j = 1; j < as; ++j){
+                for(r2_uint64 j = start + 1; j < as; ++j){
                         cpy(&seq[j*es], buf, es);
                         l = j - 1;
-                        for(;l >= 0 && cmp(&seq[l*es], buf) > 0 ; --l)
+                        for(;l >= (r2_int64) start && cmp(&seq[l*es], buf) > 0; --l)
                                 cpy(&seq[l*es], &seq[(l + 1)*es] , es);
                         
                         cpy(buf, &seq[(l + 1)*es], es);
                 }
+
+                if(buf != buffer)
+                        free(buf);
         }
 }
 
+
 /**
- * @brief               Sorts a sequence in non-decreasing order using selection sort sort. 
- *             
- *          
- * @param arr           Array. 
+ * @brief               Sorts a sequence in non-decreasing order using selection sort. 
+ *                      
+ * @param arr           Array.
+ * @param start         Start.
  * @param as            Array size. Example if we are sorting 10 numbers then array size should be 10.
  * @param es            Element size. Example if we're sorting an array of 4 byte integers
  *                      then es should be equal to 4.
  * @param cmp           A callback comparison function that compares two elements a and b.
  */
-void r2_selection_sort(void *arr, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+void r2_selection_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
 {
         char *seq  = arr;
         /**
@@ -65,18 +78,325 @@ void r2_selection_sort(void *arr, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
         r2_int64 l = 0;
         r2_int64 k = 0;
         if(buf != NULL){
-                for(r2_uint64 j = 0; j < as - 1; ++j){
+                for(r2_uint64 j = start; j < as - 1; ++j){
                         k = j;
                         for(r2_uint64 l = j + 1; l < as; ++l)
                                 if(cmp(&seq[l*es], &seq[k*es]) < 0)
                                         k = l;
-                        cpy(&seq[j*es], buf, es);
-                        cpy(&seq[k*es], &seq[j*es],es);
-                        cpy(buf, &seq[k*es], es);
+                        if(k != j){
+                                cpy(&seq[j*es], buf, es);
+                                cpy(&seq[k*es], &seq[j*es],es);
+                                cpy(buf, &seq[k*es], es); 
+                        }
+                }
+
+                if(buf != buffer)
+                        free(buf);
+        }
+}
+
+/**
+ * @brief               Sorts a sequence in non-decreasing order using bubble sort. 
+ *                     
+ * @param arr           Array. 
+ * @param start         Start.
+ * @param as            Array size. Example if we are sorting 10 numbers then array size should be 10.
+ * @param es            Element size. Example if we're sorting an array of 4 byte integers
+ *                      then es should be equal to 4.
+ * @param cmp           A callback comparison function that compares two elements a and b.
+ */
+void r2_bubble_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+{
+        char *seq  = arr;
+        /**
+         * @brief We reserve 1024 bytes for a single element of the array.  
+         * Our assumption is that a single element is less than 1024 bytes. 
+         * However we dynamically allocate more memory if our assumption is wrong.
+         */
+        char buffer[1024] = {0};
+        char *buf  = buffer;
+        if(es > 1024)
+                buf = malloc(sizeof(char) *es);
+
+        r2_int64 l = 0;
+        if(buf != NULL){
+                for(r2_uint64 j = start; j < as; ++j){
+                        for(r2_uint64 k = 0; k < as -1; ++k){
+                                if(cmp(&seq[k*es], &seq[(k+1)*es]) > 0){
+                                        cpy(&seq[k*es], buf, es); 
+                                        cpy(&seq[(k+1)*es], &seq[k*es], es);
+                                        cpy(buf, &seq[(k+1)*es], es);
+                                }
+                        }
+                }
+                if(buf != buffer)
+                        free(buf);
+        }
+}
+
+/**
+ * @brief               Sorts a sequence in non-decreasing order using shell sort. 
+ *                      
+ * @param arr           Array. 
+ * @param as            Array size. Example if we are sorting 10 numbers then array size should be 10.
+ * @param es            Element size. Example if we're sorting an array of 4 byte integers
+ *                      then es should be equal to 4.
+ * @param cmp           A callback comparison function that compares two elements a and b.
+ */
+void r2_shell_sort(void *arr, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+{
+        char *seq  = arr;
+        /**
+         * @brief We reserve 1024 bytes for a single element of the array.  
+         * Our assumption is that a single element is less than 1024 bytes. 
+         * However we dynamically allocate more memory if our assumption is wrong.
+         */
+        char buffer[1024] = {0};
+        char *buf  = buffer;
+        if(es > 1024)
+                buf = malloc(sizeof(char) *es);
+
+        r2_int64 h = 1; 
+        r2_int64  l = 0;
+        while(h < as /3)
+                h*=3 + 1;
+
+        for(;h > 0; h/=3){
+                for(r2_uint64 i = h; i < as; ++i){
+                        cpy(&seq[i*es], buf, es);
+                        l = i - h; 
+                        for(;l >= 0 && cmp(&seq[l*es], buf) > 0;l-=h)
+                                cpy(&seq[l*es], &seq[(l+h)*es], es);
+                        
+                        cpy(buf, &seq[(l + h)*es], es);
+                }
+        }
+
+        if(buf != buffer)
+                free(buf);
+}
+
+/**
+ * @brief               Sorts a sequence in non-decreasing order using mergesort. 
+ *             
+ *          
+ * @param arr           Array. 
+ * @param start         Start.
+ * @param as            Array size. Example if we are sorting 10 numbers then array size should be 10.
+ * @param es            Element size. Example if we're sorting an array of 4 byte integers
+ *                      then es should be equal to 4.
+ * @param cmp           A callback comparison function that compares two elements a and b.
+ */
+void r2_merge_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+{
+        char *seq = malloc(es * as); 
+        assert(seq != NULL);
+        merge_sort(arr, seq, start, as -1, es, cmp);
+        free(seq);
+}
+
+/**
+ * @brief               Sorts a sequence in non-decreasing order using a modified mergesort. 
+ *                      The key difference in this merge sort is that we use cut off point 
+ *                      for small subarrays. What this means is that we don't recurse on smaller
+ *                      subarrays instead we use insertion sort to sort those arrays.
+ *             
+ *          
+ * @param arr           Array. 
+ * @param start         Start.
+ * @param as            Array size. Example if we are sorting 10 numbers then array size should be 10.
+ * @param es            Element size. Example if we're sorting an array of 4 byte integers
+ *                      then es should be equal to 4.
+ * @param cmp           A callback comparison function that compares two elements a and b.
+ */
+void r2_merge_sort_mod(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp) 
+{
+        char *seq = malloc(es * as); 
+        assert(seq != NULL);
+        merge_sort_mod(arr, seq, start, as -1, es, cmp);
+        free(seq);
+}
+
+/**
+ * @brief               Sorts a sequence in non-decreasing order using bottom up mergesort. 
+ *             
+ *          
+ * @param arr           Array. 
+ * @param start         Start.
+ * @param as            Array size. Example if we are sorting 10 numbers then array size should be 10.
+ * @param es            Element size. Example if we're sorting an array of 4 byte integers
+ *                      then es should be equal to 4.
+ * @param cmp           A callback comparison function that compares two elements a and b.
+ */
+void r2_bmerge_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+{
+        char *seq = malloc(es * as); 
+        assert(seq != NULL);
+        bmerge_sort(arr, seq, start, as, es, cmp);
+        free(seq);
+}
+
+/**
+ * @brief               This function merges the sub arrays into a sorted array.
+ * 
+ * @param seq           Seq array. 
+ * @param aux           Auxillary Array.
+ * @param start         Start.
+ * @param mid           Middle.
+ * @param end           End.
+ * @param es            Element size.
+ * @param cmp           A comparison callback function.
+ */
+static void merge(char *seq, char *aux, r2_uint64 start, r2_uint64 mid, r2_uint64 end, r2_uint64 es, r2_cmp cmp)
+{
+
+        /**
+         * @brief Copy contents of arr into aux.
+         *        Consider switching to memcpy?
+         */
+        for(r2_uint64 i = start; i <= end; ++i)
+                cpy(&seq[i*es], &aux[i*es], es); 
+
+        for(r2_uint64 j = start, k = mid + 1, l = start; l <= end; ++l){   
+                if(j <= mid && k <= end){
+                        if(cmp(&aux[j*es], &aux[k*es]) <= 0){
+                                cpy(&aux[j*es], &seq[l*es], es);
+                                ++j;
+                        }else{
+                                cpy(&aux[k*es], &seq[l*es], es);
+                                ++k;    
+                        }
+                }else if(k <= end){
+                        cpy(&aux[k*es], &seq[l*es], es);
+                        ++k; 
+                }else{
+                        cpy(&aux[j*es], &seq[l*es], es);
+                        ++j;   
                 }
         }
 }
 
+/**
+ * @brief               Helper function for mergesort.
+ * 
+ * @param arr           Array.
+ * @param seq           Sequence. 
+ * @param start         Start of array.
+ * @param as            Array size.
+ * @param es            Element size.
+ * @param cmp           A comparison callback function.
+ */
+static void merge_sort(void *arr, void *seq, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+{
+        if(as <= start) 
+                return; 
+        r2_uint64 mid = start + (as - start) / 2;
+        merge_sort(arr, seq, start, mid, es, cmp);
+        merge_sort(arr, seq, mid + 1, as, es, cmp); 
+        merge(arr, seq, start, mid, as, es, cmp);
+}
+
+/**
+ * @brief               Helper function for mergesort mod.
+ * 
+ * @param arr           Array.
+ * @param seq           Sequence. 
+ * @param start         Start of array.
+ * @param as            Array size.
+ * @param es            Element size.
+ * @param cmp           A comparison callback function.
+ */
+static void merge_sort_mod(void *arr, void *seq, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+{
+        if(as <= start) 
+                return; 
+        else if((as - start) <= 15){
+                r2_insertion_sort(arr, start, as + 1, es, cmp);
+                return;
+        }
+                
+        
+        r2_uint64 mid = start + (as - start) / 2;
+        merge_sort_mod(arr, seq, start, mid, es, cmp);
+        merge_sort_mod(arr, seq, mid + 1, as, es, cmp); 
+        merge(arr, seq, start, mid, as, es, cmp);        
+}
+
+/**
+ * @brief               Helper function for bottom up merge sort.
+ * 
+ * @param arr           Array.
+ * @param seq           Sequence. 
+ * @param start         Start of array.
+ * @param as            Array size.
+ * @param es            Element size.
+ * @param cmp           A comparison callback function.
+ */
+static void bmerge_sort(void *arr, void *seq, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+{
+        r2_uint64 mid = 0;
+        r2_uint64 end = 0; 
+        for(r2_uint64 i = 1; i < as; i <<= 1){
+                for(r2_uint64 low = start; low < as - i; low += 2*i){
+                        mid = low + i - 1;
+                        end = low + i*2 - 1;
+                        if(as < end)
+                                end = as - 1;
+                        merge(arr, seq, low, mid, end, es, cmp);
+                }
+        }
+}
+
+
+/**
+ * @brief               Sorts a sequence in non-decreasing order using bottom up mergesort with insertion sort. 
+ *             
+ *          
+ * @param arr           Array. 
+ * @param start         Start.
+ * @param as            Array size. Example if we are sorting 10 numbers then array size should be 10.
+ * @param es            Element size. Example if we're sorting an array of 4 byte integers
+ *                      then es should be equal to 4.
+ * @param cmp           A callback comparison function that compares two elements a and b.
+ */
+void r2_bmerge_sort_mod(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+{
+        char *seq = malloc(es * as); 
+        assert(seq != NULL);
+        bmerge_sort_mod(arr, seq, start, as, es, cmp);
+        free(seq);
+}
+
+
+/**
+ * @brief               Helper function for bottom up merge sort.
+ * 
+ * @param arr           Array.
+ * @param seq           Sequence. 
+ * @param start         Start of array.
+ * @param as            Array size.
+ * @param es            Element size.
+ * @param cmp           A comparison callback function.
+ */
+static void bmerge_sort_mod(void *arr, void *seq, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
+{
+        r2_uint64 mid = 0;
+        r2_uint64 end = 0; 
+        for(r2_uint64 i = 1; i < as; i <<= 1){
+                for(r2_uint64 low = start; low < as - i; low += 2*i){
+                        mid = low + i - 1;
+                        end = low + i*2 - 1;
+                        if(as < end)
+                                end = as - 1;
+
+                        if(end - low > 15)
+                                merge(arr, seq, low, mid, end, es, cmp);
+                        else if((end - low >= 8 && end - low <= 15 )|| (end - low == as - 1))
+                                r2_insertion_sort(arr, low, end + 1, es, cmp);
+                        
+                }
+        }        
+}
 
 /**
  * @brief       Copies src into dest.
@@ -88,4 +408,12 @@ void r2_selection_sort(void *arr, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
 static inline void cpy(r2_uc *src, r2_uc *dest, r2_uint64 size)
 {
         memcpy(dest, src, size);
+}
+
+
+static void is_sorted(void *arr, r2_uint64 start, r2_uint64 size, r2_uint64 ez,r2_cmp cmp)
+{
+        char *seq = arr;
+        for(r2_uint64 i = start; i < size -1; ++i)
+                assert(cmp(seq + i *ez, seq + (i + 1) * ez) <= 0);
 }

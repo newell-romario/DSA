@@ -1,6 +1,8 @@
 #include "r2_sort_test.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 static r2_int16 int_cmp(const void *, const void *);
 static r2_int16 char_cmp(const void *, const void *);
@@ -20,7 +22,7 @@ static void test_insertion_sort()
         for(r2_uint16 i = 0; i < 3; ++i){
                 printf("\nBefore:");
                 print_ints(seq[i], 10);
-                r2_insertion_sort(seq[i], 10, sizeof(r2_int64), int_cmp);
+                r2_insertion_sort(seq[i], 0,10, sizeof(r2_int64), int_cmp);
                 is_sorted(seq[i], 10, sizeof(r2_int64), int_cmp);
                 printf("\nAfter:");
                 print_ints(seq[i], 10);
@@ -29,7 +31,7 @@ static void test_insertion_sort()
         r2_c alphabet[] = {'a', 'c', 'f', 'b', 'z', 'm', 'x', 'g', 'e', 'r', 'q', 'j', 'k', 'v', 'u', 'w', 'y', 'h', 'i' ,'l', 'n', 'o', 'p', 'd', 's', 't'};
         printf("\nBefore:");
         print_char(alphabet, 26);
-        r2_insertion_sort(alphabet, 26, sizeof(r2_c), char_cmp);     
+        r2_insertion_sort(alphabet, 0,26, sizeof(r2_c), char_cmp);     
         is_sorted(alphabet, 26, sizeof(r2_c), char_cmp);
         printf("\nAfter:");
         print_char(alphabet, 26);
@@ -41,7 +43,7 @@ static void test_insertion_sort()
         for(r2_uint16 i = 0; i < 3; ++i){
                 printf("\nBefore:");
                 print_double(vals[i], 10);
-                r2_insertion_sort(&vals[i], 10, sizeof(r2_dbl), double_cmp);
+                r2_insertion_sort(&vals[i], 0, 10, sizeof(r2_dbl), double_cmp);
                 is_sorted(vals[i], 10, sizeof(r2_dbl), double_cmp);
                 printf("\nAfter:");
                 print_double(vals[i], 10);
@@ -58,7 +60,7 @@ static void test_selection_sort()
         for(r2_uint16 i = 0; i < 3; ++i){
                 printf("\nBefore:");
                 print_ints(seq[i], 10);
-                r2_selection_sort(seq[i], 10, sizeof(r2_int64), int_cmp);
+                r2_selection_sort(seq[i], 0,10, sizeof(r2_int64), int_cmp);
                 is_sorted(seq[i], 10, sizeof(r2_int64), int_cmp);
                 printf("\nAfter:");
                 print_ints(seq[i], 10);
@@ -67,7 +69,7 @@ static void test_selection_sort()
         r2_c alphabet[] = {'a', 'c', 'f', 'b', 'z', 'm', 'x', 'g', 'e', 'r', 'q', 'j', 'k', 'v', 'u', 'w', 'y', 'h', 'i' ,'l', 'n', 'o', 'p', 'd', 's', 't'};
         printf("\nBefore:");
         print_char(alphabet, 26);
-        r2_selection_sort(alphabet, 26, sizeof(r2_c), char_cmp);     
+        r2_selection_sort(alphabet, 0, 26, sizeof(r2_c), char_cmp);     
         is_sorted(alphabet, 26, sizeof(r2_c), char_cmp);
         printf("\nAfter:");
         print_char(alphabet, 26);
@@ -79,13 +81,268 @@ static void test_selection_sort()
         for(r2_uint16 i = 0; i < 3; ++i){
                 printf("\nBefore:");
                 print_double(vals[i], 10);
-                r2_selection_sort(&vals[i], 10, sizeof(r2_dbl), double_cmp);
+                r2_selection_sort(&vals[i], 0, 10, sizeof(r2_dbl), double_cmp);
                 is_sorted(vals[i], 10, sizeof(r2_dbl), double_cmp);
                 printf("\nAfter:");
                 print_double(vals[i], 10);
         }          
 }
 
+static void test_r2_bubble_sort()
+{
+        printf("\n--------------------------------Bubble Sort----------------------------------------\n");
+        r2_int64 unsorted[] = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+        r2_int64 sorted[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        r2_int64 mixed[]    = {1, 10, 5, 4, 2, 10, 9, 8, 7, -6};
+        void *seq[] = {unsorted, sorted, mixed};
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_ints(seq[i], 10);
+                r2_bubble_sort(seq[i], 0, 10, sizeof(r2_int64), int_cmp);
+                is_sorted(seq[i], 10, sizeof(r2_int64), int_cmp);
+                printf("\nAfter:");
+                print_ints(seq[i], 10);
+        }
+
+        r2_c alphabet[] = {'a', 'c', 'f', 'b', 'z', 'm', 'x', 'g', 'e', 'r', 'q', 'j', 'k', 'v', 'u', 'w', 'y', 'h', 'i' ,'l', 'n', 'o', 'p', 'd', 's', 't'};
+        printf("\nBefore:");
+        print_char(alphabet, 26);
+        r2_bubble_sort(alphabet, 0, 26, sizeof(r2_c), char_cmp);     
+        is_sorted(alphabet, 26, sizeof(r2_c), char_cmp);
+        printf("\nAfter:");
+        print_char(alphabet, 26);
+
+        r2_dbl vals[][10] = {{.12, 0.002, 5.14, -.0111, 3.14, 1.498, .451, -99, 100, 8},
+                             {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+                             {1, 10, 5, 4, 2, 10, 9, 8, 7, -6}};
+
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_double(vals[i], 10);
+                r2_bubble_sort(&vals[i], 0, 10, sizeof(r2_dbl), double_cmp);
+                is_sorted(vals[i], 10, sizeof(r2_dbl), double_cmp);
+                printf("\nAfter:");
+                print_double(vals[i], 10);
+        }          
+}
+
+static void test_r2_shell_sort()
+{
+        printf("\n--------------------------------Shell Sort----------------------------------------\n");
+        r2_int64 unsorted[] = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+        r2_int64 sorted[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        r2_int64 mixed[]    = {1, 10, 5, 4, 2, 10, 9, 8, 7, -6};
+        void *seq[] = {unsorted, sorted, mixed};
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_ints(seq[i], 10);
+                r2_shell_sort(seq[i], 10, sizeof(r2_int64), int_cmp);
+                is_sorted(seq[i], 10, sizeof(r2_int64), int_cmp);
+                printf("\nAfter:");
+                print_ints(seq[i], 10);
+        }
+
+        r2_c alphabet[] = {'a', 'c', 'f', 'b', 'z', 'm', 'x', 'g', 'e', 'r', 'q', 'j', 'k', 'v', 'u', 'w', 'y', 'h', 'i' ,'l', 'n', 'o', 'p', 'd', 's', 't'};
+        printf("\nBefore:");
+        print_char(alphabet, 26);
+        r2_shell_sort(alphabet, 26, sizeof(r2_c), char_cmp);     
+        is_sorted(alphabet, 26, sizeof(r2_c), char_cmp);
+        printf("\nAfter:");
+        print_char(alphabet, 26);
+
+        r2_dbl vals[][10] = {{.12, 0.002, 5.14, -.0111, 3.14, 1.498, .451, -99, 100, 8},
+                             {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+                             {1, 10, 5, 4, 2, 10, 9, 8, 7, -6}};
+
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_double(vals[i], 10);
+                r2_shell_sort(&vals[i], 10, sizeof(r2_dbl), double_cmp);
+                is_sorted(vals[i], 10, sizeof(r2_dbl), double_cmp);
+                printf("\nAfter:");
+                print_double(vals[i], 10);
+        }     
+        
+}
+
+static void test_r2_merge_sort()
+{
+        printf("\n--------------------------------Merge Sort----------------------------------------\n");
+        r2_int64 unsorted[] = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+        r2_int64 sorted[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        r2_int64 mixed[]    = {1, 10, 5, 4, 2, 10, 9, 8, 7, -6};
+        void *seq[] = {unsorted, sorted, mixed};
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_ints(seq[i], 10);
+                r2_merge_sort(seq[i], 0, 10, sizeof(r2_int64), int_cmp);
+                is_sorted(seq[i], 10, sizeof(r2_int64), int_cmp);
+                printf("\nAfter:");
+                print_ints(seq[i], 10);
+        }
+
+        r2_c alphabet[] = {'a', 'c', 'f', 'b', 'z', 'm', 'x', 'g', 'e', 'r', 'q', 'j', 'k', 'v', 'u', 'w', 'y', 'h', 'i' ,'l', 'n', 'o', 'p', 'd', 's', 't'};
+        printf("\nBefore:");
+        print_char(alphabet, 26);
+        r2_merge_sort(alphabet, 0, 26, sizeof(r2_c), char_cmp);     
+        is_sorted(alphabet, 26, sizeof(r2_c), char_cmp);
+        printf("\nAfter:");
+        print_char(alphabet, 26);
+
+        r2_dbl vals[][10] = {{.12, 0.002, 5.14, -.0111, 3.14, 1.498, .451, -99, 100, 8},
+                             {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+                             {1, 10, 5, 4, 2, 10, 9, 8, 7, -6}};
+
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_double(vals[i], 10);
+                r2_merge_sort(&vals[i], 0, 10, sizeof(r2_dbl), double_cmp);
+                is_sorted(vals[i], 10, sizeof(r2_dbl), double_cmp);
+                printf("\nAfter:");
+                print_double(vals[i], 10);
+        }         
+}
+
+static void test_r2_merge_sort_mod()
+{
+        printf("\n--------------------------------Merge Sort With Insertion Sort----------------------------------------\n");
+        r2_int64 unsorted[] = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+        r2_int64 sorted[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        r2_int64 mixed[]    = {1, 10, 5, 4, 2, 10, 9, 8, 7, -6};
+        void *seq[] = {unsorted, sorted, mixed};
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_ints(seq[i], 10);
+                r2_merge_sort_mod(seq[i], 0, 10, sizeof(r2_int64), int_cmp);
+                is_sorted(seq[i], 10, sizeof(r2_int64), int_cmp);
+                printf("\nAfter:");
+                print_ints(seq[i], 10);
+        }
+
+        r2_c alphabet[] = {'a', 'c', 'f', 'b', 'z', 'm', 'x', 'g', 'e', 'r', 'q', 'j', 'k', 'v', 'u', 'w', 'y', 'h', 'i' ,'l', 'n', 'o', 'p', 'd', 's', 't'};
+        printf("\nBefore:");
+        print_char(alphabet, 26);
+        r2_merge_sort_mod(alphabet, 0, 26, sizeof(r2_c), char_cmp);     
+        is_sorted(alphabet, 26, sizeof(r2_c), char_cmp);
+        printf("\nAfter:");
+        print_char(alphabet, 26);
+
+        r2_dbl vals[][10] = {{.12, 0.002, 5.14, -.0111, 3.14, 1.498, .451, -99, 100, 8},
+                             {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+                             {1, 10, 5, 4, 2, 10, 9, 8, 7, -6}};
+
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_double(vals[i], 10);
+                r2_merge_sort_mod(&vals[i], 0, 10, sizeof(r2_dbl), double_cmp);
+                is_sorted(vals[i], 10, sizeof(r2_dbl), double_cmp);
+                printf("\nAfter:");
+                print_double(vals[i], 10);
+        }         
+}
+
+static void test_bmerge_sort()
+{
+        printf("\n--------------------------------Bottom Up Merge Sort----------------------------------------\n");
+        r2_int64 unsorted[] = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+        r2_int64 sorted[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        r2_int64 mixed[]    = {1, 10, 5, 4, 2, 10, 9, 8, 7, -6};
+        void *seq[] = {unsorted, sorted, mixed};
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_ints(seq[i], 10);
+                r2_bmerge_sort(seq[i], 0, 10, sizeof(r2_int64), int_cmp);
+                is_sorted(seq[i], 10, sizeof(r2_int64), int_cmp);
+                printf("\nAfter:");
+                print_ints(seq[i], 10);
+        }
+
+        r2_c alphabet[] = {'a', 'c', 'f', 'b', 'z', 'm', 'x', 'g', 'e', 'r', 'q', 'j', 'k', 'v', 'u', 'w', 'y', 'h', 'i' ,'l', 'n', 'o', 'p', 'd', 's', 't'};
+        printf("\nBefore:");
+        print_char(alphabet, 26);
+        r2_bmerge_sort(alphabet, 0, 26, sizeof(r2_c), char_cmp);     
+        is_sorted(alphabet, 26, sizeof(r2_c), char_cmp);
+        printf("\nAfter:");
+        print_char(alphabet, 26);
+
+        r2_dbl vals[][10] = {{.12, 0.002, 5.14, -.0111, 3.14, 1.498, .451, -99, 100, 8},
+                             {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+                             {1, 10, 5, 4, 2, 10, 9, 8, 7, -6}};
+
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_double(vals[i], 10);
+                r2_bmerge_sort(&vals[i], 0, 10, sizeof(r2_dbl), double_cmp);
+                is_sorted(vals[i], 10, sizeof(r2_dbl), double_cmp);
+                printf("\nAfter:");
+                print_double(vals[i], 10);
+        }           
+}
+
+static void test_bmerge_sort_mod()
+{
+        printf("\n--------------------------------Bottom Up Merge Sort----------------------------------------\n");
+        r2_int64 unsorted[] = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+        r2_int64 sorted[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        r2_int64 mixed[]    = {1, 10, 5, 4, 2, 10, 9, 8, 7, -6};
+        void *seq[] = {unsorted, sorted, mixed};
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_ints(seq[i], 10);
+                r2_bmerge_sort_mod(seq[i], 0, 10, sizeof(r2_int64), int_cmp);
+                is_sorted(seq[i], 10, sizeof(r2_int64), int_cmp);
+                printf("\nAfter:");
+                print_ints(seq[i], 10);
+        }
+
+        r2_c alphabet[] = {'a', 'c', 'f', 'b', 'z', 'm', 'x', 'g', 'e', 'r', 'q', 'j', 'k', 'v', 'u', 'w', 'y', 'h', 'i' ,'l', 'n', 'o', 'p', 'd', 's', 't'};
+        printf("\nBefore:");
+        print_char(alphabet, 26);
+        r2_bmerge_sort_mod(alphabet, 0, 26, sizeof(r2_c), char_cmp);     
+        is_sorted(alphabet, 26, sizeof(r2_c), char_cmp);
+        printf("\nAfter:");
+        print_char(alphabet, 26);
+
+        r2_dbl vals[][10] = {{.12, 0.002, 5.14, -.0111, 3.14, 1.498, .451, -99, 100, 8},
+                             {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+                             {1, 10, 5, 4, 2, 10, 9, 8, 7, -6}};
+
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_double(vals[i], 10);
+                r2_bmerge_sort_mod(&vals[i], 0, 10, sizeof(r2_dbl), double_cmp);
+                is_sorted(vals[i], 10, sizeof(r2_dbl), double_cmp);
+                printf("\nAfter:");
+                print_double(vals[i], 10);
+        }             
+}
+
+static void test_r2_sort_stats()
+{
+        FILE *fp = fopen("partially_sorted.txt", "r"); 
+        const r2_int64 size = 500000;
+        r2_int64 *num = malloc(sizeof(r2_int64) * size); 
+        r2_int64 n; 
+        r2_int64 line = 0;
+        printf("\nPartially sorted");
+        while(fscanf(fp, "%lld", &num[line]) == 1 && line != size){
+                printf("\n%lld)%lld", line, num[line++]);
+        }
+
+        clock_t before = clock(); 
+        r2_bmerge_sort_mod(num, 0, size, sizeof(r2_int64), int_cmp);
+        double after = (double)(clock() - before) / CLOCKS_PER_SEC;
+        is_sorted(num, size, sizeof(r2_int64), int_cmp);
+
+        fclose(fp);
+        fp = fopen("results.txt", "w");
+        for(r2_uint64 i = 0; i < size; ++i)
+                fprintf(fp,"%lld\n", num[i]);
+
+        printf("\nTesting");
+        free(num);
+        fclose(fp);
+}
 
 static void is_sorted(void *arr, r2_uint64 size, r2_uint64 ez,r2_cmp cmp)
 {
@@ -132,6 +389,13 @@ void r2_sort_test_run()
 {
         test_insertion_sort();
         test_selection_sort();
+        test_r2_bubble_sort();
+        test_r2_shell_sort();
+        test_r2_merge_sort();
+        test_r2_merge_sort_mod();
+        test_bmerge_sort();
+        test_bmerge_sort_mod();
+        test_r2_sort_stats();
 }
 
 static void print_ints(r2_int64 *arr, r2_uint64 size)

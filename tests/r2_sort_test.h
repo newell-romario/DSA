@@ -3,6 +3,13 @@
 #include "../src/r2_sort.h"
 static void test_insertion_sort();
 static void test_selection_sort();
+static void test_r2_bubble_sort();
+static void test_r2_shell_sort();
+static void test_r2_merge_sort();
+static void test_r2_sort_stats();
+static void test_r2_merge_sort_mod();
+static void test_bmerge_sort();
+static void test_bmerge_sort_mod();
 void r2_sort_test_run();
 
 #endif
