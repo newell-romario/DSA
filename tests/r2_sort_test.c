@@ -422,18 +422,18 @@ static void test_r2_quick_sort()
 static void test_r2_sort_stats()
 {
         FILE *fp = fopen("reverse_sorted.txt", "r"); 
-        const r2_int64 size = 200000;
+        const r2_int64 size = 100000;
         r2_int64 *num = malloc(sizeof(r2_int64) * size); 
         r2_int64 line = 0;
         printf("\nreverse_sorted");
         while(line != size){
-                fscanf(fp, "%ld", &num[line]);
+                fscanf(fp, "%lld", &num[line]);
                 printf("\n%lld)%lld", line, num[line]);
                 ++line;
         }
 
         clock_t before = clock(); 
-        r2_quick_sort(num, 0, size, sizeof(r2_int64), int_cmp);
+        r2_merge_sort(num, 0, size, sizeof(r2_int64), int_cmp);
         double after = (double)(clock() - before) / CLOCKS_PER_SEC;
         is_sorted(num, 0, size, sizeof(r2_int64), int_cmp);
         fclose(fp);

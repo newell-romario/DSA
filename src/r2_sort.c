@@ -1,10 +1,9 @@
 #include "r2_sort.h"
-#include "r2_arrstack.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #define CUT_OFF 32
-
+static r2_uint64 nc;
 static void swap(char *, char *, r2_uint64);
 static void cpy(void *, void *, r2_uint64);
 static void merge(char *, char *, r2_uint64, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
@@ -16,6 +15,8 @@ static void is_sorted(void *, r2_uint64, r2_uint64, r2_uint64,r2_cmp);
 static r2_int64 hoare(char*, r2_int64, r2_int64, r2_uint64, r2_cmp);
 static r2_int64 lomuto(char*, r2_uint64, r2_uint64, r2_int64, r2_cmp);
 static void quick_sort(void *, r2_int64, r2_int64, r2_uint64, r2_cmp);
+static r2_int64 newell(char *, r2_int64, r2_int64, r2_int64, r2_cmp);
+
 /**
  * @brief               Sorts a sequence in non-decreasing order using insertion sort. 
  *                
@@ -204,6 +205,7 @@ void r2_shell_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cm
  */
 void r2_merge_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
 {
+        nc = 0;
         char *seq = malloc(es * as); 
         assert(seq != NULL);
         merge_sort(arr, seq, start, as -1, es, cmp);
@@ -227,6 +229,7 @@ void r2_merge_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cm
  */
 void r2_merge_sort_mod(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp) 
 {
+        nc = 0;
         char *seq = malloc(es * as); 
         assert(seq != NULL);
         merge_sort_mod(arr, seq, start, as -1, es, cmp);
@@ -247,6 +250,7 @@ void r2_merge_sort_mod(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r
  */
 void r2_bmerge_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
 {
+        nc = 0;
         char *seq = malloc(es * as); 
         assert(seq != NULL);
         bmerge_sort(arr, seq, start, as, es, cmp);
@@ -267,13 +271,13 @@ void r2_bmerge_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_c
  */
 static void merge(char *seq, char *aux, r2_uint64 start, r2_uint64 mid, r2_uint64 end, r2_uint64 es, r2_cmp cmp)
 {
-
         /**
          * @brief Copy contents of seq into aux.
          * 
          */
         memcpy(&aux[start*es], &seq[start*es], (end - start + 1)*es);
-        for(r2_uint64 j = start, k = mid + 1, l = start; l <= end; ++l){   
+        for(r2_uint64 j = start, k = mid + 1, l = start; l <= end; ++l){ 
+                ++nc;  
                 if(j <= mid && k <= end){
                         if(cmp(&aux[j*es], &aux[k*es]) <= 0){
                                 cpy(&aux[j*es], &seq[l*es], es);
@@ -331,7 +335,6 @@ static void merge_sort_mod(void *arr, void *seq, r2_uint64 start, r2_uint64 as, 
                 return;
         }
                 
-        
         r2_uint64 mid = start + (as - start) / 2;
         merge_sort_mod(arr, seq, start, mid, es, cmp);
         merge_sort_mod(arr, seq, mid + 1, as, es, cmp); 
@@ -377,6 +380,7 @@ static void bmerge_sort(void *arr, void *seq, r2_uint64 start, r2_uint64 as, r2_
  */
 void r2_bmerge_sort_mod(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
 {
+        nc = 0;
         char *seq = malloc(es * as); 
         assert(seq != NULL);
         bmerge_sort_mod(arr, seq, start, as, es, cmp);
@@ -439,6 +443,7 @@ static void bmerge_sort_mod(void *arr, void *seq, r2_uint64 start, r2_uint64 as,
  */
 void r2_quick_sort(void *arr, r2_uint64 start, r2_uint64 as, r2_uint64 es, r2_cmp cmp)
 {
+        nc = 0;
         quick_sort(arr, start, as - 1, es, cmp);
         is_sorted(arr, start, as, es, cmp);
 }
@@ -460,8 +465,8 @@ static void quick_sort(void *arr, r2_int64 start, r2_int64 as, r2_uint64 es, r2_
         if(start >= as)
                 return;
         
-        r2_int64 mid = hoare(arr, start, as, es, cmp);
-        //r2_int64 mid = lomuto(arr, start, as, es, cmp);
+
+        r2_int64 mid  = newell(arr, start, as, es, cmp);
         quick_sort(arr, start, mid -1, es, cmp); 
         quick_sort(arr, mid + 1, as, es, cmp);
 
@@ -489,11 +494,17 @@ static r2_int64 hoare(char *arr, r2_int64 start, r2_int64 end, r2_uint64 es, r2_
         r2_int64 r  = end-1;
         if(buf != NULL){
                 while(l <= r){
-                        while(l <= r && cmp(&arr[l*es], &arr[end*es]) <= 0)
+                        while(l <= r && cmp(&arr[l*es], &arr[end*es]) <= 0){
                                 ++l;
+                                ++nc;
+                        }
+                                
                         
-                        while(r >= l && cmp(&arr[r*es], &arr[end*es]) >= 0)
+                        while(r >= l && cmp(&arr[r*es], &arr[end*es]) >= 0){
                                 --r;
+                                ++nc;
+                        }
+                                
                        
                         if(l < r){
                                 cpy(&arr[r*es], buf, es); 
@@ -531,6 +542,7 @@ static r2_int64 lomuto(char*arr, r2_uint64 start, r2_uint64 end, r2_int64 es, r2
                 buf = malloc(sizeof(char) *es);
         r2_int64 i = start -1; 
         for(r2_uint64 j = start; j <= end - 1; ++j){
+                ++nc;
                 if(cmp(&arr[j*es], &arr[end*es]) <= 0){
                         ++i; 
                         cpy(&arr[i*es], buf, es); 
@@ -547,6 +559,104 @@ static r2_int64 lomuto(char*arr, r2_uint64 start, r2_uint64 end, r2_int64 es, r2
         if(buf != buffer)
                 free(buf);
         return i; 
+}
+
+/**
+ * @brief               Custom partition function for quicksort.
+ *                      
+ *                      
+ * @param arr           Array.
+ * @param start         Start
+ * @param end           End.
+ * @param es            Element size.
+ * @param cmp           A comparison callback function.
+ */
+static r2_int64 newell(char *arr, r2_int64 start, r2_int64 end, r2_int64 es, r2_cmp cmp)
+{
+
+        r2_int64 l  = start; 
+        r2_int64 r  = end;
+        char buffer[64] = {0}; 
+        char *buf   = buffer; 
+        if(es > 64)
+                buf = malloc(sizeof(char) *es);
+
+        assert(buf != NULL);
+        
+        /*Checking if we're sorted in ascending order*/
+        while(l <= end -1 && cmp(&arr[l*es], &arr[(l+1)*es]) <= 0){
+                ++l;
+                ++nc;
+        }
+               
+
+        if(l == end){
+                l = start + (end - start) / 2;
+                goto DONE;
+        }
+        /*Checking if we're sorted in descending order*/
+        while(r > start && cmp(&arr[r*es], &arr[(r-1)*es]) <= 0){
+                --r;
+                ++nc;
+        }
+                
+
+        if(r == start){
+                /*Reverse array*/
+                for(r2_int64 i = start, j = end; i < j; --j, ++i){
+                        cpy(&arr[i*es], buf, es); 
+                        cpy(&arr[j*es], &arr[i*es], es);
+                        cpy(buf, &arr[j*es], es);
+                }
+                l = start + (end - start) / 2;
+                goto DONE;
+        }
+
+        
+        /*Only swap when not equal*/
+        if(l != r){
+             cpy(&arr[l*es], buf, es);
+             cpy(&arr[(l+1)*es], &arr[l*es], es);
+             cpy(buf, &arr[(l+1)*es], es);
+        }
+
+        cpy(&arr[r*es], buf, es);
+        cpy(&arr[end*es], &arr[r*es], es);
+        cpy(buf, &arr[end*es], es);
+
+        if(cmp(&arr[(l+1)*es], &arr[end*es]) > 0)
+                l = start;
+
+                
+        
+        r = end - 1;
+        while(l <= r){
+                while(l <= r && cmp(&arr[l*es], &arr[end*es]) <= 0){
+                        ++l;
+                        ++nc;
+                }
+                        
+
+                while(r >= l && cmp(&arr[r*es], &arr[end*es]) >= 0){
+                        --r; 
+                        ++nc;
+                }
+                        
+                if(l < r){
+                        cpy(&arr[r*es], buf, es); 
+                        cpy(&arr[l*es], &arr[r*es], es);
+                        cpy(buf, &arr[l*es], es);   
+                }
+        }
+
+        cpy(&arr[l*es], buf, es); 
+        cpy(&arr[end*es], &arr[l*es], es);
+        cpy(buf, &arr[end*es], es);
+        if(buf != buffer)
+                free(buf);
+       
+        DONE:
+                return l;
 }
 
 /**
