@@ -26,4 +26,6 @@ void r2_merge_sort_mod(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
 void r2_bmerge_sort(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
 void r2_bmerge_sort_mod(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
 void r2_quick_sort(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+void r2_quick_sort_mod(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
+void r2_heap_sort(void *, r2_uint64, r2_uint64, r2_uint64, r2_cmp);
 #endif

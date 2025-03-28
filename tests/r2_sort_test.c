@@ -419,10 +419,49 @@ static void test_r2_quick_sort()
         print_ints(keys, 6);        
 }
 
+
+static void test_r2_heap_sort()
+{
+        printf("\n--------------------------------Heap Sort----------------------------------------\n");
+        r2_int64 unsorted[] = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+        r2_int64 sorted[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        r2_int64 mixed[]    = {1, 10, 5, 4, 2, 10, 9, 8, 7, -6};
+        void *seq[] = {unsorted, sorted, mixed};
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_ints(seq[i], 10);
+                r2_heap_sort(seq[i], 0, 10, sizeof(r2_int64), int_cmp);
+                is_sorted(seq[i], 0, 10, sizeof(r2_int64), int_cmp);
+                printf("\nAfter:");
+                print_ints(seq[i], 10);
+        }
+
+        r2_c alphabet[] = {'a', 'c', 'f', 'b', 'z', 'm', 'x', 'g', 'e', 'r', 'q', 'j', 'k', 'v', 'u', 'w', 'y', 'h', 'i' ,'l', 'n', 'o', 'p', 'd', 's', 't'};
+        printf("\nBefore:");
+        print_char(alphabet, 26);
+        r2_heap_sort(alphabet, 0, 26, sizeof(r2_c), char_cmp);     
+        is_sorted(alphabet, 0, 26, sizeof(r2_c), char_cmp);
+        printf("\nAfter:");
+        print_char(alphabet, 26);
+
+        r2_dbl vals[][10] = {{.12, 0.002, 5.14, -.0111, 3.14, 1.498, .451, -99, 100, 8},
+                             {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+                             {1, 10, 5, 4, 2, 10, 9, 8, 7, -6}};
+
+        for(r2_uint16 i = 0; i < 3; ++i){
+                printf("\nBefore:");
+                print_double(vals[i], 10);
+                r2_heap_sort(&vals[i], 0, 10, sizeof(r2_dbl), double_cmp);
+                is_sorted(vals[i], 0, 10, sizeof(r2_dbl), double_cmp);
+                printf("\nAfter:");
+                print_double(vals[i], 10);
+        } 
+}
+
 static void test_r2_sort_stats()
 {
-        FILE *fp = fopen("reverse_sorted.txt", "r"); 
-        const r2_int64 size = 100000;
+        FILE *fp = fopen("partially_sorted.txt", "r"); 
+        const r2_int64 size = 5000000;
         r2_int64 *num = malloc(sizeof(r2_int64) * size); 
         r2_int64 line = 0;
         printf("\nreverse_sorted");
@@ -433,7 +472,7 @@ static void test_r2_sort_stats()
         }
 
         clock_t before = clock(); 
-        r2_merge_sort(num, 0, size, sizeof(r2_int64), int_cmp);
+        r2_quick_sort(num, 0, size, sizeof(r2_int64), int_cmp);
         double after = (double)(clock() - before) / CLOCKS_PER_SEC;
         is_sorted(num, 0, size, sizeof(r2_int64), int_cmp);
         fclose(fp);
@@ -498,6 +537,7 @@ void r2_sort_test_run()
         test_bmerge_sort();
         test_bmerge_sort_mod();
         test_r2_quick_sort();
+        test_r2_heap_sort();
         test_r2_sort_stats();
 }
 

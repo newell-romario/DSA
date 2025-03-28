@@ -11,6 +11,7 @@ static void test_r2_merge_sort_mod();
 static void test_bmerge_sort();
 static void test_bmerge_sort_mod();
 static void test_r2_quick_sort();
+static void test_r2_heap_sort();
 void r2_sort_test_run();
 
 #endif
