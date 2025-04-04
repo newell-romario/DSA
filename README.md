@@ -1,1 +1,1 @@
-Welcome to my data structures and algorithms library implemented in the C programming language.  The purpose of this library is to give demonstration of how different data structures and algorithms would be implemented in C. This library is of help to anyone who wants a concrete implementation of structures in C. 
+This is a data structures and algorithms library implemented in C. This library aims to provide concrete implementations of common data structures and algorithms. This library can be used as a guide to implement data structures and algorithms in C. 
