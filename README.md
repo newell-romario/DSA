@@ -1,1 +1,1 @@
-This is a data structures and algorithms library implemented in C. This library aims to provide concrete implementations of common data structures and algorithms. This library can be used as a guide to implement data structures and algorithms in C. 
+This is a data structures and algorithms library implemented in C. This library aims to provide concrete implementations of common data structures and algorithms. This library implements the following data structues stack, avl tree, red and black tree, wavl tree, graphs, queue, deque, linked list, ring, and disjoint set.  
