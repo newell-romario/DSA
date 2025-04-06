@@ -22,7 +22,7 @@ struct r2_arrstack{
         r2_cmp cmp; /*A comparison callback function used to compare data items in array*/
 }; 
 
-struct r2_arrstack* r2_create_arrstack(r2_uint64, r2_fd fd, r2_cpy, r2_cmp);
+struct r2_arrstack* r2_create_arrstack(r2_uint64, r2_fd, r2_cpy, r2_cmp);
 struct r2_arrstack* r2_destroy_arrstack(struct r2_arrstack *);
 r2_uint16 r2_arrstack_push(struct r2_arrstack *, void *); 
 r2_uint16 r2_arrstack_pop(struct r2_arrstack *);
