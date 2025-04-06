@@ -641,7 +641,7 @@ r2_uint16 r2_graph_has_cycle(struct r2_graph *graph)
 {
         r2_uint16 CYCLE = FALSE;
         /*Stores current edge being processed*/
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
 
        /**
         * Every vertex has a state. We keep track of this state by using an array and a hash table. 
@@ -719,7 +719,7 @@ r2_uint16 r2_graph_has_cycle(struct r2_graph *graph)
         }
         CLEANUP:
                 if(stack != NULL)
-                        r2_arrstack_destroy_stack(stack);
+                        r2_destroy_arrstack(stack);
                 if(state != NULL)
                         free(state);
                 if(processed != NULL) 
@@ -913,7 +913,7 @@ void r2_graph_dfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
 {
         r2_int16 FAILED = FALSE;
         /*Stores current edge being processed*/
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
        /**
         * Every vertex has a state. We keep track of this state by using an array and a hash table. 
         * The initial state of a vertex is always WHITE. As we perform the breadth first search 
@@ -989,7 +989,7 @@ void r2_graph_dfs(struct r2_graph *graph, struct r2_vertex *source, r2_act actio
         }while(source != NULL);
         CLEANUP:
                 if(stack != NULL)
-                        r2_arrstack_destroy_stack(stack);
+                        r2_destroy_arrstack(stack);
                 if(state != NULL)
                         free(state);
                 if(processed != NULL) 
@@ -1012,7 +1012,7 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, struct r2_vertex
         r2_int16 FAILED = FALSE;
         r2_uint64 ENTIRE_GRAPH = source == NULL? TRUE : FALSE; /*Perform DFS on entire graph when true*/
         /*Stores current edge being processed*/
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         /*Stores vertices in specific order*/
         struct r2_list *list = r2_create_list(NULL, NULL, NULL);
         r2_uint16 *state = malloc(sizeof(r2_uint16) * graph->nvertices);
@@ -1122,7 +1122,7 @@ struct r2_list* r2_graph_dfs_traversals(struct r2_graph *graph, struct r2_vertex
         }
         CLEANUP:
                 if(stack != NULL)
-                        r2_arrstack_destroy_stack(stack);
+                        r2_destroy_arrstack(stack);
                 if(state != NULL)
                         free(state);
                 if(processed != NULL) 
@@ -1434,7 +1434,7 @@ struct r2_list* r2_graph_get_paths(struct r2_graph *graph, struct r2_vertex *src
         /*Stores the list of edges on the current path*/
         struct r2_vertex **path = malloc(sizeof(struct r2_vertex *) * graph->nvertices);
         /*Stores current edge being processed*/
-        struct r2_arrstack *stack    = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack    = r2_create_arrstack(0, NULL, NULL, NULL);
         struct r2_robintable *onpath = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL); 
 
         if(stack == NULL || path == NULL || onpath == NULL || paths == NULL || graph->nvertices == 0){
@@ -1520,7 +1520,7 @@ struct r2_list* r2_graph_get_paths(struct r2_graph *graph, struct r2_vertex *src
                         r2_destroy_robintable(onpath);
 
                 if(stack != NULL)
-                        r2_arrstack_destroy_stack(stack);
+                        r2_destroy_arrstack(stack);
         return paths;
 }
 
@@ -1807,7 +1807,7 @@ struct r2_graph* r2_graph_dfs_tree(struct r2_graph *graph, struct r2_vertex *sou
         struct r2_graph *dfs = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
 
         /*Stores current edge being processed*/
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         
         /**
         * Every vertex has a state. We keep track of this state by using an array and a hash table. 
@@ -1908,7 +1908,7 @@ struct r2_graph* r2_graph_dfs_tree(struct r2_graph *graph, struct r2_vertex *sou
         }while(source != NULL);
         CLEANUP:
                 if(stack != NULL)
-                        r2_arrstack_destroy_stack(stack);
+                        r2_destroy_arrstack(stack);
                 if(state != NULL)
                         free(state);
                 if(processed != NULL) 
@@ -2463,7 +2463,7 @@ struct r2_forest* r2_graph_tscc(struct r2_graph *graph)
         r2_dbl *pre  = malloc(sizeof(r2_dbl) * graph->nvertices);/*stores preorder number of each vertex*/
         r2_dbl *low  = malloc(sizeof(r2_dbl) * graph->nvertices);/*stores low number of each vertex*/
         r2_uint64 *state = malloc(sizeof(r2_uint64) * graph->nvertices);/*stores the state of each vertex*/
-        struct r2_arrstack *stack       =  r2_arrstack_create_stack(0, NULL, NULL, NULL);/*store the current vertex depth first search is on*/
+        struct r2_arrstack *stack       =  r2_create_arrstack(0, NULL, NULL, NULL);/*store the current vertex depth first search is on*/
         struct r2_robintable *processed =  r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
         if(pre == NULL || low == NULL || state == NULL || stack == NULL || processed == NULL || forest == NULL || graph->nvertices == 0){
                 FAILED = TRUE; 
@@ -2609,7 +2609,7 @@ struct r2_forest* r2_graph_tscc(struct r2_graph *graph)
                         free(state); 
                 
                 if(stack != NULL)
-                        r2_arrstack_destroy_stack(stack);
+                        r2_destroy_arrstack(stack);
                 
                 if(processed != NULL)
                         r2_destroy_robintable(processed);
@@ -2916,8 +2916,8 @@ struct r2_forest* r2_graph_bcc(struct r2_graph *graph)
         r2_int64 *state  =  malloc(sizeof(r2_int64) * graph->nvertices);
         r2_dbl *low = malloc(sizeof(r2_dbl) * graph->nvertices); 
         r2_dbl *pre = malloc(sizeof(r2_dbl) * graph->nvertices);
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
-        struct r2_arrstack *edges = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
+        struct r2_arrstack *edges = r2_create_arrstack(0, NULL, NULL, NULL);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .80, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
         struct r2_list  *tree = r2_create_list(NULL, NULL, NULL);
         struct r2_graph *bcc  = NULL; 
@@ -3056,10 +3056,10 @@ struct r2_forest* r2_graph_bcc(struct r2_graph *graph)
                         free(low);
 
                 if(stack != NULL)
-                        r2_arrstack_destroy_stack(stack);
+                        r2_destroy_arrstack(stack);
 
                 if(edges != NULL)
-                        r2_arrstack_destroy_stack(edges);
+                        r2_destroy_arrstack(edges);
                 
                 if(FAILED == TRUE && tree != NULL){
                         head = r2_listnode_first(tree);
@@ -3205,7 +3205,7 @@ r2_uint16 r2_graph_is_biconnected(struct r2_graph *graph)
         r2_int64 *state  =  malloc(sizeof(r2_int64) * graph->nvertices);
         r2_dbl *low = malloc(sizeof(r2_dbl) * graph->nvertices); 
         r2_dbl *pre = malloc(sizeof(r2_dbl) * graph->nvertices);
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
         if(state == NULL || low == NULL || pre == NULL || stack == NULL || processed == NULL || graph->nvertices == 0){
                 FAILED = TRUE; 
@@ -3329,7 +3329,7 @@ r2_uint16 r2_graph_is_biconnected(struct r2_graph *graph)
                         free(low);
 
                 if(stack != NULL)
-                        r2_arrstack_destroy_stack(stack);
+                        r2_destroy_arrstack(stack);
                 
         return BICONNECTED == 1 || BICONNECTED == 0;
 }
@@ -3348,7 +3348,7 @@ struct r2_list* r2_graph_articulation_points(struct r2_graph *graph)
         r2_int64 *state  =  malloc(sizeof(r2_int64) * graph->nvertices);
         r2_dbl *low = malloc(sizeof(r2_dbl) * graph->nvertices); 
         r2_dbl *pre = malloc(sizeof(r2_dbl) * graph->nvertices);
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
         if(state == NULL || low == NULL || pre == NULL || stack == NULL || processed == NULL || graph->nvertices == 0 || artpoints == NULL){
                 FAILED = TRUE; 
@@ -3507,7 +3507,7 @@ struct r2_list* r2_graph_articulation_points(struct r2_graph *graph)
                         free(low);
 
                 if(stack != NULL)
-                        r2_arrstack_destroy_stack(stack);
+                        r2_destroy_arrstack(stack);
 
                 if(FAILED == TRUE && artpoints != NULL)
                         artpoints = r2_destroy_list(artpoints);
@@ -3527,7 +3527,7 @@ struct r2_list* r2_graph_bridges(struct r2_graph *graph)
         r2_int64 *state  =  malloc(sizeof(r2_int64) * graph->nvertices);
         r2_dbl *low = malloc(sizeof(r2_dbl) * graph->nvertices); 
         r2_dbl *pre = malloc(sizeof(r2_dbl) * graph->nvertices);
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         struct r2_robintable *processed = r2_create_robintable(1, 1, 0, 0, .75, graph->vcmp, NULL, NULL, NULL, NULL, NULL);
         struct r2_list *bridges = r2_create_list(NULL, NULL, NULL);
         if(state == NULL || low == NULL || pre == NULL || stack == NULL || processed == NULL || bridges == NULL || graph->nvertices == 0){
@@ -3652,7 +3652,7 @@ struct r2_list* r2_graph_bridges(struct r2_graph *graph)
                         free(low);
 
                 if(stack != NULL)
-                        r2_arrstack_destroy_stack(stack);
+                        r2_destroy_arrstack(stack);
                 
                 if(FAILED == TRUE && bridges != NULL)
                         bridges = r2_destroy_list(bridges);

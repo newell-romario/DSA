@@ -19,7 +19,7 @@ static void test_r2_arrstack_init_data()
  * @brief      Tests the create functionality of the stack.
  * 
  */
-static void test_r2_arrstack_create_stack()
+static void test_r2_create_arrstack()
 {
         struct r2_arrstack *stack = NULL; 
         /**
@@ -27,7 +27,7 @@ static void test_r2_arrstack_create_stack()
          * 
          */
         for(int i = 32; i < 4096; i <<= 2){
-                stack = r2_arrstack_create_stack(i, NULL, NULL, NULL); 
+                stack = r2_create_arrstack(i, NULL, NULL, NULL); 
                 assert(r2_arrstack_empty(stack) == TRUE); 
                 assert(stack->top == 0);
                 assert(stack->cmp == NULL); 
@@ -35,7 +35,7 @@ static void test_r2_arrstack_create_stack()
                 assert(stack->fd  ==  NULL);
                 assert(stack->ssize == i);
                 assert(stack->data != NULL);
-                r2_arrstack_destroy_stack(stack);
+                r2_destroy_arrstack(stack);
         }
 }
 
@@ -43,10 +43,10 @@ static void test_r2_arrstack_create_stack()
  * @brief       Test the destroy functionality of the stack.
  * 
  */
-static void test_r2_arrstack_destroy_stack()
+static void test_r2_destroy_arrstack()
 {
-        struct r2_arrstack  *stack = r2_arrstack_create_stack(SIZE, NULL, NULL, NULL); 
-        assert(r2_arrstack_destroy_stack(stack) == NULL);        
+        struct r2_arrstack  *stack = r2_create_arrstack(SIZE, NULL, NULL, NULL); 
+        assert(r2_destroy_arrstack(stack) == NULL);        
 }
 
 /**
@@ -55,13 +55,13 @@ static void test_r2_arrstack_destroy_stack()
  */
 static void test_r2_arrstack_push()
 {
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL); 
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL); 
         for(int i = 0; i < SIZE; ++i){
                 r2_arrstack_push(stack, &arr[i]);
                 assert(r2_arrstack_top(stack) == &arr[i]); 
                 assert(stack->ncount == (i + 1));
         }
-        r2_arrstack_destroy_stack(stack);
+        r2_destroy_arrstack(stack);
 }
 
 /**
@@ -70,7 +70,7 @@ static void test_r2_arrstack_push()
  */
 static void test_r2_arrstack_pop()
 {
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
                 r2_arrstack_push(stack, &arr[i]);
         
@@ -84,7 +84,7 @@ static void test_r2_arrstack_pop()
                 r2_arrstack_pop(stack);
         }
         assert(r2_arrstack_empty(stack) == TRUE);
-        r2_arrstack_destroy_stack(stack);
+        r2_destroy_arrstack(stack);
 }
 
 /**
@@ -93,12 +93,12 @@ static void test_r2_arrstack_pop()
  */
 static void test_r2_arrstack_top()
 {
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         for(int i = 0; i < SIZE; ++i){
                 r2_arrstack_push(stack, &arr[i]);
                 assert(r2_arrstack_top(stack) == &arr[i]);
         }
-        r2_arrstack_destroy_stack(stack);
+        r2_destroy_arrstack(stack);
 }
 
 /**
@@ -107,14 +107,14 @@ static void test_r2_arrstack_top()
  */
 static void test_r2_arrstack_empty()
 {
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         assert(r2_arrstack_empty(stack) == TRUE); 
 
         for(int i = 0 ; i < SIZE; ++i)
                 r2_arrstack_push(stack, &arr[i]);
 
         assert(r2_arrstack_empty(stack) != TRUE); 
-        r2_arrstack_destroy_stack(stack);
+        r2_destroy_arrstack(stack);
 }
 
 /**
@@ -123,12 +123,12 @@ static void test_r2_arrstack_empty()
  */
 static void test_r2_arrstack_full()
 {
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         for(int i = 0; i < SIZE; ++i)
                 r2_arrstack_push(stack, &arr[i]);
         
         assert(r2_arrstack_full(stack) == TRUE); 
-        r2_arrstack_destroy_stack(stack);
+        r2_destroy_arrstack(stack);
 }
 
 static void *cpy(const void *data)
@@ -154,7 +154,7 @@ static r2_int16 cmp(const void *d1, const void *d2)
  */
 static void test_r2_arrstack_compare()
 {
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         
         /*Shallow comparison*/
         assert(r2_arrstack_compare(stack, stack) == TRUE);
@@ -185,8 +185,8 @@ static void test_r2_arrstack_compare()
         copy->cmp  = cmp;
         assert(r2_arrstack_compare(stack, copy) == TRUE);
 
-        r2_arrstack_destroy_stack(stack);
-        r2_arrstack_destroy_stack(copy);
+        r2_destroy_arrstack(stack);
+        r2_destroy_arrstack(copy);
 }
 
 
@@ -198,7 +198,7 @@ static void test_r2_arrstack_compare()
  */
 static void test_r2_arrstack_copy()
 {
-        struct r2_arrstack *stack = r2_arrstack_create_stack(0, NULL, NULL, NULL);
+        struct r2_arrstack *stack = r2_create_arrstack(0, NULL, NULL, NULL);
         struct r2_arrstack *dest  = r2_arrstack_copy(stack); 
         
         /*Shallow comparison.*/
@@ -208,7 +208,7 @@ static void test_r2_arrstack_copy()
         /*Deep comparison*/
         stack->cmp = cmp;
         assert(r2_arrstack_compare(stack, dest) == TRUE);
-        r2_arrstack_destroy_stack(dest);
+        r2_destroy_arrstack(dest);
         
         for(int i = 0; i < SIZE; ++i)
                 r2_arrstack_push(stack, &arr[i]);
@@ -222,7 +222,7 @@ static void test_r2_arrstack_copy()
         stack->cmp = cmp;
         dest->cmp  = cmp;
         assert(r2_arrstack_compare(stack, dest) == TRUE);
-        r2_arrstack_destroy_stack(dest);
+        r2_destroy_arrstack(dest);
         
         /*Shallow comparison after deep copy*/
         stack->cpy = cpy;
@@ -235,8 +235,8 @@ static void test_r2_arrstack_copy()
         dest->cmp  = cmp;
         assert(r2_arrstack_compare(stack, dest) == TRUE);
         
-        r2_arrstack_destroy_stack(stack);
-        r2_arrstack_destroy_stack(dest);
+        r2_destroy_arrstack(stack);
+        r2_destroy_arrstack(dest);
 }
 
 
@@ -248,8 +248,8 @@ static void test_r2_arrstack_copy()
 void test_r2_arrstack_run()
 {
         test_r2_arrstack_init_data();
-        test_r2_arrstack_create_stack();
-        test_r2_arrstack_destroy_stack();
+        test_r2_create_arrstack();
+        test_r2_destroy_arrstack();
         test_r2_arrstack_push();
         test_r2_arrstack_pop();
         test_r2_arrstack_top();

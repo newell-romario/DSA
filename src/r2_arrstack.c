@@ -15,7 +15,7 @@ static r2_uint16 r2_arrstack_resize(struct r2_arrstack *, r2_uint64);
  * @param cmp                   A callback comparison function compares item on the stack.
  * @return struct r2_arrstack*  Returns an empty stack, otherwise NULL.
  */
-struct r2_arrstack* r2_arrstack_create_stack(r2_uint64 size, r2_fd fd, r2_cpy cpy, r2_cmp cmp)
+struct r2_arrstack* r2_create_arrstack(r2_uint64 size, r2_fd fd, r2_cpy cpy, r2_cmp cmp)
 {
         struct r2_arrstack *stack  = malloc(sizeof(struct r2_arrstack));
         if(stack != NULL){
@@ -42,7 +42,7 @@ struct r2_arrstack* r2_arrstack_create_stack(r2_uint64 size, r2_fd fd, r2_cpy cp
  * @param stack                 Stack.
  * @return struct r2_arrstack*  Returns NULL upon successfully destruction.
  */
-struct r2_arrstack*  r2_arrstack_destroy_stack(struct r2_arrstack *stack)
+struct r2_arrstack*  r2_destroy_arrstack(struct r2_arrstack *stack)
 {
         if(stack->fd != NULL){
                 for(r2_uint64 i = 0; i < stack->ncount; ++i)
@@ -197,13 +197,13 @@ r2_uint16 r2_arrstack_compare(const struct r2_arrstack *s1, const struct r2_arrs
  */
 struct r2_arrstack* r2_arrstack_copy(const struct r2_arrstack *source)
 {
-        struct r2_arrstack *dest = r2_arrstack_create_stack(source->ssize, source->fd, source->cpy, source->cmp);
+        struct r2_arrstack *dest = r2_create_arrstack(source->ssize, source->fd, source->cpy, source->cmp);
         if(dest != NULL){
                 for(r2_uint64 i = 0; i < source->ncount; ++i){
                         if(source->cpy != NULL && dest->data[i] != NULL){
                                 dest->data[i] = source->cpy(source->data[i]);
                                 if(dest->data[i]  == NULL){
-                                        dest = r2_arrstack_destroy_stack(dest);
+                                        dest = r2_destroy_arrstack(dest);
                                         break;
                                 }
                         }
