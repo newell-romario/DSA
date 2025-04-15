@@ -4,6 +4,7 @@
 
 /********************File scope functions************************/
 static void r2_freenode(struct r2_stacknode *, r2_fd);
+static struct r2_stacknode* r2_create_stacknode();
 /********************File scope functions************************/
 
 
@@ -26,7 +27,6 @@ struct r2_stack* r2_create_stack(r2_cmp cmp, r2_cpy cpy, r2_fd fd)
                 stack->fd       = fd; 
                 stack->cpy      = cpy;
         }
-
         return stack; 
 }
 
@@ -42,7 +42,6 @@ struct r2_stacknode* r2_create_stacknode()
                 node->data = NULL;
                 node->next = NULL;
         }
-
         return node; 
 }
 

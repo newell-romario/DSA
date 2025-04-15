@@ -27,13 +27,12 @@ struct r2_stack{
 
 
 
-struct r2_stack*         r2_create_stack(r2_cmp, r2_cpy, r2_fd);
-struct r2_stacknode*     r2_create_stacknode();
-struct r2_stack*         r2_destroy_stack(struct r2_stack *);
-r2_uint16                r2_stack_push(struct r2_stack *,void *);
-r2_uint16                r2_stack_pop(struct r2_stack *);
-struct r2_stacknode*     r2_stack_peek(const struct r2_stack *);
-r2_int16                 r2_stack_empty(const struct r2_stack *);
-struct r2_stack*         r2_stack_copy(const struct r2_stack *);
-r2_uint16                r2_stack_compare(const struct r2_stack *, const struct r2_stack*);
+struct r2_stack*  r2_create_stack(r2_cmp, r2_cpy, r2_fd);
+struct r2_stack*  r2_destroy_stack(struct r2_stack *);
+r2_uint16  r2_stack_push(struct r2_stack *,void *);
+r2_uint16  r2_stack_pop(struct r2_stack *);
+struct r2_stacknode*   r2_stack_peek(const struct r2_stack *);
+r2_int16 r2_stack_empty(const struct r2_stack *);
+struct r2_stack*   r2_stack_copy(const struct r2_stack *);
+r2_uint16 r2_stack_compare(const struct r2_stack *, const struct r2_stack*);
 #endif

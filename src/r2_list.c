@@ -3,6 +3,7 @@
 
 /********************File scope functions************************/
 static void r2_freenode(struct r2_listnode *, r2_fd);
+struct r2_listnode* r2_create_listnode(); 
 /********************File scope functions************************/
 
 /**
