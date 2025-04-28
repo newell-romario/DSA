@@ -6,7 +6,7 @@ static void r2_freenode(struct r2_queuenode *, r2_fd);
 /********************File scope functions************************/
 
 /**
- * @brief              Returns an empty queue.
+ * @brief              Creates an empty queue.
  * 
  * @param  cmp         A comparison callback function.
  * @param  cpy         A callback function to copy values.
@@ -28,7 +28,7 @@ struct r2_queue*  r2_create_queue(r2_cmp cmp, r2_cpy cpy, r2_fd fd)
 }
 
 /**
- * @brief                    Returns an emtpy node.
+ * @brief                    Creates an emtpy node.
  * 
  * @return r2_queuenode*     Returns an emtpy node, else NULL.
  */
@@ -67,7 +67,7 @@ struct r2_queue* r2_destroy_queue(struct r2_queue *queue)
  * @brief                       Enqueues an element.
  *                              
  * @param queue                 Queue.
- * @param data                  Data stored. 
+ * @param data                  Data. 
  * @return r2_uint16            Returns TRUE upon succesful insertion, else FALSE.
  */
 r2_uint16 r2_queue_enqueue(struct r2_queue*queue, void *data)
@@ -93,7 +93,7 @@ r2_uint16 r2_queue_enqueue(struct r2_queue*queue, void *data)
  * @brief                       Dequeues an element.
  *                              
  * @param queue                 Queue.
- * @return r2_uint16            Returns TRUE upon succesful insertion, else FALSE.
+ * @return r2_uint16            Returns TRUE upon succesful deletion, else FALSE.
  */
 r2_uint16  r2_queue_dequeue(struct r2_queue *queue)
 {
@@ -146,8 +146,9 @@ r2_uint16 r2_queue_empty(const struct r2_queue *queue)
 
 
 /**
- * @brief                      Makes a copy of the queue. 
- * 
+ * @brief                      Copies a queue. 
+ *                             This function can do either a shallow or deep copy based on whether 
+ *                             cpy was set. If cpy is set then it's a deep copy, else shallow copy.
  * @param source               Source.
  * @return struct r2_queue*    Returns the copy of the queue.
  */
@@ -185,8 +186,10 @@ struct r2_queue* r2_queue_copy(const struct r2_queue *source)
 }
 
 /**
- * @brief                       Compares two queues.
- * 
+ * @brief                       Compare  queues.
+ *                              
+ *                              This function can do either a shallow or deep comparison based on whether 
+ *                              cmp was set. If cmp is set then it's a deep comparison, else shallow comparison.
  * @param q1                    Queue 1.
  * @param q2                    Queue 2.
  * @return r2_uint16            Returns TRUE or FALSE based on equality.

@@ -7,7 +7,7 @@ struct r2_listnode* r2_create_listnode();
 /********************File scope functions************************/
 
 /**
- * @brief                       Creates a node and returns it to the user. 
+ * @brief                       Creates a empty node. 
  * 
  * @return struct r2_listnode*  Returns a list node, else NULL.
  */
@@ -24,8 +24,8 @@ struct r2_listnode* r2_create_listnode()
 }
 
 /**
- * @brief                       Returns the node at position POS in the list.
- *                              Indexing begins at zero (0) i.e. the  first node is at index zero.
+ * @brief                       Returns the node at position pos in the list.
+ *                              Indexing begins at zero.
  * 
  * @param list                  List. 
  * @param pos                   Position. 
@@ -190,7 +190,7 @@ r2_uint16 r2_list_insert_after(struct r2_list *list, struct r2_listnode *pos, vo
 }
 
 /**
- * @brief                       Inserts an element before position pos. 
+ * @brief                       Inserts an element before position POS. 
  * 
  * @param list                  List.
  * @param pos                   Position.
@@ -270,7 +270,7 @@ r2_uint16 r2_list_delete_at_back(struct r2_list *list)
 }
 
 /**
- * @brief                       Removes an element at pos.
+ * @brief                       Removes an element at POS.
  * 
  * @param list                  List. 
  * @param pos                   Position.
@@ -298,8 +298,9 @@ r2_uint16 r2_list_delete(struct r2_list *list, struct r2_listnode *pos)
 }
 
 /**
- * @brief                       This function makes a copy of the list and returns it.
- * 
+ * @brief                       Copies a list.
+ *                              This function can do either a shallow or deep copy based on whether 
+ *                              cpy was set. If cpy is set then it's a deep copy, else shallow copy.
  * @param source                Source.
  * @return struct r2_list*      Returns a copy, else NULL.
  */
@@ -337,8 +338,10 @@ struct r2_list* r2_list_copy(const struct r2_list *source)
 }
 
 /**
- * @brief                       Compares two list. 
- * 
+ * @brief                       Compare lists. 
+ *
+ *                              This function can do either a shallow or deep comparison based on whether 
+ *                              cmp was set. If cmp is set then it's a deep comparison, else shallow comparison.                              
  * @param l1                    List 1
  * @param l2                    List 2
  * @return r2_uint16            Returns TRUE if lists are equal, otherwise FALSE.

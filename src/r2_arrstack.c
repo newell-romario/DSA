@@ -107,7 +107,6 @@ r2_uint16 r2_arrstack_pop(struct r2_arrstack *stack)
  * @brief               Returns the top of the stack.
  *                       
  *                            
- * 
  * @param stack         Stack.
  * @return void*        Returns the data, else NULL.
  */
@@ -161,8 +160,9 @@ static r2_uint16 r2_arrstack_resize(struct r2_arrstack *stack, r2_uint64 size)
 
 
 /**
- * @brief               Compares two stack.
- *                      Please ensure cmp field is set for s1 before comparison.
+ * @brief               Compares stacks.
+ *                      This function can do either a shallow or deep comparison based on whether 
+ *                      cmp was set. If cmp is set then it's a deep comparison, else shallow comparison.
  * @param s1            Stack 1
  * @param s2            Stack 2
  * @return r2_uint16    Returns TRUE if both stack are equal, otherwise FALSE.
@@ -188,10 +188,9 @@ r2_uint16 r2_arrstack_compare(const struct r2_arrstack *s1, const struct r2_arrs
 }
 
 /**
- * @brief                       Returns a copy of the stack. 
- *                              This function can do a shallow/deep copy based on if the 
- *                              cpy was set. If cpy is set then it's a deep copy,
- *                              else shallow copy.
+ * @brief                       Copies stack. 
+ *                              This function can do either a shallow or deep copy based on whether 
+ *                              cpy was set. If cpy is set then it's a deep copy, else shallow copy.
  * @param source                Stack.
  * @return struct r2_arrstack*  Returns a copy of the stack. 
  */
