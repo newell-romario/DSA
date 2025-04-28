@@ -3,7 +3,6 @@
 #include "../src/r2_queue.h"
 
 static void test_r2_create_queue();
-static void test_r2_create_queuenode();
 static void test_r2_destroy_queue();
 static void test_r2_queue_enqueue();
 static void test_r2_queue_dequeue();

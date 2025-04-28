@@ -28,20 +28,20 @@ struct r2_list{
         r2_fd  fd;/*A callback function that release memory*/
 }; 
 
-struct r2_listnode* r2_create_listnode(); 
+
 struct r2_listnode* r2_listnode_at(const struct r2_list *, r2_uint64);
 struct r2_listnode* r2_listnode_first(const struct r2_list *); 
 struct r2_listnode* r2_listnode_last(const struct r2_list *);
-struct r2_list*     r2_create_list(r2_cmp, r2_cpy, r2_fd); 
-struct r2_list*     r2_destroy_list(struct r2_list *);
-r2_uint16     r2_list_insert_at_front(struct r2_list *, void*); 
-r2_uint16     r2_list_insert_at_back(struct r2_list *, void*); 
-r2_uint16     r2_list_insert_after(struct r2_list *, struct r2_listnode *, void *);
-r2_uint16     r2_list_insert_before(struct r2_list *, struct r2_listnode *, void *);
-r2_uint16     r2_list_delete_at_front(struct r2_list *); 
-r2_uint16     r2_list_delete_at_back(struct r2_list *);
-r2_uint16     r2_list_delete(struct r2_list *, struct r2_listnode *);
-struct r2_list*     r2_list_copy(const struct r2_list *); 
-r2_uint16           r2_list_compare(const struct r2_list *, const struct r2_list *);     
+struct r2_list*  r2_create_list(r2_cmp, r2_cpy, r2_fd); 
+struct r2_list*  r2_destroy_list(struct r2_list *);
+r2_uint16  r2_list_insert_at_front(struct r2_list *, void*); 
+r2_uint16  r2_list_insert_at_back(struct r2_list *, void*); 
+r2_uint16  r2_list_insert_after(struct r2_list *, struct r2_listnode *, void *);
+r2_uint16  r2_list_insert_before(struct r2_list *, struct r2_listnode *, void *);
+r2_uint16  r2_list_delete_at_front(struct r2_list *); 
+r2_uint16  r2_list_delete_at_back(struct r2_list *);
+r2_uint16  r2_list_delete(struct r2_list *, struct r2_listnode *);
+struct r2_list* r2_list_copy(const struct r2_list *); 
+r2_uint16  r2_list_compare(const struct r2_list *, const struct r2_list *);     
 r2_uint16 r2_list_empty(const struct r2_list *);
 #endif

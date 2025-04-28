@@ -29,18 +29,7 @@ static void test_r2_create_stack(){
         r2_destroy_stack(stack);
 }
 
-/**
- * @brief Tests the correctness of create function for a node.
- * 
- */
-static void test_r2_create_stacknode()
-{
-        struct r2_stacknode *node = r2_create_stacknode();
-        assert(node != NULL);
-        assert(node->data == NULL);
-        assert(node->next == NULL);
-        free(node);
-}
+
 
 /**
  * @brief Tests the correctness of the destroy function for the stack.
@@ -281,7 +270,6 @@ void test_r2_stack_run()
 {
         test_init_data();
         test_r2_create_stack();
-        test_r2_create_stacknode();
         test_r2_destroy_stack();
         test_r2_stack_push();
         test_r2_stack_peek();

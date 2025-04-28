@@ -4,12 +4,13 @@
 
 /********************File scope functions************************/
 static void r2_freenode(struct r2_stacknode *, r2_fd);
+static struct r2_stacknode* r2_create_stacknode();
 /********************File scope functions************************/
 
 
 
 /**
- * @brief                This function creates an empty stack. 
+ * @brief                Creates an empty stack. 
  * 
  * @param cmp            A callback comparison function.
  * @param cpy            A callback copy function.
@@ -26,12 +27,11 @@ struct r2_stack* r2_create_stack(r2_cmp cmp, r2_cpy cpy, r2_fd fd)
                 stack->fd       = fd; 
                 stack->cpy      = cpy;
         }
-
         return stack; 
 }
 
 /**
- * @brief                    This function creates an empty node and returns it to the caller.
+ * @brief                    Creates an empty stacknode.
  * 
  * @return r2_stacknode*     Returns an empty node, else NULL. 
  */
@@ -42,7 +42,6 @@ struct r2_stacknode* r2_create_stacknode()
                 node->data = NULL;
                 node->next = NULL;
         }
-
         return node; 
 }
 
@@ -136,8 +135,9 @@ r2_int16 r2_stack_empty(const struct r2_stack *stack)
 
 
 /**
- * @brief                       Makes a copy of stack.
- * 
+ * @brief                       Copies a stack.
+ *                              This function can do either a shallow or deep copy based on whether 
+ *                              cpy was set. If cpy is set then it's a deep copy, else shallow copy.
  * @param source                Stack. 
  * @return struct r2_stack*     Returns the copy of the stack.
  */
@@ -169,8 +169,10 @@ struct r2_stack* r2_stack_copy(const struct r2_stack *source)
 }
 
 /**
- * @brief              Compares two stack.
- * 
+ * @brief              Compare stacks.
+ *                     
+ *                     This function can do either a shallow or deep comparison based on whether 
+ *                     cmp was set. If cmp is set then it's a deep comparison, else shallow comparison. 
  * @param s1           Stack 1.
  * @param s2           Stack 2.
 
@@ -181,8 +183,6 @@ r2_uint16  r2_stack_compare(const struct r2_stack *s1, const struct r2_stack *s2
         r2_uint16 result = FALSE;
         if(s1->ssize != s2->ssize)
                 return result; 
-        
-        
 
         if(r2_stack_empty(s1) != TRUE && r2_stack_empty(s2) != TRUE && s1->ssize == s2->ssize){
                 

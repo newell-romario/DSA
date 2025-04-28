@@ -1,8 +1,8 @@
 #ifndef ARRAY_STACK_TEST_H_
 #define ARRAY_STACK_TEST_H_
 #include "../src/r2_arrstack.h"
-static void test_r2_arrstack_create_stack();
-static void test_r2_arrstack_destroy_stack();
+static void test_r2_create_arrstack();
+static void test_r2_destroy_arrstack();
 static void test_r2_arrstack_push();
 static void test_r2_arrstack_pop();
 static void test_r2_arrstack_top();

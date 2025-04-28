@@ -33,17 +33,6 @@ static void test_r2_create_queue()
         r2_destroy_queue(queue);
 }
 
-/**
- * @brief Tests the create queue node functionality
- * 
- **/
-static void test_r2_create_queuenode()
-{
-        struct r2_queuenode * node = r2_create_queuenode();
-        assert(node->data == NULL);
-        assert(node->next == NULL);
-        free(node);
-}
 
 /**
  * @brief Tests the destroy functionality.
@@ -304,7 +293,7 @@ void test_r2_queue_run()
 {
         test_init_data();
         test_r2_create_queue();
-        test_r2_create_queuenode();
+        //test_r2_create_queuenode();
         test_r2_destroy_queue();
         test_r2_queue_compare();
         test_r2_queue_dequeue();
