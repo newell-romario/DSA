@@ -40,7 +40,7 @@ struct r2_vertex{
         struct r2_list *elist;/*contains all the edges for this vertex*/
         struct r2_robintable *edges;/*edges*/
         struct r2_robintable *vat;/*vertex attributes*/ 
-        r2_uint16 nat;/*mirors nat attribute in graph*/ 
+        r2_uint16 nat;/*mirrors nat attribute in graph*/ 
         r2_uint64 nedges;/*number of edges*/     
 };
 
@@ -122,5 +122,7 @@ struct r2_graph* r2_graph_shortest_dag(struct r2_graph *, r2_uc *,  r2_uint64, r
 r2_dbl r2_graph_dist_from_source(struct r2_graph *, r2_uc *, r2_uint64);
 struct r2_graph* r2_graph_mst_kruskal(struct r2_graph *, r2_weight);
 struct r2_graph* r2_graph_mst_prim(struct r2_graph *, r2_weight);
+struct r2_graph* r2_graph_copy(const struct r2_graph *);
+struct r2_graph* r2_graph_transitive_closure(const struct r2_graph *);
 /*************************************************Graph Algorithms*******************************************/
 #endif 

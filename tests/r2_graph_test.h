@@ -48,5 +48,7 @@ static void test_r2_graph_dag_shortest();
 static void test_r2_graph_prim_mst();
 static void test_r2_graph_kruskal_mst();
 static void test_r2_graph_stats();
+static void test_r2_graph_copy();
+static void test_r2_transitive_closure();
 void test_r2_graph_run();
 #endif

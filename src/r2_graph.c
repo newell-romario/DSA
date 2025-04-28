@@ -4496,3 +4496,100 @@ r2_dbl r2_graph_dist_from_source(struct r2_graph *graph, r2_uc *source, r2_uint6
         r2_dbl *dist = r2_vertex_get_attributes(src,"0xdfs", 5, vat_cmp); 
         return  *dist;
 }
+
+/**
+ * @brief                   Creates copy of graph.
+ * 
+ * @param graph             Graph.
+ * @return struct r2_graph* Returns copy of graph, else NULL.
+ */
+struct r2_graph* r2_graph_copy(const struct r2_graph *graph)
+{
+        struct r2_graph *copy = r2_create_graph(graph->vcmp, graph->gcmp, graph->fv, graph->fk, graph->fd);
+        struct r2_robintable *att[3] = {NULL};
+        copy->nat = TRUE; 
+        copy->gat = graph->gat;
+        if(copy != NULL){
+                struct r2_vertex *src   = NULL; 
+                struct r2_vertex *dest  = NULL;
+                struct r2_edge *edge    = NULL; 
+                struct r2_listnode *head = r2_listnode_first(graph->elist); 
+                while(head != NULL){
+                        edge = head->data; 
+                        src  = edge->src; 
+                        dest = edge->dest; 
+                        att[0] = edge->eat;
+                        att[1] = src->vat;
+                        att[2] = dest->vat;
+                        if(r2_graph_add_edge(copy, src->vkey, src->len, dest->vkey, dest->len) != TRUE){
+                                copy = r2_destroy_graph(copy);
+                                break;
+                        }
+                        
+                        src  = r2_graph_get_vertex(copy, src->vkey, src->len);
+                        dest = r2_graph_get_vertex(copy, dest->vkey, dest->len);
+                        edge = r2_graph_get_edge(copy, src->vkey, src->len, dest->vkey, dest->len); 
+                        edge->eat = att[0];
+                        src->vat  = att[1];
+                        dest->vat = att[2];
+                        head = head->next;
+                } 
+        }
+
+        return copy;
+}
+
+/**
+ * @brief                       Creates transitive closure of graph.
+ *                              
+ * @param graph                 Graph.
+ * @return struct r2_graph*     Returns transitive closure of graph, else NULL.
+ */
+struct r2_graph* r2_graph_transitive_closure(const struct r2_graph *graph)
+{
+        r2_uint16 FAILED  = FALSE;
+        struct r2_graph *closure  = r2_graph_copy(graph); 
+        if(closure == NULL){
+                FAILED = TRUE; 
+                goto CLEANUP;
+        }
+
+        struct r2_vertex *src  = NULL;  
+        struct r2_vertex *dest = NULL; 
+        struct r2_vertex *con  = NULL; 
+        struct r2_listnode *head[3] = {NULL, NULL, NULL};
+
+        for(head[0] = r2_listnode_first(closure->vlist); head[0] != NULL; head[0] = head[0]->next){
+                con = head[0]->data;
+                for(head[1] = r2_listnode_first(closure->vlist); head[1] != NULL; head[1] = head[1]->next){
+                        src = head[1]->data;
+                        for(head[2] = r2_listnode_first(closure->vlist); head[2] != NULL; head[2] = head[2]->next){
+                                dest = head[2]->data;
+                                if(src == dest){
+                                        if(r2_graph_add_edge(closure, src->vkey, src->len, src->vkey, src->len) != TRUE){
+                                                FAILED = TRUE; 
+                                                goto CLEANUP;
+                                        }
+                                        continue;
+                                }
+
+                                if(r2_graph_get_edge(closure, src->vkey, src->len, dest->vkey, dest->len) != NULL || 
+                                (r2_graph_get_edge(closure, src->vkey, src->len, con->vkey, con->len) != NULL && 
+                                r2_graph_get_edge(closure, con->vkey, con->len, dest->vkey, dest->len) != NULL)){
+                                        if(r2_graph_add_edge(closure, src->vkey, src->len, dest->vkey, dest->len) != TRUE){
+                                                FAILED = TRUE; 
+                                                goto CLEANUP;
+                                        }
+                                        continue;     
+                                }
+                        }
+                }
+        }
+          
+
+        CLEANUP:
+                if(FAILED == TRUE)
+                        closure = r2_destroy_graph(closure);
+
+        return closure;
+}
