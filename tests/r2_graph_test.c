@@ -3064,6 +3064,111 @@ static void test_r2_graph_kruskal_mst()
         r2_destroy_graph(graph);
 }
 
+/**
+ * @brief Test graph copy.
+ * 
+ */
+static void test_r2_graph_copy()
+{
+       struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
+       FILE *fp = fopen("facebook_combined.txt" , "r");
+       r2_uint64 a;
+       r2_uint64 b;
+       r2_uint64 *src; 
+       r2_uint64 *dest; 
+       while(fscanf(fp, "%lld\t%lld", &a, &b) == 2){
+                printf("\n%lld=>%lld", a, b); 
+                src  = malloc(sizeof(r2_uint64));
+                dest = malloc(sizeof(r2_uint64));
+                *src = a; 
+                *dest= b;
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+                assert(r2_graph_get_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) != NULL);    
+       }
+
+       struct r2_graph *copy = r2_graph_copy(graph);
+       struct r2_vertex *u = NULL; 
+       struct r2_vertex *v = NULL;
+       struct r2_listnode *head = r2_listnode_first(graph->vlist);
+       while(head != NULL){
+                u = head->data;
+                v = r2_graph_get_vertex(copy, u->vkey, u->len);
+                assert(v != NULL); 
+                assert(u->vat == v->vat);
+                head = head->next;
+       }
+
+       struct r2_edge *edge = NULL;
+       head  = r2_listnode_first(graph->elist); 
+       while(head != NULL){
+                edge = head->data;
+                u = edge->src; 
+                v = edge->dest; 
+                assert(r2_graph_get_edge(copy, u->vkey, u->len, v->vkey, v->len) != NULL);
+                assert(r2_graph_get_edge(copy, u->vkey, u->len, v->vkey, v->len)->eat == edge->eat);
+                head = head->next;
+       }
+
+       assert(graph->nvertices == copy->nvertices); 
+       assert(graph->nedges == copy->nedges); 
+       assert(graph->gat == copy->gat);
+       fclose(fp);
+       r2_destroy_graph(copy); 
+       r2_destroy_graph(graph);
+}
+
+/**
+ * @brief Test transitive closure.
+ * 
+ */
+static void test_r2_transitive_closure()
+{
+        struct r2_graph *graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
+        r2_uint64 edges[][2] = {
+                {1, 2}, 
+                {1, 3}, 
+                {2, 4}, 
+                {2, 5}, 
+                {3, 1}, 
+                {3, 6}, 
+                {4, 6}, 
+                {4, 3}, 
+                {6, 5}
+        };
+
+        for(r2_uint64 i = 0; i < 9; ++i)
+                r2_graph_add_edge(graph, (r2_uc *)&edges[i][0], sizeof(r2_uint64), (r2_uc *)&edges[i][1], sizeof(r2_uint64));
+
+        printf("\n---------------------------Closure----------------------");
+        print_graph(graph);
+        struct r2_graph *closure = r2_graph_transitive_closure(graph);
+        printf("\n---------------------------Graph Closure----------------------");
+        print_graph(closure);
+        r2_destroy_graph(closure);
+        r2_destroy_graph(graph); 
+
+
+        graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
+        FILE *fp = fopen("CA-GrQc.txt" , "r");
+        r2_uint64 a;
+        r2_uint64 b;
+        r2_uint64 *src; 
+        r2_uint64 *dest; 
+        while(fscanf(fp, "%lld\t%lld", &a, &b) == 2){
+                printf("\n%lld=>%lld", a, b); 
+                src  = malloc(sizeof(r2_uint64));
+                dest = malloc(sizeof(r2_uint64));
+                *src = a; 
+                *dest= b;
+                assert(r2_graph_add_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) == TRUE);
+                assert(r2_graph_get_edge(graph, (r2_uc *)src, sizeof(r2_uint64), (r2_uc *)dest, sizeof(r2_uint64)) != NULL);
+        }
+
+        closure = r2_graph_transitive_closure(graph);
+        fclose(fp);
+        r2_destroy_graph(closure);
+        r2_destroy_graph(graph); 
+}
 
 void test_r2_graph_run()
 {
@@ -3103,16 +3208,18 @@ void test_r2_graph_run()
         test_r2_graph_scc();
         test_r2_graph_is_connected();
         test_r2_graph_path_tree();
+        test_r2_graph_copy();
+        test_r2_transitive_closure();
         //test_r2_graph_bcc();
         //test_r2_graph_is_bcc();
         //test_r2_graph_articulation_points();
         //test_r2_graph_bridges();
-       // test_r2_graph_dijkstra();
+        //test_r2_graph_dijkstra();
         //test_r2_graph_bellmanford();
-        test_r2_graph_dag_shortest();
+        //test_r2_graph_dag_shortest();
         //test_r2_graph_prim_mst();
-        test_r2_graph_kruskal_mst();
-        test_r2_graph_stats();
+        //test_r2_graph_kruskal_mst();
+        //test_r2_graph_stats();
 }
 
 

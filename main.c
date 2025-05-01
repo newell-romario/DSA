@@ -35,7 +35,7 @@ int main()
         //test_r2_hashtable_run();
         //test_r2_btree_run(); 
         //test_r2_unionfind_run(); 
-        //test_r2_graph_run();
-        r2_sort_test_run();
+        test_r2_graph_run();
+        //r2_sort_test_run();
         return 0;
 }
