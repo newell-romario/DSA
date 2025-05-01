@@ -3149,7 +3149,7 @@ static void test_r2_transitive_closure()
 
 
         graph = r2_create_graph(vcmp, NULL, NULL, NULL, NULL); 
-        FILE *fp = fopen("Email-EuAll.txt" , "r");
+        FILE *fp = fopen("CA-GrQc.txt" , "r");
         r2_uint64 a;
         r2_uint64 b;
         r2_uint64 *src; 
