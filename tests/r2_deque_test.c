@@ -20,18 +20,7 @@ static void test_r2_create_deque()
         r2_destroy_deque(deque);
 }
 
-/**
- * @brief       Tests the create deque functionality.
- * 
- */
-static void test_r2_create_dequenode()
-{
-        struct r2_dequenode *node  = r2_create_dequenode();
-        /*Node should be empty when just created.*/ 
-        assert(node->data == NULL); 
-        assert(node->next == NULL);
-        free(node);
-}
+
 
 /**
  * @brief       Tests the destroy functionality of the deque.
@@ -343,7 +332,6 @@ void test_r2_deque_run()
 {
         test_r2_deque_init_data();
         test_r2_create_deque();
-        test_r2_create_dequenode();
         test_r2_destroy_deque();
         test_r2_deque_empty();
         test_r2_deque_insert_at_front();

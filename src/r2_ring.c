@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "r2_ring.h"
-
+#include <assert.h>
 /**
  * @brief                       Creates an empty ring buffer.
  * 
@@ -39,7 +39,7 @@ struct r2_ring* r2_create_ring(r2_uint64 rsize, r2_cmp cmp, r2_cpy cpy, r2_fd fd
 struct r2_ring* r2_destroy_ring(struct r2_ring *ring)
 {
         if(ring->fd != NULL){
-                for(r2_uint64 i = ring->front, j = 0; j < ring->ncount; i = (i % ring->rsize),  ++j)
+                for(r2_uint64 i = ring->front, j = 0; j < ring->ncount; i = (i+1)%ring->rsize,  ++j)
                         ring->fd(ring->data[i]);          
         }
 
@@ -50,12 +50,15 @@ struct r2_ring* r2_destroy_ring(struct r2_ring *ring)
 
 /**
  * @brief                     Inserts an element into the ring buffer.  
- * 
+ *                            Overwrites the oldest element if the ring becomes full.
+ *           
+ *                              
  * @param ring                Ring. 
  * @param data                Data.
  */
 void r2_ring_insert(struct r2_ring *ring, void *data)
 {
+        assert(data != NULL);
         if(ring->ncount < ring->rsize){
                 ring->data[ring->rear] = data;
                 ring->rear = (ring->rear + 1) % ring->rsize;
@@ -96,6 +99,7 @@ void* r2_ring_front(const struct r2_ring *ring)
 
 /**
  * @brief               Returns the data at a position pos in the ring.
+ *                      Indexing starts at zero.
  * 
  * @param pos           Position.         
  * @return void*        Returns the data at a posiiton else NULL.
@@ -104,7 +108,7 @@ void* r2_ring_at(const struct r2_ring *ring, r2_uint64 pos)
 {
         void *data = NULL; 
         
-        if(pos < ring->rsize){
+        if(pos < ring->ncount){
                 pos = (ring->front + pos) % ring->rsize;
                 data = ring->data[pos];
         }
@@ -125,6 +129,10 @@ r2_uint16 r2_ring_empty(const struct r2_ring *ring)
 
 /**
  * @brief                       Creates a copy of a ring.
+ *                           
+ *                              This function can do either a shallow or deep copy based on whether 
+ *                              cpy was set. If cpy is set then it's a deep copy, else shallow copy. 
+ *                              Fd should be set when cpy is set.
  * 
  * @param ring                  Ring.
  * @return struct r2_ring*      Returns ring.
@@ -136,14 +144,13 @@ struct r2_ring* r2_ring_copy(const struct r2_ring *ring)
                 copy->front  = ring->front; 
                 copy->rear   = ring->rear;
                 for(r2_uint64 i = 0, j = ring->front; i < ring->ncount; ++i, j = (j + 1) % ring->rsize){
-                        if(ring->cpy != NULL && copy->data[j] != NULL){
+                        if(ring->cpy != NULL){
                                 copy->data[j] = ring->cpy(ring->data[j]);
                                 if(copy->data[j] == NULL){
                                         copy = r2_destroy_ring(copy);
                                         break; 
                                 }
-                        }  
-                        else
+                        }else
                                 copy->data[j] = ring->data[j];
                         copy->ncount++;
                 }
@@ -154,7 +161,9 @@ struct r2_ring* r2_ring_copy(const struct r2_ring *ring)
 
 /**
  * @brief                       Compares two rings.
- * 
+ *                              This function can do either a shallow or deep comparison based on whether 
+ *                              cmp was set. If cmp is set for r1 then it's a deep comparison, else shallow comparison.    
+ *                              
  * @param r1                    Ring 1
  * @param r2                    Ring 2
  * @return r2_uint16            Returns TRUE if both rings are equal, otherwise FALSE.
@@ -162,14 +171,15 @@ struct r2_ring* r2_ring_copy(const struct r2_ring *ring)
 r2_uint16 r2_ring_compare(const struct r2_ring *r1, const struct r2_ring *r2)
 {               
                 r2_uint16 result = FALSE;
+
                 if(r2_ring_empty(r1) == TRUE && r2_ring_empty(r2) == TRUE)
                         result = TRUE;
-                else if(r1->rsize == r2->rsize && r1->ncount == r2->ncount){
-                        for(r2_uint64 i = 0, j = r1->front; i < r1->ncount; ++i, j = (j + 1) % r1->rsize){
+                else if(r1->ncount == r2->ncount){
+                        for(r2_uint64 i = 0, j = r1->front, k = r2->front; i < r1->ncount; ++i, j = (j + 1) % r1->rsize, k= (k + 1) % r2->rsize){
                                 if(r1->cmp != NULL)
-                                        result = r1->cmp(r1->data[j], r2->data[j]) == 0? TRUE : FALSE; 
+                                        result = r1->cmp(r1->data[j], r2->data[k]) == 0? TRUE : FALSE; 
                                 else
-                                        result = r1->data[j] == r2->data[j]? TRUE : FALSE;
+                                        result = r1->data[j] == r2->data[k]? TRUE : FALSE;
                                 
                                 if(result == FALSE)
                                         break;

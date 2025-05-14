@@ -1,6 +1,7 @@
 #include "r2_stack.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 /********************File scope functions************************/
 static void r2_freenode(struct r2_stacknode *, r2_fd);
@@ -76,6 +77,7 @@ struct r2_stack* r2_destroy_stack(struct r2_stack *stack)
  */
 r2_uint16 r2_stack_push(struct r2_stack *stack, void *data)
 {
+        assert(data != NULL);
         struct r2_stacknode *node = r2_create_stacknode(); 
         r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
@@ -136,8 +138,11 @@ r2_int16 r2_stack_empty(const struct r2_stack *stack)
 
 /**
  * @brief                       Copies a stack.
+ *                              
  *                              This function can do either a shallow or deep copy based on whether 
  *                              cpy was set. If cpy is set then it's a deep copy, else shallow copy.
+ *                              Fd should be set when cpy is set.
+ * 
  * @param source                Stack. 
  * @return struct r2_stack*     Returns the copy of the stack.
  */
@@ -171,11 +176,13 @@ struct r2_stack* r2_stack_copy(const struct r2_stack *source)
 /**
  * @brief              Compare stacks.
  *                     
- *                     This function can do either a shallow or deep comparison based on whether 
- *                     cmp was set. If cmp is set then it's a deep comparison, else shallow comparison. 
+ *                     This function can do either a shallow or deep copy based on whether 
+ *                     cpy was set. If cpy is set then it's a deep copy, else shallow copy. 
+ *                     Additionally, if cpy is set then fd should be set inorder to release memory
+ *                     when the copy function fails.
+ *  
  * @param s1           Stack 1.
  * @param s2           Stack 2.
-
  * @return r2_uint16   Returns TRUE if both stack are equal, else FALSE.
  */
 r2_uint16  r2_stack_compare(const struct r2_stack *s1, const struct r2_stack *s2)
