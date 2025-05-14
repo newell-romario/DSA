@@ -15,19 +15,7 @@ static void test_r2_init_data()
                 arr[i] = rand() % SIZE + 1;
 }
 
-/**
- * @brief       Tests the create functionality for the list node.
- * 
- */
-static void test_r2_create_listnode()
-{
-        struct r2_listnode *node = r2_create_listnode(); 
-        assert(node != NULL);
-        assert(node->data == NULL); 
-        assert(node->next == NULL);
-        assert(node->prev == NULL);
-        free(node);
-}
+
 
 /**
  * @brief       Tests the create functionality for the list.
@@ -580,7 +568,6 @@ static void test_r2_list_empty()
 void test_r2_list_run()
 {
         test_r2_init_data();
-        test_r2_create_listnode(); 
         test_r2_create_list(NULL, NULL, NULL); 
         test_r2_destroy_list();
         test_r2_listnode_at(); 

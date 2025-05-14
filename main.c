@@ -13,6 +13,7 @@
 #include "tests/r2_heap_test.h"
 #include "tests/r2_unionfind_test.h"
 #include "tests/r2_sort_test.h"
+#include "tests/r2_string_test.h"
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
@@ -35,7 +36,9 @@ int main()
         //test_r2_hashtable_run();
         //test_r2_btree_run(); 
         //test_r2_unionfind_run(); 
-        test_r2_graph_run();
+        //test_r2_graph_run();
         //r2_sort_test_run();
+
+        test_r2_string_run();
         return 0;
 }
