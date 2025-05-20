@@ -12,12 +12,12 @@ static r2_int16 maxcmp(const void *, const void *);
  */
 static void test_r2_create_priority_queue()
 {
-        struct r2_pq *pq = r2_create_priority_queue(64, 1, NULL, NULL,NULL);
+        struct r2_pq *pq = r2_create_priority_queue(64, 1, maxcmp, NULL,NULL);
         assert(pq != NULL); 
         assert(pq->ncount == 0); 
         assert(pq->pqsize == 64); 
         assert(pq->type == 1);
-        assert(pq->kcmp == NULL);
+        assert(pq->kcmp == maxcmp);
         assert(pq->fd == NULL);
         r2_destroy_priority_queue(pq);
 }
@@ -27,7 +27,7 @@ static void test_r2_create_priority_queue()
  */
 static void test_r2_destroy_priority_queue()
 {
-        struct r2_pq *pq = r2_create_priority_queue(64, 1, NULL, NULL, NULL);
+        struct r2_pq *pq = r2_create_priority_queue(64, 1, maxcmp, NULL, NULL);
         assert(r2_destroy_priority_queue(pq)  == NULL);
 }
 
@@ -96,11 +96,11 @@ static void test_r2_pq_adjust()
         struct r2_locator * l = r2_pq_first(pq);
         r2_int64 *v = l->data;
         *v = *v +  20;
-        pq = r2_pq_adjust(pq, l, 1);
+        r2_pq_adjust(pq, l, 1);
         assert(*(r2_int64 *)r2_pq_first(pq)->data == values[9]);
 
         *v = *v - 50;
-        pq = r2_pq_adjust(pq, l, 0);
+        r2_pq_adjust(pq, l, 0);
         assert(*(r2_int64 *)r2_pq_first(pq)->data == *v);
         r2_destroy_priority_queue(pq);
 }

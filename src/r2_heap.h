@@ -73,5 +73,5 @@ struct r2_locator* r2_pq_insert(struct r2_pq*, void *);
 struct r2_locator* r2_pq_first(struct r2_pq *);
 r2_uint16 r2_pq_remove(struct r2_pq *, struct r2_locator *);
 r2_uint16 r2_pq_empty(const struct r2_pq *);
-struct r2_pq* r2_pq_adjust(struct r2_pq *, struct r2_locator *, r2_uint16);
+void r2_pq_adjust(struct r2_pq *, struct r2_locator *, r2_uint16);
 #endif

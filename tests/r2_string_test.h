@@ -4,5 +4,6 @@ static void test_r2_naive_substring();
 static void test_r2_rabin_karp_substring(); 
 static void test_r2_naive_dfa();
 static void test_r2_kmp();
+static void test_r2_bmh();
 void test_r2_string_run();
 #endif

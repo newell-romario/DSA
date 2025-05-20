@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-
+#define  ALPHA_SIZE 256
+#define MAX(a,b) ((a) >= (b)? (a) : (b))
 /**
  * @brief               Performs a naive substring search for a pattern in a string.
  * 
@@ -76,19 +76,18 @@ r2_int64 r2_rabin_karp(const r2_c *str, const r2_c *pat)
         r2_uint64 prime = 155654281135519;/*prime number*/
         r2_uint64 pl = 0;/*length of pattern*/
         r2_uint64 k  = 0;
-        r2_uint64 alpha_size = 256;/*alphabet size*/
 
         /*Computing hash of pattern*/
         for(r2_uint64 i = 0; pat[i] != '\0'; pl = ++i)
-                pat_hash  = (pat_hash*alpha_size + pat[i])%prime;
+                pat_hash  = (pat_hash*ALPHA_SIZE + pat[i])%prime;
         
         /*Computing significant digit*/
         for(r2_int64 i = 1; i < pl ; ++i)
-                sig_digit = (sig_digit*alpha_size)%prime;
+                sig_digit = (sig_digit*ALPHA_SIZE)%prime;
         
         /*Computing hash of string*/
         for(r2_uint64 i = 0; str[i] != '\0' && i != pl; ++i)
-                str_hash  = (str_hash*alpha_size + str[i])%prime; 
+                str_hash  = (str_hash*ALPHA_SIZE + str[i])%prime; 
         
         if(pat_hash == str_hash){
                 while(pat[k] == str[k] && pat[k] != '\0' && str[k] != '\0')
@@ -100,7 +99,7 @@ r2_int64 r2_rabin_karp(const r2_c *str, const r2_c *pat)
                 
         for(r2_uint64 i = pl; str[0] !='\0' && str[i] != '\0'; ++i){
                 str_hash = (str_hash - str[i-pl]*sig_digit)%prime; 
-                str_hash = (str_hash*alpha_size + str[i])%prime;
+                str_hash = (str_hash*ALPHA_SIZE + str[i])%prime;
                 if(str_hash == pat_hash){
                         /*Confirming possible match*/
                         k = 0;
@@ -144,17 +143,16 @@ r2_int64 r2_naive_dfa(const r2_c *str, const r2_c *pat)
         r2_uint64 len     = strlen(pat);/*length of pattern*/
         if(len == 0) return 0;
         r2_uint64 **table = calloc(len+1, sizeof(r2_uint64 *));/*transition table*/
-        r2_c *suffix = calloc(len + 1, sizeof(r2_c));
+        r2_uc *suffix = calloc(len + 1, sizeof(r2_c));
         r2_int64 pos = -1;
         const r2_c *prefix = pat;
-        const r2_uint16 ALPHABET_SIZE = 256;
         if(table == NULL)
                 goto CLEANUP;
         
         
 
         for(r2_uint64 row = 0; row < len+1; ++row){
-                table[row] = calloc(ALPHABET_SIZE, sizeof(r2_uint64)); 
+                table[row] = calloc(ALPHA_SIZE, sizeof(r2_uint64)); 
                 if(table[row] == NULL)
                         FAILED = TRUE;
         }
@@ -164,8 +162,8 @@ r2_int64 r2_naive_dfa(const r2_c *str, const r2_c *pat)
 
         
         for(r2_int64 row = 0, state = 0; row <= len; ++row, ++state){
-                for(r2_c col = 0; col < ALPHABET_SIZE; ++col){
-                        suffix[row]  = col;
+                for(r2_uint64 col = 0; col < ALPHA_SIZE; ++col){
+                        suffix[row]  = (r2_c)col;
                         r2_uint64 lp   = 0;/*longest prefix*/
                         for(r2_int64 i = row, j=i, p = 0; i >= 0; --i, p = 0){
                                 for(r2_int64 k = row; j >= 0; --k, --j)
@@ -241,7 +239,7 @@ r2_int64 r2_naive_dfa(const r2_c *str, const r2_c *pat)
         r2_uint64 lp  = 0;/*longest proper prefix of pat[:k]*/
         for(r2_uint64 i = 1; i < len; ++i){
                 while(lp > 0 && pat[lp] != pat[i])
-                        lp = ft[lp];
+                        lp = ft[lp-1];
 
                 if(pat[lp] == pat[i])
                         lp = lp + 1;
@@ -265,4 +263,47 @@ r2_int64 r2_naive_dfa(const r2_c *str, const r2_c *pat)
         CLEANUP:
                 free(ft);
                 return j;
-}    
+}
+
+/**
+ * @brief               Boyer-Moore string matching algorithm.
+ * 
+ * @param str           String.
+ * @param pat           Pattern. 
+ * @return r2_int64     Returns the location of the first match found, else -1.  
+ */
+r2_int64 r2_bmh(const r2_c*str, const r2_c *pat)
+{
+        const r2_int64 patlen = strlen(pat);/*length of pattern*/
+        if(patlen == 0)
+                return 0; 
+        
+        /*Declaring bad character table and initializing all entries to -1*/
+        r2_int64 ct[ALPHA_SIZE];
+        for(r2_uint64 i = 0; i != ALPHA_SIZE; ++i)
+                ct[i] = -1;
+
+        /*Stores the right most occurence of a character in pattern*/
+        for(r2_int64 i = patlen-1; i >= 0; --i)
+                if(ct[pat[i]] == -1)
+                        ct[pat[i]] = i;   
+        
+        /*Matching with the bad character rule only*/
+        r2_uint64 len = strlen(str); 
+        r2_uint64 pos = patlen-1;
+        r2_int64 k    = 0;
+        r2_int64 j    = 0;
+        r2_uint64 jmp = 0;
+        while(pos < len){
+                /*Do right to left comparison*/
+                k = pos; 
+                j = patlen-1;
+                for(;j > -1 && str[k] == pat[j]; --k, --j);
+                if(j == -1)
+                        return k+1;
+        
+                jmp = MAX(1, j-ct[str[k]]);
+                pos = pos + jmp; /*Calculating the shift amount*/
+        }
+     return -1;    
+}
