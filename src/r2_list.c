@@ -1,5 +1,6 @@
 #include "r2_list.h"
 #include <stdlib.h>
+#include <assert.h>
 
 /********************File scope functions************************/
 static void r2_freenode(struct r2_listnode *, r2_fd);
@@ -96,10 +97,14 @@ struct r2_list* r2_create_list(r2_cmp cmp, r2_cpy cpy, r2_fd fd)
 struct r2_list* r2_destroy_list(struct r2_list *list)
 {
         struct r2_listnode *front = r2_listnode_first(list);
-        while(front != NULL){
-                r2_freenode(front->prev, list->fd); 
-                front = front->next;
+        struct r2_listnode *current  = front;
+        while(current != NULL){
+                front = current;
+                current = current->next;
+                r2_freenode(front, list->fd); 
+                
         }
+
         free(list);
         return NULL;  
 }
@@ -114,6 +119,7 @@ struct r2_list* r2_destroy_list(struct r2_list *list)
  */
 r2_uint16 r2_list_insert_at_front(struct r2_list *list, void *data)
 {
+        assert(data != NULL);
         struct r2_listnode *node = r2_create_listnode(); 
         r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
@@ -142,6 +148,7 @@ r2_uint16 r2_list_insert_at_front(struct r2_list *list, void *data)
  */
 r2_uint16 r2_list_insert_at_back(struct r2_list *list, void *data)
 {
+        assert(data != NULL);
         struct r2_listnode *node = r2_create_listnode(); 
         r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
@@ -170,6 +177,7 @@ r2_uint16 r2_list_insert_at_back(struct r2_list *list, void *data)
  */
 r2_uint16 r2_list_insert_after(struct r2_list *list, struct r2_listnode *pos, void *data)
 {
+        assert(data != NULL);
         struct r2_listnode *rear   = r2_listnode_last(list);
         r2_uint16 SUCCESS = FALSE;
         if(pos == rear)
@@ -199,6 +207,7 @@ r2_uint16 r2_list_insert_after(struct r2_list *list, struct r2_listnode *pos, vo
  */
 r2_uint16 r2_list_insert_before(struct r2_list *list, struct r2_listnode *pos, void *data)
 {
+        assert(data != NULL);
         struct r2_listnode *front = r2_listnode_first(list); 
         r2_uint16 SUCCESS  = FALSE;
         if(pos == front)
@@ -227,6 +236,7 @@ r2_uint16 r2_list_insert_before(struct r2_list *list, struct r2_listnode *pos, v
  */
 r2_uint16 r2_list_delete_at_front(struct r2_list *list)
 {
+
         r2_uint16 SUCCESS = FALSE;
         if(r2_list_empty(list) != TRUE){
                 struct r2_listnode *front = r2_listnode_first(list); 
@@ -298,9 +308,12 @@ r2_uint16 r2_list_delete(struct r2_list *list, struct r2_listnode *pos)
 }
 
 /**
- * @brief                       Copies a list.
+ * @brief                       Creates a copy of the list.
+ *                              
  *                              This function can do either a shallow or deep copy based on whether 
- *                              cpy was set. If cpy is set then it's a deep copy, else shallow copy.
+ *                              cpy was set. If cpy is set for source then it's a deep copy, else shallow copy.
+ *                              Fd should be set when cpy is set.
+ *                      
  * @param source                Source.
  * @return struct r2_list*      Returns a copy, else NULL.
  */
@@ -341,7 +354,8 @@ struct r2_list* r2_list_copy(const struct r2_list *source)
  * @brief                       Compare lists. 
  *
  *                              This function can do either a shallow or deep comparison based on whether 
- *                              cmp was set. If cmp is set then it's a deep comparison, else shallow comparison.                              
+ *                              cmp was set. If cmp is set for l1 then it's a deep comparison, else shallow comparison. 
+ *                              
  * @param l1                    List 1
  * @param l2                    List 2
  * @return r2_uint16            Returns TRUE if lists are equal, otherwise FALSE.
@@ -349,10 +363,14 @@ struct r2_list* r2_list_copy(const struct r2_list *source)
 r2_uint16  r2_list_compare(const struct r2_list *l1, const struct r2_list *l2)
 {
         r2_uint16 result = FALSE; 
-        if(r2_list_empty(l1) != TRUE && r2_list_empty(l2) != TRUE && l1->lsize == l2->lsize){
+        if(r2_list_empty(l1) == TRUE && r2_list_empty(l2) == TRUE){
+                result = TRUE;
+                return result;
+        }
+                
+        if(l1->lsize == l2->lsize){
                 struct r2_listnode *l1_front = r2_listnode_first(l1); 
                 struct r2_listnode *l2_front = r2_listnode_first(l2);
-
                 while(l1_front != NULL && l2_front != NULL){
                         
                         if(l1->cmp != NULL)
@@ -366,8 +384,7 @@ r2_uint16  r2_list_compare(const struct r2_list *l1, const struct r2_list *l2)
                         l1_front = l1_front->next; 
                         l2_front = l2_front->next;
                 }
-        }else if(r2_list_empty(l1) == TRUE && r2_list_empty(l2) == TRUE)
-                result = TRUE;
+        }
 
         return result;
 }

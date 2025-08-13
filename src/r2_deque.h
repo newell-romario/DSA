@@ -25,7 +25,7 @@ struct r2_deque{
 
 
 struct r2_deque*        r2_create_deque(r2_cmp, r2_cpy, r2_fd);
-struct r2_dequenode*    r2_create_dequenode();
+
 struct r2_deque*        r2_destroy_deque(struct r2_deque *);
 r2_uint16               r2_deque_empty(const struct r2_deque *);
 r2_uint16               r2_deque_insert_at_front(struct r2_deque *, void*); 

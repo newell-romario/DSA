@@ -71,10 +71,24 @@ static void test_r2_kmp()
         assert(r2_kmp("", "") == 0); 
 }
 
+static void test_r2_bmh()
+{
+        const char *str = "bacbababaabcbab";
+        assert(r2_bmh(str, "cbab")  == 2); 
+        assert(r2_bmh(str, "o")   == -1); 
+        assert(r2_bmh(str, "aa") == 8); 
+        assert(r2_bmh(str, "oo")  == -1); 
+        assert(r2_bmh(str, "") == 0);
+        assert(r2_bmh(str, str) == 0);
+        assert(r2_bmh("", str) == -1);
+        assert(r2_bmh("", "") == 0); 
+}
+
 void test_r2_string_run()
 {
         test_r2_naive_substring();
         test_r2_rabin_karp_substring();
         test_r2_naive_dfa();
         test_r2_kmp();
+        test_r2_bmh();
 }

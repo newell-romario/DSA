@@ -1,5 +1,6 @@
 #include "r2_queue.h"
 #include <stdlib.h>
+#include <assert.h>
 
 /********************File scope functions************************/
 static void r2_freenode(struct r2_queuenode *, r2_fd);
@@ -72,6 +73,7 @@ struct r2_queue* r2_destroy_queue(struct r2_queue *queue)
  */
 r2_uint16 r2_queue_enqueue(struct r2_queue*queue, void *data)
 {
+        assert(data != NULL);
         struct r2_queuenode *node = r2_create_queuenode(); 
         r2_uint16 SUCCESS = FALSE;
         if(node != NULL){
@@ -147,8 +149,11 @@ r2_uint16 r2_queue_empty(const struct r2_queue *queue)
 
 /**
  * @brief                      Copies a queue. 
+ *                             
  *                             This function can do either a shallow or deep copy based on whether 
- *                             cpy was set. If cpy is set then it's a deep copy, else shallow copy.
+ *                             cpy was set. If cpy is set for source then it's a deep copy, else shallow copy.
+ *                             Fd should be set when cpy is set.
+ *      
  * @param source               Source.
  * @return struct r2_queue*    Returns the copy of the queue.
  */
@@ -189,7 +194,8 @@ struct r2_queue* r2_queue_copy(const struct r2_queue *source)
  * @brief                       Compare  queues.
  *                              
  *                              This function can do either a shallow or deep comparison based on whether 
- *                              cmp was set. If cmp is set then it's a deep comparison, else shallow comparison.
+ *                              cmp was set. If cmp is set for q1 then it's a deep comparison, else shallow comparison.
+ * 
  * @param q1                    Queue 1.
  * @param q2                    Queue 2.
  * @return r2_uint16            Returns TRUE or FALSE based on equality.
@@ -197,11 +203,15 @@ struct r2_queue* r2_queue_copy(const struct r2_queue *source)
 r2_uint16  r2_queue_compare(const struct r2_queue *q1, const struct r2_queue *q2)
 {
         r2_uint16 result = FALSE; 
-        if(r2_queue_empty(q1) != TRUE && r2_queue_empty(q2) != TRUE && q2->qsize == q1->qsize){
+        if(r2_queue_empty(q1) == TRUE && r2_queue_empty(q2) == TRUE){
+                result = TRUE; 
+                return result;
+        }
+
+        if(q2->qsize == q1->qsize){
                 struct r2_queuenode *q1_front = r2_queue_front(q1); 
                 struct r2_queuenode *q2_front = r2_queue_front(q2);
                 while(q1_front != NULL && q2_front != NULL){
-                        
                         if(q1->cmp != NULL)
                                 result = q1->cmp(q1_front->data, q2_front->data) == 0? TRUE : FALSE;
                         else
@@ -213,9 +223,7 @@ r2_uint16  r2_queue_compare(const struct r2_queue *q1, const struct r2_queue *q2
                         q1_front = q1_front->next; 
                         q2_front = q2_front->next; 
                 }
-        }else if(r2_queue_empty(q1) == TRUE && r2_queue_empty(q2) == TRUE)
-                result = TRUE;
-        
+        }   
         return result;
 }
 
