@@ -120,7 +120,7 @@ r2_uint16 r2_trie_insert(struct r2_trie *trie, r2_uc *key, r2_uint64 len, void *
         if(SUCCESS == FALSE){
                 /**
                  * We failed to insert the key into the trie and 
-                 * need to walk back up the tree removing nodes we inserted. 
+                 * need to walk back up the trie removing nodes we inserted. 
                  * We stop walking the trie once we reach back to our starting position. 
                  * 
                  */
