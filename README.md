@@ -83,10 +83,6 @@ This library provides robust implementations of the following data structures an
 - Memory management utilities
 - Type-safe implementations
 
-
-
-
-
 ### Callback Functions
 
 The library uses callback functions for customization:
@@ -115,4 +111,3 @@ cmake ..
 ```bash
 cmake --build .
 ```
-
